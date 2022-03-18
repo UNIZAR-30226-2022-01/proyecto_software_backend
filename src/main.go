@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"io/ioutil"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -31,13 +33,18 @@ import (
 	middlewarePropio "backend/middleware"
 )
 
+const (
+	CARPETA_FRONTEND      = "web"
+	FICHERO_RAIZ_FRONTEND = "index.html"
+)
+
 func main() {
 	// El objeto de base de datos es seguro para uso concurrente y controla su
 	// propia pool de conexiones independientemente.
 	//globales.Db = dao.InicializarConexionDb()
 
 	// Instancia un servidor HTTP con el router programado indicado
-	server := &http.Server{Addr: ":8080", Handler: service()}
+	server := &http.Server{Addr: ":8080", Handler: router()}
 
 	canalCierre := tratarContextoCierreServidor(server)
 
@@ -91,15 +98,19 @@ func tratarContextoCierreServidor(server *http.Server) <-chan struct{} {
 }
 
 // Devuelve un router programado para las URLs a atender
-func service() http.Handler {
+func router() http.Handler {
 	r := chi.NewRouter()
 
 	// Middlewares a usar, de momento sobre todas las URLs
 	r.Use(middleware.Logger)
 	r.Use(middlewarePropio.MiddlewarePropio())
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Bienvenido!"))
+	directorioDeTrabajo, _ := os.Getwd()
+	ficherosFrontend := filepath.Join(directorioDeTrabajo, CARPETA_FRONTEND)
+	log.Println("Sirviendo " + FICHERO_RAIZ_FRONTEND + " desde " + ficherosFrontend)
+	index, _ := ioutil.ReadFile(ficherosFrontend + "/" + FICHERO_RAIZ_FRONTEND)
+	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+		w.Write(index)
 	})
 
 	// Diferentes pruebas de las funcionalidaes de Chi
@@ -112,7 +123,6 @@ func service() http.Handler {
 	r.Route("/articles", func(r chi.Router) {
 		r.Get("/", generales.HandlerDePrueba)                                  // GET /articles
 		r.Get("/{month}-{day}-{year}", generales.HandlerDePruebaConParametros) // GET /articles/01-16-2017
-
 	})
 
 	return r

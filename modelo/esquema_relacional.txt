@@ -1,0 +1,48 @@
+Table Usuario as U{
+  id int [pk, increment]
+  email varchar [not null, unique]
+  nombreUsuario varchar [not null, unique]
+  passwordHash varchar [not null]
+  biografia varchar
+  cookieSesion bytea [not null]
+  partidasGanadas int [not null]
+  partidasTotales int [not null]
+  puntos int [not null]
+  ID_dado int [ref: > I.id, not null]
+  ID_ficha int  [ref: > I.id, not null]
+}
+
+Table TieneItems as TI {
+  ID_user int [ref: > U.id, pk]
+  ID_item int [ref: > I.id, pk]
+}
+
+Table ItemTienda as I {
+  id int [pk]
+  nombre varchar [not null]
+  descripcion varchar [not null]
+  precio int [not null]
+  tipo Enum [not null]
+}
+
+Table Partida as P {
+  id int [pk, increment]
+  estadoPartida bytea [not null]
+  mensajes bytea [not null]
+  esPublica boolean [not null]
+  // Si es privada, será no nulo
+  passwordHash varchar 
+  enCurso boolean [not null]
+}
+
+Table Participa as Pa {
+  ID_partida int [pk, ref: > P.id]
+  ID_usuario int [pk, ref: - U.id]
+}
+
+Table EsAmigo as A {
+  ID_usuario1 int [pk, ref: > U.id]
+  ID_usuario2 int [pk, ref: > U.id]
+  pendiente boolean [not null]
+  // si quisieramos chat entre 2 amigos, añadir campo chat serializado
+}

@@ -57,6 +57,7 @@ func ServirJSON(writer http.ResponseWriter, request *http.Request) {
 	log.Println(json.Marshal(ejemplo))
 
 	// Establece el contenido a servir como JSON y lo escribe
+	writer.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(writer).Encode(ejemplo)
 }
 
