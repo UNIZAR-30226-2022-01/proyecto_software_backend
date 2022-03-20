@@ -25,7 +25,6 @@ CREATE TABLE backend."Partida" (
 
 
 CREATE TABLE backend."Usuario" (
-	id serial4 NOT NULL,
 	email varchar NOT NULL,
 	"nombreUsuario" varchar NOT NULL,
 	"passwordHash" varchar NOT NULL,
@@ -37,7 +36,7 @@ CREATE TABLE backend."Usuario" (
 	"ID_dado" int4 NOT NULL,
 	"ID_ficha" int4 NOT NULL,
 	CONSTRAINT "Usuario_email_key" UNIQUE (email),
-	CONSTRAINT "Usuario_pkey" PRIMARY KEY (id),
+	CONSTRAINT "Usuario_pkey" PRIMARY KEY ("nombreUsuario"),
 	CONSTRAINT usuario_un UNIQUE ("nombreUsuario"),
 	CONSTRAINT "Usuario_ID_dado_fkey" FOREIGN KEY ("ID_dado") REFERENCES backend."ItemTienda"(id),
 	CONSTRAINT "Usuario_ID_ficha_fkey" FOREIGN KEY ("ID_ficha") REFERENCES backend."ItemTienda"(id)
@@ -45,28 +44,39 @@ CREATE TABLE backend."Usuario" (
 
 
 CREATE TABLE backend."EsAmigo" (
-	"ID_usuario1" int4 NOT NULL,
-	"ID_usuario2" int4 NOT NULL,
+	"nombreUsuario1" varchar NOT NULL,
+	"nombreUsuario2" varchar NOT NULL,
 	pendiente bool NOT NULL,
-	CONSTRAINT "EsAmigo_pkey" PRIMARY KEY ("ID_usuario1", "ID_usuario2"),
-	CONSTRAINT "EsAmigo_ID_usuario1_fkey" FOREIGN KEY ("ID_usuario1") REFERENCES backend."Usuario"(id),
-	CONSTRAINT "EsAmigo_ID_usuario2_fkey" FOREIGN KEY ("ID_usuario2") REFERENCES backend."Usuario"(id)
+	CONSTRAINT "EsAmigo_pkey" PRIMARY KEY ("nombreUsuario1", "nombreUsuario2"),
+	CONSTRAINT "EsAmigo_nombre_usuario1_fkey" FOREIGN KEY ("nombreUsuario1") REFERENCES backend."Usuario"("nombreUsuario"),
+	CONSTRAINT "EsAmigo_nombre,usuario2_fkey" FOREIGN KEY ("nombreUsuario2") REFERENCES backend."Usuario"("nombreUsuario")
 );
 
 
 CREATE TABLE backend."Participa" (
 	"ID_partida" int4 NOT NULL,
-	"ID_usuario" int4 NOT NULL,
-	CONSTRAINT "Participa_pkey" PRIMARY KEY ("ID_partida", "ID_usuario"),
+	"nombreUsuario" varchar NOT NULL,
+	CONSTRAINT "Participa_pkey" PRIMARY KEY ("ID_partida", "nombreUsuario"),
 	CONSTRAINT "Participa_ID_partida_fkey" FOREIGN KEY ("ID_partida") REFERENCES backend."Partida"(id),
-	CONSTRAINT "Participa_ID_usuario_fkey" FOREIGN KEY ("ID_usuario") REFERENCES backend."Usuario"(id)
+	CONSTRAINT "Participa_ID_usuario_fkey" FOREIGN KEY ("nombreUsuario") REFERENCES backend."Usuario"("nombreUsuario")
 );
 
 
 CREATE TABLE backend."TieneItems" (
 	"ID_item" int4 NOT NULL,
-	"ID_user" int4 NOT NULL,
-	CONSTRAINT "TieneItems_pkey" PRIMARY KEY ("ID_item", "ID_user"),
+	"nombreUsuario" varchar NOT NULL,
+	CONSTRAINT "TieneItems_pkey" PRIMARY KEY ("ID_item", "nombreUsuario"),
 	CONSTRAINT "TieneItems_ID_item_fkey" FOREIGN KEY ("ID_item") REFERENCES backend."ItemTienda"(id),
-	CONSTRAINT "TieneItems_ID_user_fkey" FOREIGN KEY ("ID_user") REFERENCES backend."Usuario"(id)
+	CONSTRAINT "TieneItems_ID_user_fkey" FOREIGN KEY ("nombreUsuario") REFERENCES backend."Usuario"("nombreUsuario")
 );
+
+
+INSERT INTO backend."ItemTienda"
+(id, nombre, descripcion, precio, tipo)
+VALUES(0, 'Fichas por defecto.', 'Fichas por defecto, aburridas.', 0, 'ficha'::backend."item");
+INSERT INTO backend."ItemTienda"
+(id, nombre, descripcion, precio, tipo)
+VALUES(1, 'Dados por defecto.', 'Dados por defecto, aburridos.', 0, 'dado'::backend."item");
+INSERT INTO backend."ItemTienda"
+(id, nombre, descripcion, precio, tipo)
+VALUES(2, 'Avatar por defecto.', 'Avatar por defecto, aburrido.', 0, 'avatar'::backend."item");
