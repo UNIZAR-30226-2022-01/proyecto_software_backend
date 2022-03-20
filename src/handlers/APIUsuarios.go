@@ -10,11 +10,11 @@ import (
 	"net/http"
 )
 
+// EnviarSolicitudAmistad envía una solicitud de amistad entre el usuario que genera
+// la solicitud y el indicado en el nombre. Responde con status 200 si ha habido éxito,
+// o status 500 si ha habido un error junto a su motivo en el cuerpo.
 func EnviarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuarioReceptor := chi.URLParam(request, "nombre")
-
-	log.Println("Parámetros EnviarSolicitudAmistad:", nombreUsuarioReceptor)
-
 	nombreUsuarioEmisor := middleware.ObtenerUsuarioCookie(request)
 
 	usuarioEmisor := vo.Usuario{0, "", nombreUsuarioEmisor, "", "", http.Cookie{}, 0, 0, 0, 0, 0}
@@ -22,17 +22,17 @@ func EnviarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) {
 
 	err := dao.CrearSolicitudAmistad(globales.Db, &usuarioEmisor, &usuarioReceptor)
 	if err != nil {
-		log.Println("Error en EnviarSolicitudAmistad", err)
+		devolverError(writer, "EnviarSolicitudAmistad", err)
 	}
 
-	// TODO: respuesta
+	devolverExito(writer)
 }
 
+// AceptarSolicitudAmistad acepta una solicitud de amistad entre el usuario que genera
+// la solicitud y el indicado en el nombre. Responde con status 200 si ha habido éxito,
+// o status 500 si ha habido un error junto a su motivo en el cuerpo.
 func AceptarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuarioReceptor := chi.URLParam(request, "nombre")
-
-	log.Println("Parámetros AceptarSolicitudAmistad:", nombreUsuarioReceptor)
-
 	nombreUsuarioEmisor := middleware.ObtenerUsuarioCookie(request)
 
 	usuarioEmisor := vo.Usuario{0, "", nombreUsuarioEmisor, "", "", http.Cookie{}, 0, 0, 0, 0, 0}
@@ -40,12 +40,15 @@ func AceptarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) 
 
 	err := dao.AceptarSolicitudAmistad(globales.Db, &usuarioEmisor, &usuarioReceptor)
 	if err != nil {
-		log.Println("Error en AceptarSolicitudAmistad", err)
+		devolverError(writer, "AceptarSolicitudAmistad", err)
 	}
 
-	// TODO: respuesta
+	devolverExito(writer)
 }
 
+// RechazarSolicitudAmistad rechaza una solicitud de amistad entre el usuario que genera
+// la solicitud y el indicado en el nombre. Responde con status 200 si ha habido éxito,
+// o status 500 si ha habido un error junto a su motivo en el cuerpo.
 func RechazarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuarioReceptor := chi.URLParam(request, "nombre")
 
@@ -58,8 +61,8 @@ func RechazarSolicitudAmistad(writer http.ResponseWriter, request *http.Request)
 
 	err := dao.RechazarSolicitudAmistad(globales.Db, &usuarioEmisor, &usuarioReceptor)
 	if err != nil {
-		log.Println("Error en RechazarSolicitudAmistad", err)
+		devolverError(writer, "RechazarSolicitudAmistad", err)
 	}
 
-	// TODO: respuesta
+	devolverExito(writer)
 }

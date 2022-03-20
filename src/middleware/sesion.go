@@ -1,5 +1,6 @@
 // Package middleware define middleware propio para actuar de intermediario entre
-// la llegada de una petición y su tratamiento final por un handler
+// la llegada de una petición y su tratamiento final por un handler, así como
+// funciones auxiliares relacionadas con el mismo
 package middleware
 
 import (
@@ -14,33 +15,30 @@ import (
 )
 
 const (
-	NOMBRE_COOKIE_USUARIO             = "cookie_user" // El valor de una cookie de usuario consiste en "nombre_usuario'|'id'
+	NOMBRE_COOKIE_USUARIO             = "cookie_user" // Valor de una cookie de usuario: "nombre_usuario'|'id'
 	SEPARADOR_VALOR_COOKIE_USUARIO    = '|'
 	LONGITUD_ID_COOKIE_USUARIO        = 128
 	TIEMPO_EXPIRACION_COOKIES_USUARIO = 15 * 24 * time.Hour // 15 días
 )
 
-// Función que devuelve una función de middleware
+// MiddlewareSesion devuelve un middleware que comprueba la existencia de una cookie de usuario válida antes de
+// permitir a la URL dada, y deniega si no existe.
 func MiddlewareSesion() func(next http.Handler) http.Handler {
 	// next es el handler (o middleware) siguiente a éste middleware
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			// Escribe directamente y luego deja escribir al handler a continuación,
-			// en realidad se leerían cookies y se serviría contenido diferente o
-			// dejaría pasar al handler, etc.
 			cookie, cookieRequest, err := CargarCookieUsuario(r)
 
 			if err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
-				log.Printf("Error al cargar cookie de usuario:", err)
+				log.Println("Error al cargar cookie de usuario:", err)
 			} else {
 				if cookie.Expires.Before(time.Now()) && (cookieRequest.Raw == cookie.Raw) {
-					// Cortamos la cadena en este punto, porque la cookie es inválida
+					// Se corta la cadena en este punto, porque la cookie es inválida
 					w.WriteHeader(http.StatusUnauthorized)
-					log.Printf("Cookie expirada o inválida")
+					log.Println("Detectada cookie expirada o inválida")
 				} else {
-					log.Println("Enhorabuena, estás logueado :)")
-					// Deja pasar al handler
+					// Deja pasar al siguiente handler
 					next.ServeHTTP(w, r)
 				}
 			}
@@ -50,6 +48,7 @@ func MiddlewareSesion() func(next http.Handler) http.Handler {
 	}
 }
 
+// ObtenerUsuarioCookie devuelve el nombre de usuario almacenado en una cookie de usuario de la petición, si existe.
 func ObtenerUsuarioCookie(request *http.Request) (nombre string) {
 	for _, c := range request.Cookies() {
 		if c.Name == NOMBRE_COOKIE_USUARIO { // Es una cookie de usuario
@@ -62,6 +61,8 @@ func ObtenerUsuarioCookie(request *http.Request) (nombre string) {
 	return nombre
 }
 
+// CargarCookieUsuario devuelve la cookie de usuario almacenada en una cookie de usuario de la petición y la equivalente
+// almacenada. Devuelve error en caso de no encontrarse alguna de las dos.
 func CargarCookieUsuario(request *http.Request) (cookie http.Cookie, cookieRequest http.Cookie, err error) {
 	for _, c := range request.Cookies() {
 		if c.Name == NOMBRE_COOKIE_USUARIO { // Es una cookie de usuario
@@ -81,6 +82,8 @@ func CargarCookieUsuario(request *http.Request) (cookie http.Cookie, cookieReque
 	return cookie, cookieRequest, err
 }
 
+// GenerarCookieUsuario genera una cookie para el nombre de usuario dado, la devuelve y la almacena. En caso de fallo o
+// usuario no existente devuelve un error.
 func GenerarCookieUsuario(writer *http.ResponseWriter, nombreUsuario string) (err error) {
 	expiracion := time.Now().Add(TIEMPO_EXPIRACION_COOKIES_USUARIO)
 
@@ -94,6 +97,7 @@ func GenerarCookieUsuario(writer *http.ResponseWriter, nombreUsuario string) (er
 
 		err = dao.InsertarCookie(globales.Db, &usuarioVO)
 	} else {
+		// No debería ocurrir
 		log.Println(`Se ha proporcionado un nombre de usuario que contiene el carácter separador. 
                         No se ha generado ninguna cookie.`)
 	}
@@ -101,7 +105,22 @@ func GenerarCookieUsuario(writer *http.ResponseWriter, nombreUsuario string) (er
 	return err
 }
 
-// Genera un ID de una cookie aleatorio, de longitud LONGITUD_ID_COOKIE_USUARIO
+// BorrarCookieUsuario borrar la cookie para el nombre de usuario dado en el cliente y en el almacén para el nombre de
+// usuario dado. En caso de fallo o usuario no existente devuelve un error.
+func BorrarCookieUsuario(writer *http.ResponseWriter, nombreUsuario string) (err error) {
+	// Sobreescribe la cookie de usuario en la respuesta por la misma sin valor y expirando automáticamente
+	cookie := http.Cookie{Name: NOMBRE_COOKIE_USUARIO, Value: "", Expires: time.Unix(0, 0)}
+
+	usuarioVO := vo.Usuario{0, "", nombreUsuario, "", "", cookie, 0, 0, 0, 0, 0}
+
+	err = dao.InsertarCookie(globales.Db, &usuarioVO)
+
+	http.SetCookie(*writer, &cookie)
+
+	return err
+}
+
+// RandStringRunes genera un ID de una cookie aleatorio, de longitud LONGITUD_ID_COOKIE_USUARIO.
 func RandStringRunes() string {
 	letterRunes := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
@@ -110,12 +129,4 @@ func RandStringRunes() string {
 		idCookie[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
 	return string(idCookie)
-}
-
-func borrarCookieUsuario(writer *http.ResponseWriter, idUsuario string) {
-	// db
-
-	// Sobreescribe la cookie de usuario en la respuesta por la misma sin valor y expirando automáticamente
-	cookie := http.Cookie{Name: NOMBRE_COOKIE_USUARIO, Value: "", Expires: time.Unix(0, 0)}
-	http.SetCookie(*writer, &cookie)
 }
