@@ -1,6 +1,10 @@
 package main
 
 import (
+	"backend/dao"
+	"backend/globales"
+	"backend/handlers"
+	middlewarePropio "backend/middleware"
 	"context"
 	"io/ioutil"
 	"os/signal"
@@ -24,13 +28,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"os"
-	/////////////////////////////////
-	// Módulos propios
-	/////////////////////////////////
-	// Funciones de tratamiento de peticiones HTTP
-	"backend/handlers/generales"
 	// Middleware a utilizar escrito por nosotros
-	middlewarePropio "backend/middleware"
 )
 
 const (
@@ -41,7 +39,7 @@ const (
 func main() {
 	// El objeto de base de datos es seguro para uso concurrente y controla su
 	// propia pool de conexiones independientemente.
-	//globales.Db = dao.InicializarConexionDb()
+	globales.Db = dao.InicializarConexionDb()
 
 	// Instancia un servidor HTTP con el router programado indicado
 	server := &http.Server{Addr: ":8080", Handler: router()}
@@ -101,9 +99,8 @@ func tratarContextoCierreServidor(server *http.Server) <-chan struct{} {
 func router() http.Handler {
 	r := chi.NewRouter()
 
-	// Middlewares a usar, de momento sobre todas las URLs
+	// Para debugging
 	r.Use(middleware.Logger)
-	r.Use(middlewarePropio.MiddlewarePropio())
 
 	directorioDeTrabajo, _ := os.Getwd()
 	ficherosFrontend := filepath.Join(directorioDeTrabajo, CARPETA_FRONTEND)
@@ -113,16 +110,21 @@ func router() http.Handler {
 		w.Write(index)
 	})
 
-	// Diferentes pruebas de las funcionalidaes de Chi
-	r.Post("/registro", generales.HandlerDePruebaConParametrosPost)
-	r.Get("/dameJSON", generales.ServirJSON)
-	r.Get("/dameUnaImagen", generales.ServirImagen)
-	r.Get("/formularioRegistro", generales.MenuRegistro)
+	r.Post("/registro", handlers.Registro)
+	r.Post("/login", handlers.Login)
 
-	// Ejemplo de rutas REST
-	r.Route("/articles", func(r chi.Router) {
-		r.Get("/", generales.HandlerDePrueba)                                  // GET /articles
-		r.Get("/{month}-{day}-{year}", generales.HandlerDePruebaConParametros) // GET /articles/01-16-2017
+	// Pruebas
+
+	r.Get("/formularioRegistro", handlers.MenuRegistro)
+	r.Get("/formulariologin", handlers.MenuLogin)
+
+	// Rutas REST
+	r.Route("/api", func(r chi.Router) {
+		// Obligamos el acceso con login previo
+		r.Use(middlewarePropio.MiddlewareSesion())
+		r.Get("/aceptarSolicitudAmistad/{nombre}", handlers.AceptarSolicitudAmistad)
+		r.Get("/rechazarSolicitudAmistad/{nombre}", handlers.RechazarSolicitudAmistad)
+		r.Get("/enviarSolicitudAmistad/{nombre}", handlers.EnviarSolicitudAmistad)
 	})
 
 	return r

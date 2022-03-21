@@ -5,7 +5,8 @@ FROM scratch
 #WORKDIR backend  
 
 # Copia todos los ficheros
-COPY ./backend /           
+COPY ./backend /
+COPY ./web /web          
 
 # 80 para producción
 EXPOSE 8080                 
