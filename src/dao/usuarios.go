@@ -104,3 +104,9 @@ func RechazarSolicitudAmistad(db *sql.DB, emisor *vo.Usuario, receptor *vo.Usuar
 		emisor.NombreUsuario, receptor.NombreUsuario)
 	return err
 }
+
+// UsuarioEnPartida devolverá true en caso de que un usuario ya esté participando en una partida
+func UsuarioEnPartida(db *sql.DB, usuario *vo.Usuario) (EnPartida bool, err error) {
+	err = db.QueryRow(`SELECT EXISTS(SELECT * FROM backend."Participa" WHERE "nombreUsuario" = $1)`, usuario.NombreUsuario).Scan(&EnPartida)
+	return EnPartida, err
+}

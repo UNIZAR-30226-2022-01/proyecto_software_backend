@@ -19,6 +19,7 @@ CREATE TABLE backend."Partida" (
 	"esPublica" bool NOT NULL,
 	"passwordHash" varchar NULL,
 	"enCurso" bool NOT NULL,
+	"maxJugadores" int NOT NULL,
 	CONSTRAINT "Partida_pkey" PRIMARY KEY (id),
 	CONSTRAINT partida_check CHECK (((("esPublica" = true) AND ("passwordHash" IS NULL)) OR (("esPublica" = false) AND ("passwordHash" IS NOT NULL))))
 );
@@ -57,8 +58,8 @@ CREATE TABLE backend."Participa" (
 	"ID_partida" int4 NOT NULL,
 	"nombreUsuario" varchar NOT NULL,
 	CONSTRAINT "Participa_pkey" PRIMARY KEY ("ID_partida", "nombreUsuario"),
-	CONSTRAINT "Participa_ID_partida_fkey" FOREIGN KEY ("ID_partida") REFERENCES backend."Partida"(id),
-	CONSTRAINT "Participa_ID_usuario_fkey" FOREIGN KEY ("nombreUsuario") REFERENCES backend."Usuario"("nombreUsuario")
+	CONSTRAINT "Participa_ID_partida_fkey" FOREIGN KEY ("ID_partida") REFERENCES backend."Partida"(id) ON DELETE CASCADE ,
+	CONSTRAINT "Participa_ID_usuario_fkey" FOREIGN KEY ("nombreUsuario") REFERENCES backend."Usuario"("nombreUsuario") ON DELETE CASCADE
 );
 
 

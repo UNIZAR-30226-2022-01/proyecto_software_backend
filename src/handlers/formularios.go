@@ -35,7 +35,7 @@ func Registro(writer http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		devolverError(writer, "Registro", err)
 	} else {
-		usuarioVO := vo.Usuario{0, email, nombre, hash, "", http.Cookie{}, 0, 0, 0, 0, 0}
+		usuarioVO := vo.Usuario{email, nombre, hash, "", http.Cookie{}, 0, 0, 0, 0, 0}
 		err = dao.InsertarUsuario(globales.Db, &usuarioVO)
 
 		if err != nil {
@@ -58,7 +58,7 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 	nombre := request.FormValue("nombre")
 	password := request.FormValue("password")
 
-	usuarioVO := vo.Usuario{0, "", nombre, "", "", http.Cookie{}, 0, 0, 0, 0, 0}
+	usuarioVO := vo.Usuario{"", nombre, "", "", http.Cookie{}, 0, 0, 0, 0, 0}
 	hashDB, err := dao.ConsultarPasswordHash(globales.Db, &usuarioVO)
 
 	existe := bcrypt.CompareHashAndPassword([]byte(hashDB), []byte(password))

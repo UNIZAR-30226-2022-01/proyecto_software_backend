@@ -69,7 +69,7 @@ func CargarCookieUsuario(request *http.Request) (cookie http.Cookie, cookieReque
 			// Obtener el usuario del valor de la cookie
 			nombre := c.Value[:strings.IndexRune(c.Value, SEPARADOR_VALOR_COOKIE_USUARIO)]
 
-			usuarioVO := vo.Usuario{0, "", nombre, "", "", http.Cookie{}, 0, 0, 0, 0, 0}
+			usuarioVO := vo.Usuario{"", nombre, "", "", http.Cookie{}, 0, 0, 0, 0, 0}
 
 			cookie, err = dao.ConsultarCookie(globales.Db, &usuarioVO)
 
@@ -93,7 +93,7 @@ func GenerarCookieUsuario(writer *http.ResponseWriter, nombreUsuario string) (er
 		cookie := http.Cookie{Name: NOMBRE_COOKIE_USUARIO, Value: valorCookie, Expires: expiracion}
 		http.SetCookie(*writer, &cookie)
 
-		usuarioVO := vo.Usuario{0, "", nombreUsuario, "", "", cookie, 0, 0, 0, 0, 0}
+		usuarioVO := vo.Usuario{"", nombreUsuario, "", "", cookie, 0, 0, 0, 0, 0}
 
 		err = dao.InsertarCookie(globales.Db, &usuarioVO)
 	} else {
@@ -111,7 +111,7 @@ func BorrarCookieUsuario(writer *http.ResponseWriter, nombreUsuario string) (err
 	// Sobreescribe la cookie de usuario en la respuesta por la misma sin valor y expirando automáticamente
 	cookie := http.Cookie{Name: NOMBRE_COOKIE_USUARIO, Value: "", Expires: time.Unix(0, 0)}
 
-	usuarioVO := vo.Usuario{0, "", nombreUsuario, "", "", cookie, 0, 0, 0, 0, 0}
+	usuarioVO := vo.Usuario{"", nombreUsuario, "", "", cookie, 0, 0, 0, 0, 0}
 
 	err = dao.InsertarCookie(globales.Db, &usuarioVO)
 

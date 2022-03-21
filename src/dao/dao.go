@@ -9,7 +9,8 @@ import (
 
 // InicializarConexionDb devuelve el objeto de base de datos, en el cual realiza la conexión a la misma
 func InicializarConexionDb() *sql.DB {
-	db, err := sql.Open("postgres", "postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable")
+	//db, err := sql.Open("postgres", "postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable")
+	db, err := sql.Open("postgres", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
 	//db, err := sql.Open("postgres", "postgres://{user}:{password}@{hostname}:{port}/{database-name}?sslmode=disable")
 
 	// Para pruebas fuera de Docker:

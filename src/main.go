@@ -122,6 +122,8 @@ func router() http.Handler {
 	r.Route("/api", func(r chi.Router) {
 		// Obligamos el acceso con login previo
 		r.Use(middlewarePropio.MiddlewareSesion())
+		r.Post("/crearPartida/", handlers.CrearPartida)
+		r.Post("/unirseAPartida/", handlers.UnirseAPartida)
 		r.Get("/aceptarSolicitudAmistad/{nombre}", handlers.AceptarSolicitudAmistad)
 		r.Get("/rechazarSolicitudAmistad/{nombre}", handlers.RechazarSolicitudAmistad)
 		r.Get("/enviarSolicitudAmistad/{nombre}", handlers.EnviarSolicitudAmistad)
