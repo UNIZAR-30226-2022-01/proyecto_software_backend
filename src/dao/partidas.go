@@ -2,13 +2,15 @@ package dao
 
 import (
 	"backend/vo"
+	"bytes"
 	"database/sql"
+	"encoding/gob"
 	"log"
 )
 
 // CrearPartida crea una nueva partida, la cual será añadida a la base de datos
-// EL usuario especificará el número de jugadores máximos, si la partida es pública
-// o privada, y la contrasña cuando sea necesario
+// El usuario especificará el número de jugadores máximos, si la partida es pública
+// o privada, y la contraseña cuando sea necesario
 func CrearPartida(db *sql.DB, usuario *vo.Usuario, partida *vo.Partida) (err error) {
 	var IdPartida int
 	password := sql.NullString{String: partida.PasswordHash, Valid: len(partida.PasswordHash) > 0}
@@ -25,7 +27,7 @@ func CrearPartida(db *sql.DB, usuario *vo.Usuario, partida *vo.Partida) (err err
 	return err
 }
 
-// UnisrseAPartida crea una nueva entrada en la tabla "Participa" indicando que el usuario
+// UnirseAPartida crea una nueva entrada en la tabla "Participa" indicando que el usuario
 // forma parte de la partida
 func UnirseAPartida(db *sql.DB, usuario *vo.Usuario, partida *vo.Partida) (err error) {
 	_, err = db.Exec(`INSERT INTO backend."Participa"("ID_partida", "nombreUsuario") VALUES($1, $2)`,
@@ -60,4 +62,55 @@ func ConsultarNumeroJugadores(db *sql.DB, partida *vo.Partida) (jugadores, maxJu
 	}
 	log.Println("Número de jugadores:", jugadores, ",jugadores maximos: ", maxJugadores, "en la partida", partida.IdPartida)
 	return jugadores, maxJugadores, err
+}
+
+// AlmacenarPartidaSerializada almacena una partida existente, serializada a bytes. Devuelve un error en fallo.
+func AlmacenarPartidaSerializada(db *sql.DB, partida *vo.Partida) (err error) {
+	var b bytes.Buffer
+	encoder := gob.NewEncoder(&b)
+	err = encoder.Encode(partida)
+	if err != nil {
+		log.Println("Error al serializar partida en AlmacenarPartidaSerializada:", err)
+	}
+
+	_, err = db.Exec(`UPDATE "backend"."Partida" SET "estadoPartida" = $1 WHERE "backend"."Partida".id = $2`, b.Bytes(), partida.IdPartida)
+	if err != nil {
+		log.Println("Error al almacenar partida en AlmacenarPartidaSerializada:", err)
+	}
+
+	return nil
+}
+
+// ObtenerPartidas devuelve un listado de todas las partidas que no están en curso almacenadas,
+// ordenadas de privadas a públicas.
+func ObtenerPartidas(db *sql.DB) (partidas []vo.Partida, err error) {
+	// Ordena por defecto de false a true
+	rows, err := db.Query(`SELECT "estadoPartida" FROM backend."Partida" WHERE backend."Partida"."enCurso" = false order by backend."Partida"."esPublica"`)
+	defer rows.Close()
+	if err != nil {
+		log.Println("Error al consultar filas en ObtenerPartidas:", err)
+		return partidas, err
+	}
+
+	for rows.Next() {
+		var estadoPartida []byte
+		var partida vo.Partida
+		err = rows.Scan(&estadoPartida)
+		if err != nil {
+			log.Println("Error al recuperar fila en ObtenerPartidas:", err)
+			return partidas, err
+		}
+
+		buf := bytes.NewBuffer(estadoPartida)
+		decoder := gob.NewDecoder(buf)
+		err = decoder.Decode(&partida)
+		if err != nil {
+			log.Println("Error al deserializar partida en ObtenerPartidas:", err)
+			return partidas, err
+		}
+
+		partidas = append(partidas, partida)
+	}
+
+	return partidas, nil
 }

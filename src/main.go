@@ -112,6 +112,7 @@ func router() http.Handler {
 
 	r.Post("/registro", handlers.Registro)
 	r.Post("/login", handlers.Login)
+	//TODO: Otro POST para formularios de cambiar perfil de usuario
 
 	// Pruebas
 
@@ -122,11 +123,17 @@ func router() http.Handler {
 	r.Route("/api", func(r chi.Router) {
 		// Obligamos el acceso con login previo
 		r.Use(middlewarePropio.MiddlewareSesion())
-		r.Post("/crearPartida/", handlers.CrearPartida)
-		r.Post("/unirseAPartida/", handlers.UnirseAPartida)
-		r.Get("/aceptarSolicitudAmistad/{nombre}", handlers.AceptarSolicitudAmistad)
-		r.Get("/rechazarSolicitudAmistad/{nombre}", handlers.RechazarSolicitudAmistad)
-		r.Get("/enviarSolicitudAmistad/{nombre}", handlers.EnviarSolicitudAmistad)
+
+		// Partidas
+		r.Post("/crearPartida", handlers.CrearPartida)
+		r.Post("/unirseAPartida", handlers.UnirseAPartida)
+		r.Get("/obtenerPartidas", handlers.ObtenerPartidas)
+
+		// Usuarios
+		r.Post("/aceptarSolicitudAmistad/{nombre}", handlers.AceptarSolicitudAmistad)
+		r.Post("/rechazarSolicitudAmistad/{nombre}", handlers.RechazarSolicitudAmistad)
+		r.Post("/enviarSolicitudAmistad/{nombre}", handlers.EnviarSolicitudAmistad)
+		r.Get("/obtenerNotificaciones/", handlers.ObtenerNotificaciones)
 	})
 
 	return r

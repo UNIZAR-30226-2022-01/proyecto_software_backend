@@ -66,3 +66,9 @@ func RechazarSolicitudAmistad(writer http.ResponseWriter, request *http.Request)
 
 	devolverExito(writer)
 }
+
+// ObtenerNotificaciones devuelve un listado codificado en JSON de notificaciones
+// a mostrar, relativas al usuario que lo solicita.
+func ObtenerNotificaciones(writer http.ResponseWriter, request *http.Request) {
+	// TODO
+}

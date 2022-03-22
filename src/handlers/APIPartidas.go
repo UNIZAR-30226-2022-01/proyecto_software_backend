@@ -5,10 +5,12 @@ import (
 	"backend/globales"
 	"backend/middleware"
 	"backend/vo"
+	"encoding/json"
 	"errors"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 )
 
@@ -44,7 +46,7 @@ func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 
 	aux := 1 // TODO, para que mensaje y estado no den error por nulo
 	usuario := vo.Usuario{"", nombreUsuario, "", "", http.Cookie{}, 0, 0, 0, 0, 0}
-	partida = vo.Partida{0, esPublica, partida.PasswordHash, false, 1, maxJugadores, aux, aux}
+	partida = vo.Partida{0, esPublica, partida.PasswordHash, false, 1, maxJugadores, nil, aux, aux}
 
 	enPartida, err := dao.UsuarioEnPartida(globales.Db, &usuario)
 	if enPartida {
@@ -63,6 +65,7 @@ func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 
 // UnirseAPartida permite al usuario unirse a una partida en caso de que no esté en otra,
 // no esté completa la partida, sea pública, o tenga su contraseña si es privada.
+//
 func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 	password := request.FormValue("password")
 	idPartida, err := strconv.Atoi(request.FormValue("idPartida"))
@@ -121,4 +124,81 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	devolverExito(writer)
+}
+
+// ObtenerPartidas devuelve un listado de partidas codificado en JSON, con el siguiente orden:
+//	1- partidas privadas, de más a menos amigos presentes
+//	2- partidas públicas, de más a menos amigos presentes
+//	3- partidas públicas sin amigos: de más a menos jugadores
+func ObtenerPartidas(writer http.ResponseWriter, request *http.Request) {
+	usuario := vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)}
+
+	amigos, err := dao.ObtenerAmigos(globales.Db, &usuario)
+	if err != nil {
+		// TODO en json
+		devolverError(writer, "ObtenerPartidas", err)
+	}
+
+	partidas, err := dao.ObtenerPartidas(globales.Db)
+	if err != nil {
+		// TODO en json
+		devolverError(writer, "ObtenerPartidas", err)
+	}
+
+	// Extrae las partidas privadas del slice y deja las partidas públicas
+	var partidasPrivadas []vo.Partida
+	for i, partida := range partidas {
+		if !partida.EsPublica {
+			partidasPrivadas = append(partidasPrivadas, partida)
+			partidas = append(partidas[:i], partidas[i+1:]...)
+		} else {
+			break
+		}
+	}
+
+	// Ordena partidas privadas de más a menos amigos
+	sort.SliceStable(partidasPrivadas, func(i, j int) bool {
+		// Orden: > a <
+		return vo.ContarAmigos(amigos, partidasPrivadas[i]) > vo.ContarAmigos(amigos, partidasPrivadas[j])
+	})
+
+	// Ordena partidas públicas de más a menos amigos
+	sort.SliceStable(partidas, func(i, j int) bool {
+		// Orden: > a <
+		return vo.ContarAmigos(amigos, partidas[i]) > vo.ContarAmigos(amigos, partidas[j])
+	})
+
+	// Extrae las partidas públicas sin amigos del usuario del slice y deja las partidas públicas con amigos
+	var partidasPublicasSinAmigos []vo.Partida
+	for i, partida := range partidas {
+		// Se ha llegado al punto en el slice a partir del cual no hay amigos
+		if vo.ContarAmigos(amigos, partida) == 0 {
+			partidasPublicasSinAmigos = partidas[i:]
+			partidas = partidas[:i]
+			break
+		}
+	}
+
+	// Ordena partidas públicas sin amigos de más a menos jugadores
+	sort.SliceStable(partidasPublicasSinAmigos, func(i, j int) bool {
+		// Orden: > a <
+		return partidasPublicasSinAmigos[i].NumeroJugadores > partidasPublicasSinAmigos[j].NumeroJugadores
+	})
+
+	/*log.Println("partidas privadas despues de sort:", partidasPrivadas)
+	log.Println("partidas públicas despues de sort:", partidas)
+	log.Println("partidas públicas sin amigos despues de sort:", partidasPublicasSinAmigos)*/
+
+	// Junta todos los slices, en orden
+	partidasPrivadas = append(partidasPrivadas, partidas...)
+	partidasPrivadas = append(partidasPrivadas, partidasPublicasSinAmigos...)
+
+	log.Println("partidas ordenadas al final:", partidasPrivadas)
+
+	writer.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(writer).Encode(partidasPrivadas)
+	if err != nil {
+		// TODO en json
+		devolverError(writer, "ObtenerPartidas", err)
+	}
 }

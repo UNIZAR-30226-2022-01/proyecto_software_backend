@@ -110,3 +110,38 @@ func UsuarioEnPartida(db *sql.DB, usuario *vo.Usuario) (EnPartida bool, err erro
 	err = db.QueryRow(`SELECT EXISTS(SELECT * FROM backend."Participa" WHERE "nombreUsuario" = $1)`, usuario.NombreUsuario).Scan(&EnPartida)
 	return EnPartida, err
 }
+
+// ObtenerAmigos devuelve una lista de usuarios (con su nombre de usuario rellenado)
+// que son amigos del usuario indicado, o error en caso de fallo.
+func ObtenerAmigos(db *sql.DB, usuario *vo.Usuario) (amigos []vo.Usuario, err error) {
+	rows, err := db.Query(`SELECT backend."EsAmigo"."nombreUsuario1", backend."EsAmigo"."nombreUsuario2"
+									FROM backend."EsAmigo" 
+									WHERE $1 in (backend."EsAmigo"."nombreUsuario1", backend."EsAmigo"."nombreUsuario2" )`, usuario.NombreUsuario)
+	defer rows.Close()
+	if err != nil {
+		log.Println("Error al consultar filas en ObtenerPartidas:", err)
+		return amigos, err
+	}
+
+	for rows.Next() {
+		var amigo vo.Usuario
+		var nombre1 string
+		var nombre2 string
+		err = rows.Scan(&nombre1, &nombre2)
+
+		if err != nil {
+			log.Println("Error al recuperar fila en ObtenerPartidas:", err)
+			return amigos, err
+		}
+
+		// Elige el nombre de la tupla que no coincide con el del usuario
+		if nombre1 != usuario.NombreUsuario {
+			amigo = vo.Usuario{NombreUsuario: nombre1}
+		} else {
+			amigo = vo.Usuario{NombreUsuario: nombre2}
+		}
+		amigos = append(amigos, amigo)
+	}
+
+	return amigos, nil
+}
