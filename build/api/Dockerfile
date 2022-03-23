@@ -2,8 +2,7 @@
 FROM scratch
 
 # Copia todos los ficheros
-COPY ./backend /
-COPY ./web /web          
+COPY ./backend /     
 
 # 80 para producción
 EXPOSE 8080                 

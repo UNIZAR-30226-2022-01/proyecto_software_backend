@@ -1,7 +1,5 @@
 #!/bin/bash
 
-cp -r ../../src/web ../../build/api/web
-
 # Compila el backend sin depender de librerías de C y trae el ejecutable a la carpeta local
 cd ../../src && CGO_ENABLED=0 go build -o backend main.go && mv backend ../build/api && cd ../build/api
 
@@ -12,4 +10,3 @@ sudo docker volume create volumen-postgres
 sudo docker-compose up --detach
 
 rm ./backend
-rm -r ./web/

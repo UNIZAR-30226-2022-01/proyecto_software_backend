@@ -129,6 +129,60 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 //	2- partidas públicas, de más a menos amigos presentes
 //	3- partidas públicas sin amigos: de más a menos jugadores
 //	4- partidas privadas sin amigos: de más a menos jugadores
+//
+// El contenido JSON tendrá la siguiente forma:
+//
+// [												// Lista de elementos de partida (Nota: Será nula si no existen partidas)
+//
+//													// Elemento de partida
+//  {
+//    "IdPartida": int,							 	// ID de partida (Nota: Se deberá usar como referencia en el resto de peticiones relativas a ella)
+//    "EsPublica": bool,							// Flag de partida pública o privada
+//    "NumeroJugadores": int,						// Número de jugadores presentes en el lobby
+//    "MaxNumeroJugadores": int,					// Número de jugadores máximo establecido
+//    "AmigosPresentes": [ string, string, ...], 	// Lista de nombres de amigos presentes en el lobby (Nota: Será nulo si "NumAmigosPresentes" tiene como valor 0)
+//    "NumAmigosPresentes": int						// Número de amigos presentes en el lobby
+//  },
+//
+//  {...}
+// ]
+//
+//
+//
+// Ejemplo:
+// [
+//  {
+//    "IdPartida": 1,
+//    "EsPublica": false,
+//    "NumeroJugadores": 4,
+//    "MaxNumeroJugadores": 6,
+//    "AmigosPresentes": [
+//      "amigo1",
+//      "amigo2"
+//    ],
+//    "NumAmigosPresentes": 2
+//  },
+//  {
+//    "IdPartida": 2,
+//    "EsPublica": false,
+//    "NumeroJugadores": 4,
+//    "MaxNumeroJugadores": 6,
+//    "AmigosPresentes": [
+//      "amigo3"
+//    ],
+//    "NumAmigosPresentes": 1
+//  },
+//  {
+//    "IdPartida": 3,
+//    "EsPublica": true,
+//    "NumeroJugadores": 3,
+//    "MaxNumeroJugadores": 6,
+//    "AmigosPresentes": null,
+//    "NumAmigosPresentes": 0
+//  }
+//]
+//
+// Si ocurre algún error durante el procesamiento, se devolverá un status 500.
 func ObtenerPartidas(writer http.ResponseWriter, request *http.Request) {
 	usuario := vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)}
 
@@ -142,20 +196,17 @@ func ObtenerPartidas(writer http.ResponseWriter, request *http.Request) {
 		devolverErrorSQL(writer)
 	}
 
-	partidasPrivadas, partidasPublicas := divirPartidasPrivadasYPublicas(partidas)
+	partidasPrivadas, partidasPublicas := dividirPartidasPrivadasYPublicas(partidas)
 
 	// Ordena partidas privadas de más a menos amigos
 	ordenarPorNumeroAmigos(partidasPrivadas, amigos)
-
 	// Ordena partidas públicas de más a menos amigos
 	ordenarPorNumeroAmigos(partidasPublicas, amigos)
-
 	// Extrae las partidas privadas sin amigos del usuario del slice y deja las partidas privadas con amigos
 	partidasPrivadasConAmigos, partidasPrivadasSinAmigos := dividirPartidasPorAmigos(partidasPrivadas, amigos)
 
 	// Ordena partidas privadas sin amigos de más a menos jugadores
 	ordenarPorNumeroJugadores(writer, partidasPrivadasSinAmigos)
-
 	// Extrae las partidas públicas sin amigos del usuario del slice y deja las partidas públicas con amigos
 	partidasPublicasConAmigos, partidasPublicasSinAmigos := dividirPartidasPorAmigos(partidasPublicas, amigos)
 
@@ -218,7 +269,7 @@ func ordenarPorNumeroAmigos(partidasPrivadas []vo.Partida, amigos []vo.Usuario) 
 	})
 }
 
-func divirPartidasPrivadasYPublicas(partidas []vo.Partida) ([]vo.Partida, []vo.Partida) {
+func dividirPartidasPrivadasYPublicas(partidas []vo.Partida) ([]vo.Partida, []vo.Partida) {
 	// Extrae las partidas privadas del slice y deja las partidas públicas
 	var partidasPrivadas []vo.Partida
 	var partidasPublicas []vo.Partida
