@@ -37,12 +37,25 @@ const (
 )
 
 func main() {
-	// El objeto de base de datos es seguro para uso concurrente y controla su
-	// propia pool de conexiones independientemente.
-	globales.Db = dao.InicializarConexionDb()
+	var server *http.Server
+	if len(os.Args) < 2 {
+		log.Println("Uso:\n\t ./ejecutable -web : Servir contenido web \n\t ./ejecutable -api : Servir API")
+		os.Exit(1)
+	} else {
+		// Instancia un servidor HTTP con el router programado indicado
+		if os.Args[1] == "-web" {
+			server = &http.Server{Addr: ":8080", Handler: routerWeb()}
+		} else if os.Args[1] == "-api" {
+			server = &http.Server{Addr: ":8080", Handler: routerAPI()}
 
-	// Instancia un servidor HTTP con el router programado indicado
-	server := &http.Server{Addr: ":8080", Handler: router()}
+			// El objeto de base de datos es seguro para uso concurrente y controla su
+			// propia pool de conexiones independientemente.
+			globales.Db = dao.InicializarConexionDb()
+		} else {
+			log.Println("Uso:\n\t ./ejecutable -web : Servir contenido web \n\t ./ejecutable -api : Servir API")
+			os.Exit(1)
+		}
+	}
 
 	canalCierre := tratarContextoCierreServidor(server)
 
@@ -55,7 +68,10 @@ func main() {
 	<-canalCierre
 
 	// Termina todos los módulos de forma segura
-	//globales.Db.Close()
+	if os.Args[1] == "-api" {
+		globales.Db.Close()
+	}
+
 	os.Exit(0)
 }
 
@@ -96,19 +112,11 @@ func tratarContextoCierreServidor(server *http.Server) <-chan struct{} {
 }
 
 // Devuelve un router programado para las URLs a atender
-func router() http.Handler {
+func routerAPI() http.Handler {
 	r := chi.NewRouter()
 
 	// Para debugging
 	r.Use(middleware.Logger)
-
-	directorioDeTrabajo, _ := os.Getwd()
-	ficherosFrontend := filepath.Join(directorioDeTrabajo, CARPETA_FRONTEND)
-	log.Println("Sirviendo " + FICHERO_RAIZ_FRONTEND + " desde " + ficherosFrontend)
-	index, _ := ioutil.ReadFile(ficherosFrontend + "/" + FICHERO_RAIZ_FRONTEND)
-	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
-		w.Write(index)
-	})
 
 	// Formularios
 	r.Post("/registro", handlers.Registro)
@@ -134,6 +142,23 @@ func router() http.Handler {
 		r.Post("/rechazarSolicitudAmistad/{nombre}", handlers.RechazarSolicitudAmistad)
 		r.Post("/enviarSolicitudAmistad/{nombre}", handlers.EnviarSolicitudAmistad)
 		r.Get("/obtenerNotificaciones/", handlers.ObtenerNotificaciones)
+	})
+
+	return r
+}
+
+func routerWeb() http.Handler {
+	r := chi.NewRouter()
+
+	// Para debugging
+	r.Use(middleware.Logger)
+
+	directorioDeTrabajo, _ := os.Getwd()
+	ficherosFrontend := filepath.Join(directorioDeTrabajo, CARPETA_FRONTEND)
+	log.Println("Sirviendo " + FICHERO_RAIZ_FRONTEND + " desde " + ficherosFrontend)
+	index, _ := ioutil.ReadFile(ficherosFrontend + "/" + FICHERO_RAIZ_FRONTEND)
+	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+		w.Write(index)
 	})
 
 	return r

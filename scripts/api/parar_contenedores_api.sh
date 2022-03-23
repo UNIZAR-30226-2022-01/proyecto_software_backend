@@ -1,4 +1,3 @@
 #!/bin/bash
-cd ../build
+cd ../../build/api
 sudo docker-compose stop
-cd ../scripts

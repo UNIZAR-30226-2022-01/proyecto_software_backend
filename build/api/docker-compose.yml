@@ -6,7 +6,7 @@ services:
     # Usa el volumen previamente creado, y ejecuta el archivo ddl.sql local en el inicio de la base de datos
     volumes: 
         - volumen-postgres:/var/lib/postgresql/data
-        - ../modelo/ddl.sql:/docker-entrypoint-initdb.d/ddl.sql
+        - ../../modelo/ddl.sql:/docker-entrypoint-initdb.d/ddl.sql
         #- ../modelo/inserts.sql:/docker-entrypoint-initdb.d/inserts.sql
     # Fichero con variables de entorno (usuario/pw)
     env_file:
