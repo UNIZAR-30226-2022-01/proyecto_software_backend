@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/gob"
-	"log"
 	"net/http"
 )
 
@@ -19,16 +18,12 @@ func ConsultarCookie(db *sql.DB, usuario *vo.Usuario) (cookie http.Cookie, err e
 
 	err = db.QueryRow(`SELECT "backend"."Usuario"."cookieSesion" FROM "backend"."Usuario"
 		WHERE "backend"."Usuario"."nombreUsuario" = $1`, usuario.NombreUsuario).Scan(&bytearray)
-
 	if err != nil {
-		log.Println("error en select de consultar cookie:", err)
+		return cookie, err
 	}
+
 	b.Write(bytearray)
 	err = decoder.Decode(&cookie)
-
-	if err != nil {
-		log.Println("error al serializar cookie:", err)
-	}
 
 	return cookie, err
 }
@@ -39,16 +34,11 @@ func InsertarCookie(db *sql.DB, usuario *vo.Usuario) (err error) {
 	var b bytes.Buffer
 	encoder := gob.NewEncoder(&b)
 	err = encoder.Encode(usuario.CookieSesion)
-
 	if err != nil {
-		log.Println("error al serializar cookie")
+		return err
 	}
 
 	_, err = db.Exec(`UPDATE "backend"."Usuario" SET "cookieSesion" = $1 WHERE "backend"."Usuario"."nombreUsuario" = $2`, b.Bytes(), usuario.NombreUsuario)
-
-	if err != nil {
-		log.Println("error en update de insertar cookie:", err)
-	}
 
 	return err
 }
@@ -58,6 +48,9 @@ func InsertarUsuario(db *sql.DB, usuario *vo.Usuario) (err error) {
 	var b bytes.Buffer
 	encoder := gob.NewEncoder(&b)
 	err = encoder.Encode(usuario.CookieSesion)
+	if err != nil {
+		return err
+	}
 
 	_, err = db.Exec(`INSERT INTO "backend"."Usuario"("email", "nombreUsuario", "passwordHash", 
 		"biografia", "cookieSesion", "puntos", "partidasGanadas", "partidasTotales", "ID_dado", "ID_ficha")
@@ -72,11 +65,6 @@ func InsertarUsuario(db *sql.DB, usuario *vo.Usuario) (err error) {
 func ConsultarPasswordHash(db *sql.DB, usuario *vo.Usuario) (hash string, err error) {
 	err = db.QueryRow(`SELECT "backend"."Usuario"."passwordHash" FROM "backend"."Usuario"
 		WHERE "backend"."Usuario"."nombreUsuario" = $1`, usuario.NombreUsuario).Scan(&hash)
-
-	if err != nil {
-		log.Println("error en select de consultar password:", err)
-	}
-
 	return hash, err
 }
 
@@ -92,8 +80,6 @@ func CrearSolicitudAmistad(db *sql.DB, emisor *vo.Usuario, receptor *vo.Usuario)
 // AceptarSolicitudAmistad registra una solicitud de amistad existente como aceptada entre los usuarios emisor y receptor.
 // En caso de fallo o no encontrarse alguno de ellos o la solicitud, devuelve un error.
 func AceptarSolicitudAmistad(db *sql.DB, emisor *vo.Usuario, receptor *vo.Usuario) error {
-	log.Println("Aceptando de", emisor.NombreUsuario, "a", receptor.NombreUsuario)
-
 	_, err := db.Exec(`UPDATE "backend"."EsAmigo" SET "pendiente" = false WHERE "nombreUsuario1" = $1 AND "nombreUsuario2" = $2`,
 		receptor.NombreUsuario, emisor.NombreUsuario)
 	return err
@@ -121,7 +107,6 @@ func ObtenerAmigos(db *sql.DB, usuario *vo.Usuario) (amigos []vo.Usuario, err er
 									WHERE $1 in (backend."EsAmigo"."nombreUsuario1", backend."EsAmigo"."nombreUsuario2" )`, usuario.NombreUsuario)
 	defer rows.Close()
 	if err != nil {
-		log.Println("Error al consultar filas en ObtenerPartidas:", err)
 		return amigos, err
 	}
 
@@ -132,7 +117,6 @@ func ObtenerAmigos(db *sql.DB, usuario *vo.Usuario) (amigos []vo.Usuario, err er
 		err = rows.Scan(&nombre1, &nombre2)
 
 		if err != nil {
-			log.Println("Error al recuperar fila en ObtenerPartidas:", err)
 			return amigos, err
 		}
 

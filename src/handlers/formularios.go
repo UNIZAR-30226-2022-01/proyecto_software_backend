@@ -5,6 +5,7 @@ import (
 	"backend/globales"
 	"backend/middleware"
 	"backend/vo"
+	"errors"
 	"golang.org/x/crypto/bcrypt"
 	"html/template"
 	"net/http"
@@ -33,17 +34,17 @@ func Registro(writer http.ResponseWriter, request *http.Request) {
 	hash, err := hashPassword(password)
 
 	if err != nil {
-		devolverError(writer, "Registro", err)
+		devolverError(writer, errors.New("Se ha producido un error al procesar los datos."))
 	} else {
 		usuarioVO := vo.Usuario{email, nombre, hash, "", http.Cookie{}, 0, 0, 0, 0, 0}
 		err = dao.InsertarUsuario(globales.Db, &usuarioVO)
 
 		if err != nil {
-			devolverError(writer, "Registro", err)
+			devolverErrorSQL(writer)
 		} else {
 			err = middleware.GenerarCookieUsuario(&writer, nombre)
 			if err != nil {
-				devolverError(writer, "Registro", err)
+				devolverErrorSQL(writer)
 			}
 		}
 	}
@@ -64,11 +65,11 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 	existe := bcrypt.CompareHashAndPassword([]byte(hashDB), []byte(password))
 
 	if err != nil || existe != nil {
-		devolverError(writer, "Login", err)
+		devolverError(writer, errors.New("Se ha producido un error al procesar los datos."))
 	} else {
 		err = middleware.GenerarCookieUsuario(&writer, nombre)
 		if err != nil {
-			devolverError(writer, "Registro", err)
+			devolverErrorSQL(writer)
 		}
 	}
 
