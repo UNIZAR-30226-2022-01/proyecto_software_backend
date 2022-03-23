@@ -110,12 +110,12 @@ func router() http.Handler {
 		w.Write(index)
 	})
 
+	// Formularios
 	r.Post("/registro", handlers.Registro)
 	r.Post("/login", handlers.Login)
 	//TODO: Otro POST para formularios de cambiar perfil de usuario
 
 	// Pruebas
-
 	r.Get("/formularioRegistro", handlers.MenuRegistro)
 	r.Get("/formulariologin", handlers.MenuLogin)
 
@@ -126,7 +126,7 @@ func router() http.Handler {
 
 		// Partidas
 		r.Post("/crearPartida", handlers.CrearPartida)
-		r.Post("/unirseAPartida", handlers.UnirseAPartida)
+		r.Post("/unirseAPartida", handlers.UnirseAPartida) // TODO: Mejor con URL?
 		r.Get("/obtenerPartidas", handlers.ObtenerPartidas)
 
 		// Usuarios

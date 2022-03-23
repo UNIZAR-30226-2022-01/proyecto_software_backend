@@ -14,9 +14,18 @@ import (
 func CrearPartida(db *sql.DB, usuario *vo.Usuario, partida *vo.Partida) (err error) {
 	var IdPartida int
 	password := sql.NullString{String: partida.PasswordHash, Valid: len(partida.PasswordHash) > 0}
+
+	var estado bytes.Buffer
+	encoder := gob.NewEncoder(&estado)
+	err = encoder.Encode(partida.Estado)
+
+	var mensajes bytes.Buffer
+	encoder = gob.NewEncoder(&mensajes)
+	err = encoder.Encode(partida.Mensajes)
+
 	err = db.QueryRow(`INSERT INTO "backend"."Partida"("estadoPartida", "mensajes", "esPublica",
         "passwordHash", "enCurso", "maxJugadores") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "id"`,
-		partida.Estado, partida.Mensajes, partida.EsPublica, password, partida.EnCurso, partida.MaxNumeroJugadores).Scan(&IdPartida)
+		estado.Bytes(), mensajes.Bytes(), partida.EsPublica, password, partida.EnCurso, partida.MaxNumeroJugadores).Scan(&IdPartida)
 	if err != nil {
 		return err
 	}
@@ -64,18 +73,75 @@ func ConsultarNumeroJugadores(db *sql.DB, partida *vo.Partida) (jugadores, maxJu
 	return jugadores, maxJugadores, err
 }
 
-// AlmacenarPartidaSerializada almacena una partida existente, serializada a bytes. Devuelve un error en fallo.
-func AlmacenarPartidaSerializada(db *sql.DB, partida *vo.Partida) (err error) {
+// AlmacenarEstadoSerializado almacena el estado una partida dada, serializado a bytes. Devuelve un error en fallo.
+func AlmacenarEstadoSerializado(db *sql.DB, partida *vo.Partida) (err error) {
 	var b bytes.Buffer
 	encoder := gob.NewEncoder(&b)
-	err = encoder.Encode(partida)
+	err = encoder.Encode(partida.Estado)
 	if err != nil {
-		log.Println("Error al serializar partida en AlmacenarPartidaSerializada:", err)
+		log.Println("Error al serializar estado en AlmacenarEstadoSerializado:", err)
 	}
 
 	_, err = db.Exec(`UPDATE "backend"."Partida" SET "estadoPartida" = $1 WHERE "backend"."Partida".id = $2`, b.Bytes(), partida.IdPartida)
 	if err != nil {
-		log.Println("Error al almacenar partida en AlmacenarPartidaSerializada:", err)
+		log.Println("Error al almacenar estado en AlmacenarEstadoSerializado:", err)
+	}
+
+	return nil
+}
+
+// AlmacenarMensajes almacena los mensajes una partida dada, serializados a bytes. Devuelve un error en fallo.
+func AlmacenarMensajes(db *sql.DB, partida *vo.Partida) (err error) {
+	var mensajes bytes.Buffer
+	encoder := gob.NewEncoder(&mensajes)
+	err = encoder.Encode(partida.Mensajes)
+	if err != nil {
+		log.Println("Error al serializar mensajes en AlmacenarMensajes:", err)
+	}
+
+	_, err = db.Exec(`UPDATE "backend"."Partida" SET "mensajes" = $1 WHERE "backend"."Partida".id = $2`, mensajes.Bytes(), partida.IdPartida)
+	if err != nil {
+		log.Println("Error al almacenar mensajes en AlmacenarMensajes:", err)
+	}
+
+	return nil
+}
+
+// ObtenerEstadoSerializado obtiene una partida existente con el ID indicado y deserializa su estado en ella, o devuelve un error en fallo.
+func ObtenerEstadoSerializado(db *sql.DB, partida *vo.Partida) (err error) {
+	var estadoPartida []byte
+	err = db.QueryRow(`SELECT "backend"."Partida"."estadoPartida" FROM "backend"."Partida" WHERE "backend"."Partida".id = $1`, partida.IdPartida).Scan(&estadoPartida)
+	if err != nil {
+		log.Println("Error al obtener estado en ObtenerEstadoSerializado:", err)
+		return err
+	}
+
+	buf := bytes.NewBuffer(estadoPartida)
+	decoder := gob.NewDecoder(buf)
+	err = decoder.Decode(&partida.Estado)
+	if err != nil {
+		log.Println("Error al deserializar estado en ObtenerEstadoSerializado:", err)
+		return err
+	}
+
+	return nil
+}
+
+// ObtenerMensajes obtiene los mensajes partida existente con el ID indicado y los deserializa en ella, o devuelve un error en fallo.
+func ObtenerMensajes(db *sql.DB, partida *vo.Partida) (err error) {
+	var mensajesPartida []byte
+	err = db.QueryRow(`SELECT "backend"."Partida"."estadoPartida" FROM "backend"."Partida" WHERE "backend"."Partida".id = $1`, partida.IdPartida).Scan(&mensajesPartida)
+	if err != nil {
+		log.Println("Error al obtener mensajes en ObtenerMensajes:", err)
+		return err
+	}
+
+	buf := bytes.NewBuffer(mensajesPartida)
+	decoder := gob.NewDecoder(buf)
+	err = decoder.Decode(&partida.Mensajes)
+	if err != nil {
+		log.Println("Error al deserializar mensajes en ObtenerMensajes:", err)
+		return err
 	}
 
 	return nil
@@ -85,7 +151,7 @@ func AlmacenarPartidaSerializada(db *sql.DB, partida *vo.Partida) (err error) {
 // ordenadas de privadas a públicas.
 func ObtenerPartidas(db *sql.DB) (partidas []vo.Partida, err error) {
 	// Ordena por defecto de false a true
-	rows, err := db.Query(`SELECT "estadoPartida" FROM backend."Partida" WHERE backend."Partida"."enCurso" = false order by backend."Partida"."esPublica"`)
+	rows, err := db.Query(`SELECT id, "estadoPartida", mensajes, "esPublica", "passwordHash", "enCurso", "maxJugadores" FROM backend."Partida" order by backend."Partida"."esPublica"`)
 	defer rows.Close()
 	if err != nil {
 		log.Println("Error al consultar filas en ObtenerPartidas:", err)
@@ -94,22 +160,55 @@ func ObtenerPartidas(db *sql.DB) (partidas []vo.Partida, err error) {
 
 	for rows.Next() {
 		var estadoPartida []byte
+		var mensajes []byte
 		var partida vo.Partida
-		err = rows.Scan(&estadoPartida)
+		var passwordHash sql.NullString
+		err = rows.Scan(&partida.IdPartida, &estadoPartida, &mensajes, &partida.EsPublica, &passwordHash, &partida.EnCurso, &partida.MaxNumeroJugadores)
 		if err != nil {
 			log.Println("Error al recuperar fila en ObtenerPartidas:", err)
 			return partidas, err
 		}
 
-		buf := bytes.NewBuffer(estadoPartida)
-		decoder := gob.NewDecoder(buf)
-		err = decoder.Decode(&partida)
+		// Ahora se obtienen los usuarios participantes, y su número
+		rowsInternas, err := db.Query(`SELECT "nombreUsuario" FROM backend."Participa" WHERE "ID_partida"= $1`, partida.IdPartida)
+		defer rowsInternas.Close()
 		if err != nil {
-			log.Println("Error al deserializar partida en ObtenerPartidas:", err)
+			log.Println("Error al consultar usuarios participantes en ObtenerPartidas:", err)
 			return partidas, err
 		}
 
-		partidas = append(partidas, partida)
+		for rowsInternas.Next() {
+			var nombre string
+			err = rowsInternas.Scan(&nombre)
+			if err != nil {
+				log.Println("Error al recuperar fila de usuario participante en ObtenerPartidas:", err)
+				return partidas, err
+			}
+
+			partida.Jugadores = append(partida.Jugadores, vo.Usuario{NombreUsuario: nombre})
+		}
+
+		// Una vez escaneadas las columnas en los campos del struct, se obtiene el resto de campos no directos
+		partida.PasswordHash = passwordHash.String
+
+		buf := bytes.NewBuffer(estadoPartida)
+		decoder := gob.NewDecoder(buf)
+		err = decoder.Decode(&partida.Estado)
+		if err != nil {
+			log.Println("Error al deserializar estado en ObtenerPartidas:", err)
+			return partidas, err
+		}
+
+		buf = bytes.NewBuffer(mensajes)
+		decoder = gob.NewDecoder(buf)
+		err = decoder.Decode(&partida.Mensajes)
+		if err != nil {
+			log.Println("Error al deserializar mensajes en ObtenerPartidas:", err)
+			return partidas, err
+		} else {
+			partidas = append(partidas, partida)
+		}
+
 	}
 
 	return partidas, nil

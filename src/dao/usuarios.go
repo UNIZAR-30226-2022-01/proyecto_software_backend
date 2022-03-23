@@ -92,8 +92,10 @@ func CrearSolicitudAmistad(db *sql.DB, emisor *vo.Usuario, receptor *vo.Usuario)
 // AceptarSolicitudAmistad registra una solicitud de amistad existente como aceptada entre los usuarios emisor y receptor.
 // En caso de fallo o no encontrarse alguno de ellos o la solicitud, devuelve un error.
 func AceptarSolicitudAmistad(db *sql.DB, emisor *vo.Usuario, receptor *vo.Usuario) error {
+	log.Println("Aceptando de", emisor.NombreUsuario, "a", receptor.NombreUsuario)
+
 	_, err := db.Exec(`UPDATE "backend"."EsAmigo" SET "pendiente" = false WHERE "nombreUsuario1" = $1 AND "nombreUsuario2" = $2`,
-		emisor.NombreUsuario, receptor.NombreUsuario)
+		receptor.NombreUsuario, emisor.NombreUsuario)
 	return err
 }
 
@@ -101,7 +103,7 @@ func AceptarSolicitudAmistad(db *sql.DB, emisor *vo.Usuario, receptor *vo.Usuari
 // En caso de fallo o no encontrarse alguno de ellos o la solicitud, devuelve un error.
 func RechazarSolicitudAmistad(db *sql.DB, emisor *vo.Usuario, receptor *vo.Usuario) error {
 	_, err := db.Exec(`DELETE FROM "backend"."EsAmigo" WHERE "nombreUsuario1" = $1 AND "nombreUsuario2" = $2`,
-		emisor.NombreUsuario, receptor.NombreUsuario)
+		receptor.NombreUsuario, emisor.NombreUsuario)
 	return err
 }
 

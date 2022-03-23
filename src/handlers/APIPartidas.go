@@ -14,7 +14,7 @@ import (
 	"strconv"
 )
 
-// CrearPartida crea una nueva partida, para la que se definirá el número máxmio de jugadores,
+// CrearPartida crea una nueva partida, para la que se definirá el número máximo de jugadores,
 // si es pública o privada, y la contraseña en caso de que fuera necesario
 func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 	password := request.FormValue("password")
@@ -24,11 +24,11 @@ func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 	esPublica := tipoPartida == "Publica"
 
 	if err != nil {
-		devolverError(writer, "Crear Partida", err)
+		devolverError(writer, "CrearPartida", err)
 		return
 	}
 	if maxJugadores < 2 || maxJugadores > 6 {
-		devolverError(writer, "Crear Partida", errors.New("El número de jugadores debe estar entre 2 y 6"))
+		devolverError(writer, "CrearPartida", errors.New("el número de jugadores debe estar entre 2 y 6"))
 		return
 	}
 
@@ -44,9 +44,10 @@ func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	aux := 1 // TODO, para que mensaje y estado no den error por nulo
 	usuario := vo.Usuario{"", nombreUsuario, "", "", http.Cookie{}, 0, 0, 0, 0, 0}
-	partida = vo.Partida{0, esPublica, partida.PasswordHash, false, 1, maxJugadores, nil, aux, aux}
+	partida = vo.Partida{0, esPublica, partida.PasswordHash, false, maxJugadores, nil, []vo.Mensaje{}, vo.EstadoPartida{}}
+	partida.Jugadores = make([]vo.Usuario, 6)
+	partida.Jugadores = append(partida.Jugadores, usuario)
 
 	enPartida, err := dao.UsuarioEnPartida(globales.Db, &usuario)
 	if enPartida {
@@ -65,7 +66,6 @@ func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 
 // UnirseAPartida permite al usuario unirse a una partida en caso de que no esté en otra,
 // no esté completa la partida, sea pública, o tenga su contraseña si es privada.
-//
 func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 	password := request.FormValue("password")
 	idPartida, err := strconv.Atoi(request.FormValue("idPartida"))
@@ -123,6 +123,15 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	// Además, se aumenta el número de jugadores presente en ella, en su estado
+	/*err = dao.ObtenerEstadoSerializado(globales.Db, &partida)
+	if err != nil {
+		devolverError(writer, "Unirse a Partida", err)
+		return
+	}
+
+	partida.Estado.NumeroJugadores = partida.Estado.NumeroJugadores + 1*/
+
 	devolverExito(writer)
 }
 
@@ -130,29 +139,34 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 //	1- partidas privadas, de más a menos amigos presentes
 //	2- partidas públicas, de más a menos amigos presentes
 //	3- partidas públicas sin amigos: de más a menos jugadores
+//	4- partidas privadas sin amigos: de más a menos jugadores
 func ObtenerPartidas(writer http.ResponseWriter, request *http.Request) {
 	usuario := vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)}
 
 	amigos, err := dao.ObtenerAmigos(globales.Db, &usuario)
 	if err != nil {
-		// TODO en json
 		devolverError(writer, "ObtenerPartidas", err)
 	}
 
+	log.Println("amigos del usuario:", amigos)
+
 	partidas, err := dao.ObtenerPartidas(globales.Db)
 	if err != nil {
-		// TODO en json
 		devolverError(writer, "ObtenerPartidas", err)
+	}
+
+	for _, p := range partidas {
+		log.Println("Amigos en partida", p.IdPartida, ":", vo.ContarAmigos(amigos, p))
 	}
 
 	// Extrae las partidas privadas del slice y deja las partidas públicas
 	var partidasPrivadas []vo.Partida
-	for i, partida := range partidas {
+	var partidasPublicas []vo.Partida
+	for _, partida := range partidas {
 		if !partida.EsPublica {
 			partidasPrivadas = append(partidasPrivadas, partida)
-			partidas = append(partidas[:i], partidas[i+1:]...)
 		} else {
-			break
+			partidasPublicas = append(partidasPublicas, partida)
 		}
 	}
 
@@ -163,42 +177,114 @@ func ObtenerPartidas(writer http.ResponseWriter, request *http.Request) {
 	})
 
 	// Ordena partidas públicas de más a menos amigos
-	sort.SliceStable(partidas, func(i, j int) bool {
+	sort.SliceStable(partidasPublicas, func(i, j int) bool {
 		// Orden: > a <
-		return vo.ContarAmigos(amigos, partidas[i]) > vo.ContarAmigos(amigos, partidas[j])
+		return vo.ContarAmigos(amigos, partidasPublicas[i]) > vo.ContarAmigos(amigos, partidasPublicas[j])
+	})
+
+	// Extrae las partidas privadas sin amigos del usuario del slice y deja las partidas privadas con amigos
+	var partidasPrivadasConAmigos []vo.Partida
+	var partidasPrivadasSinAmigos []vo.Partida
+	for _, partida := range partidasPrivadas {
+		// Se ha llegado al punto en el slice a partir del cual no hay amigos
+		if vo.ContarAmigos(amigos, partida) == 0 {
+			partidasPrivadasSinAmigos = append(partidasPrivadasSinAmigos, partida)
+		} else {
+			partidasPrivadasConAmigos = append(partidasPrivadasConAmigos, partida)
+		}
+	}
+
+	// Ordena partidas privadas sin amigos de más a menos jugadores
+	sort.SliceStable(partidasPrivadasSinAmigos, func(i, j int) bool {
+		// Orden: > a <
+		numeroJugadoresI, _, err1 := dao.ConsultarNumeroJugadores(globales.Db, &partidasPrivadasSinAmigos[i])
+		numeroJugadoresJ, _, err2 := dao.ConsultarNumeroJugadores(globales.Db, &partidasPrivadasSinAmigos[i])
+
+		if err1 != nil || err2 != nil {
+			devolverError(writer, "ObtenerPartidas", err)
+		}
+
+		return numeroJugadoresI > numeroJugadoresJ
 	})
 
 	// Extrae las partidas públicas sin amigos del usuario del slice y deja las partidas públicas con amigos
+	var partidasPublicasConAmigos []vo.Partida
 	var partidasPublicasSinAmigos []vo.Partida
-	for i, partida := range partidas {
+	for _, partida := range partidasPublicas {
 		// Se ha llegado al punto en el slice a partir del cual no hay amigos
 		if vo.ContarAmigos(amigos, partida) == 0 {
-			partidasPublicasSinAmigos = partidas[i:]
-			partidas = partidas[:i]
-			break
+			partidasPublicasSinAmigos = append(partidasPublicasSinAmigos, partida)
+		} else {
+			partidasPublicasConAmigos = append(partidasPublicasConAmigos, partida)
 		}
 	}
 
 	// Ordena partidas públicas sin amigos de más a menos jugadores
 	sort.SliceStable(partidasPublicasSinAmigos, func(i, j int) bool {
 		// Orden: > a <
-		return partidasPublicasSinAmigos[i].NumeroJugadores > partidasPublicasSinAmigos[j].NumeroJugadores
+		numeroJugadoresI, _, err1 := dao.ConsultarNumeroJugadores(globales.Db, &partidasPublicasSinAmigos[i])
+		numeroJugadoresJ, _, err2 := dao.ConsultarNumeroJugadores(globales.Db, &partidasPublicasSinAmigos[i])
+
+		if err1 != nil || err2 != nil {
+			devolverError(writer, "ObtenerPartidas", err)
+		}
+
+		return numeroJugadoresI > numeroJugadoresJ
 	})
 
-	/*log.Println("partidas privadas despues de sort:", partidasPrivadas)
-	log.Println("partidas públicas despues de sort:", partidas)
-	log.Println("partidas públicas sin amigos despues de sort:", partidasPublicasSinAmigos)*/
-
 	// Junta todos los slices, en orden
-	partidasPrivadas = append(partidasPrivadas, partidas...)
-	partidasPrivadas = append(partidasPrivadas, partidasPublicasSinAmigos...)
+	var partidasOrdenadas []vo.Partida
+	partidasOrdenadas = append(partidasOrdenadas, partidasPrivadasConAmigos...)
+	partidasOrdenadas = append(partidasOrdenadas, partidasPublicasConAmigos...)
+	partidasOrdenadas = append(partidasOrdenadas, partidasPublicasSinAmigos...)
+	partidasOrdenadas = append(partidasOrdenadas, partidasPrivadasSinAmigos...)
 
-	log.Println("partidas ordenadas al final:", partidasPrivadas)
-
-	writer.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(writer).Encode(partidasPrivadas)
 	if err != nil {
-		// TODO en json
 		devolverError(writer, "ObtenerPartidas", err)
+	} else {
+		var elementos []vo.ElementoListaPartidas
+
+		for _, p := range partidasOrdenadas {
+			elementos = append(elementos, transformarAElementoListaPartidas(&p, amigos))
+		}
+
+		writer.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(writer).Encode(elementos)
 	}
+}
+
+// transformarAElementoListaPartidas convierte una partida en un elemento de lista de partidas,
+// dada una lista de amigos de un usuario. Se asume que la partida existe en la DB.
+// No puede localizarse en el módulo VO porque causaría una dependencia cíclica con DAO
+func transformarAElementoListaPartidas(p *vo.Partida, amigos []vo.Usuario) vo.ElementoListaPartidas {
+	listaAmigos := obtenerAmigos(amigos, p)
+	numeroJugadores, _, err := dao.ConsultarNumeroJugadores(globales.Db, p)
+	if err != nil {
+		numeroJugadores = 0
+	}
+
+	return vo.ElementoListaPartidas{
+		IdPartida:          p.IdPartida,
+		EsPublica:          p.EsPublica,
+		NumeroJugadores:    numeroJugadores,
+		MaxNumeroJugadores: p.MaxNumeroJugadores,
+		AmigosPresentes:    listaAmigos,
+		NumAmigosPresentes: len(listaAmigos),
+	}
+}
+
+// obtenerAmigos obtiene una lista de nombres amigos presentes en
+// una partida, dada una lista previa
+func obtenerAmigos(amigos []vo.Usuario, partida *vo.Partida) (listaFiltrada []string) {
+	for _, amigo := range amigos {
+		// Como máximo hay 6 jugadores en la partida, así que
+		// la complejidad la dicta el número de amigos del usuario
+		for _, jugador := range partida.Jugadores {
+			if amigo.NombreUsuario == jugador.NombreUsuario {
+				listaFiltrada = append(listaFiltrada, amigo.NombreUsuario)
+			}
+		}
+	}
+
+	return listaFiltrada
 }
