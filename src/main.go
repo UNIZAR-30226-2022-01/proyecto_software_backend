@@ -6,9 +6,9 @@ import (
 	"backend/handlers"
 	middlewarePropio "backend/middleware"
 	"context"
-	"io/ioutil"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -32,8 +32,7 @@ import (
 )
 
 const (
-	CARPETA_FRONTEND      = "web"
-	FICHERO_RAIZ_FRONTEND = "index.html"
+	CARPETA_FRONTEND = "web"
 )
 
 func main() {
@@ -111,7 +110,7 @@ func tratarContextoCierreServidor(server *http.Server) <-chan struct{} {
 	return serverCtx.Done()
 }
 
-// Devuelve un router programado para las URLs a atender
+// Devuelve un router programado para URLs de la API
 func routerAPI() http.Handler {
 	r := chi.NewRouter()
 
@@ -147,19 +146,38 @@ func routerAPI() http.Handler {
 	return r
 }
 
+// Devuelve un router programado para URLs de cualquiera de los frontends
 func routerWeb() http.Handler {
 	r := chi.NewRouter()
-
-	// Para debugging
 	r.Use(middleware.Logger)
 
-	directorioDeTrabajo, _ := os.Getwd()
-	ficherosFrontend := filepath.Join(directorioDeTrabajo, CARPETA_FRONTEND)
-	log.Println("Sirviendo " + FICHERO_RAIZ_FRONTEND + " desde " + ficherosFrontend)
-	index, _ := ioutil.ReadFile(ficherosFrontend + "/" + FICHERO_RAIZ_FRONTEND)
-	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
-		w.Write(index)
-	})
+	workDir, _ := os.Getwd()
+	// Carpeta del sistema de ficheros que se va a servir, restringida a ella y sus
+	// subdirectorios
+	filesDir := http.Dir(filepath.Join(workDir, CARPETA_FRONTEND))
+	fileServer(r, "/", filesDir)
 
 	return r
+}
+
+// fileServer pone en marcha un router para un servidor de ficheros mediante HTTP,
+// que sirve ficheros estáticos desde root
+// Adaptado de https://github.com/go-chi/chi/blob/master/_examples/fileserver/main.go
+func fileServer(r chi.Router, path string, root http.FileSystem) {
+	if strings.ContainsAny(path, "{}*") {
+		panic("No se permite servir desde directorios con parámetros de URL.")
+	}
+
+	if path != "/" && path[len(path)-1] != '/' {
+		r.Get(path, http.RedirectHandler(path+"/", 301).ServeHTTP)
+		path += "/"
+	}
+	path += "*"
+
+	r.Get(path, func(w http.ResponseWriter, r *http.Request) {
+		rctx := chi.RouteContext(r.Context())
+		pathPrefix := strings.TrimSuffix(rctx.RoutePattern(), "/*")
+		fs := http.StripPrefix(pathPrefix, http.FileServer(root))
+		fs.ServeHTTP(w, r)
+	})
 }
