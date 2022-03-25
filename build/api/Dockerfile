@@ -5,7 +5,7 @@ FROM scratch
 COPY ./backend /     
 
 # 80 para producción
-EXPOSE 8080                 
+EXPOSE 8090                 
 
 ENTRYPOINT ["/backend", "-api"]
 #CMD ["/backend"]

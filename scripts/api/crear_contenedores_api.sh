@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Compila el backend sin depender de librerías de C y trae el ejecutable a la carpeta local
-cd ../../src && CGO_ENABLED=0 go build -o backend main.go && mv backend ../build/api && cd ../build/api
+cd ../../src && CGO_ENABLED=0 go build -o backend main.go && mv backend ../build/api && cp servidor.env ../build/api && cd ../build/api
 
 # Crea el volúmen de la BD
 sudo docker volume create volumen-postgres

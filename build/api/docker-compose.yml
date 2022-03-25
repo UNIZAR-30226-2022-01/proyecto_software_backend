@@ -18,9 +18,9 @@ services:
   backend:
     # Ejecuta el DockerFile local
     build: .
-    # Abre el puerto 8080 al exterior (80 en producción)
+    # Abre el puerto 8090 al exterior (80 en producción)
     ports:
-     - 8080:8080
+     - 8090:8090
     # Espera a que el contenedor de la base de datos indique que esté en marcha
     depends_on:
      - postgres

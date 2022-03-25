@@ -1,30 +1,19 @@
 package integracion_test
 
 import (
-	"backend/dao"
 	"backend/globales"
-	"backend/handlers"
 	"backend/middleware"
-	middlewarePropio "backend/middleware"
+	"backend/servidor"
 	"backend/vo"
 	"encoding/json"
-	"github.com/go-chi/chi/v5"
-	middlewareChi "github.com/go-chi/chi/v5/middleware"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
-)
-
-const (
-	CARPETA_FRONTEND      = "web"
-	FICHERO_RAIZ_FRONTEND = "index.html"
 )
 
 // Prueba, del lado del cliente, de:
@@ -34,8 +23,16 @@ const (
 //
 // Asume una BD limpia
 func TestCreacionYObtencionPartidas(t *testing.T) {
+	// Inyecta el parámetro para actuar como API y variables de entorno
+	os.Args = append(os.Args, "-api")
+	os.Setenv("DIRECCION_DB", "postgres")
+	os.Setenv("DIRECCION_DB_TESTS", "localhost")
+	os.Setenv("PUERTO_API", "8090")
+	os.Setenv("PUERTO_WEB", "8080")
+	os.Setenv("USUARIO_DB", "postgres")
+	os.Setenv("PASSWORD_DB", "postgres")
 
-	go iniciarServidor()
+	go servidor.IniciarServidor(true)
 
 	t.Log("Iniciando servidor...")
 	time.Sleep(5 * time.Second)
@@ -120,61 +117,6 @@ func TestCreacionYObtencionPartidas(t *testing.T) {
 	obtenerPartidas(cookieUsuarioPrincipal, t)
 }
 
-func iniciarServidor() {
-	globales.Db = dao.InicializarConexionDb(true)
-
-	// Instancia un servidor HTTP con el router programado indicado
-	server := &http.Server{Addr: ":8080", Handler: router()}
-
-	err := server.ListenAndServe()
-	if err != nil && err != http.ErrServerClosed {
-		log.Fatal(err)
-	}
-}
-
-func router() http.Handler {
-	r := chi.NewRouter()
-
-	// Para debugging
-	r.Use(middlewareChi.Logger)
-
-	directorioDeTrabajo, _ := os.Getwd()
-	ficherosFrontend := filepath.Join(directorioDeTrabajo, CARPETA_FRONTEND)
-	log.Println("Sirviendo " + FICHERO_RAIZ_FRONTEND + " desde " + ficherosFrontend)
-	index, _ := ioutil.ReadFile(ficherosFrontend + "/" + FICHERO_RAIZ_FRONTEND)
-	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
-		w.Write(index)
-	})
-
-	// Formularios
-	r.Post("/registro", handlers.Registro)
-	r.Post("/login", handlers.Login)
-	//TODO: Otro POST para formularios de cambiar perfil de usuario
-
-	// Pruebas
-	r.Get("/formularioRegistro", handlers.MenuRegistro)
-	r.Get("/formulariologin", handlers.MenuLogin)
-
-	// Rutas REST
-	r.Route("/api", func(r chi.Router) {
-		// Obligamos el acceso con login previo
-		r.Use(middlewarePropio.MiddlewareSesion())
-
-		// Partidas
-		r.Post("/crearPartida", handlers.CrearPartida)
-		r.Post("/unirseAPartida", handlers.UnirseAPartida)
-		r.Get("/obtenerPartidas", handlers.ObtenerPartidas)
-
-		// Usuarios
-		r.Post("/aceptarSolicitudAmistad/{nombre}", handlers.AceptarSolicitudAmistad)
-		r.Post("/rechazarSolicitudAmistad/{nombre}", handlers.RechazarSolicitudAmistad)
-		r.Post("/enviarSolicitudAmistad/{nombre}", handlers.EnviarSolicitudAmistad)
-		r.Get("/obtenerNotificaciones/", handlers.ObtenerNotificaciones)
-	})
-
-	return r
-}
-
 func purgarDB() {
 	_, err := globales.Db.Exec(`DELETE FROM "backend"."Partida"`)
 	if err != nil {
@@ -215,7 +157,7 @@ func crearUsuario(nombre string, t *testing.T) (cookie *http.Cookie) {
 		"email":    {nombre + "@" + nombre + ".com"},
 		"password": {nombre},
 	}
-	resp, err := http.PostForm("http://localhost:8080/registro", campos)
+	resp, err := http.PostForm("http://localhost:"+os.Getenv(globales.PUERTO_API)+"/registro", campos)
 	if err != nil {
 		t.Fatal("No se ha podido realizar request POST:", err)
 	}
@@ -264,7 +206,7 @@ func crearPartida(cookie *http.Cookie, t *testing.T, publica bool) {
 		}
 	}
 
-	req, err := http.NewRequest("POST", "http://localhost:8080/api/crearPartida", strings.NewReader(campos.Encode()))
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/crearPartida", strings.NewReader(campos.Encode()))
 	if err != nil {
 		t.Fatal("Error al construir request:", err)
 	}
@@ -287,7 +229,7 @@ func solicitarAmistad(cookie *http.Cookie, t *testing.T, nombre string) {
 	t.Log("Solicitando amistad de userPrincipal a", nombre)
 
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", "http://localhost:8080/api/enviarSolicitudAmistad/"+nombre, nil)
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/enviarSolicitudAmistad/"+nombre, nil)
 	if err != nil {
 		t.Fatal("Error al construir request:", err)
 	}
@@ -307,7 +249,7 @@ func solicitarAmistad(cookie *http.Cookie, t *testing.T, nombre string) {
 
 func aceptarSolicitudDeAmistad(cookie *http.Cookie, t *testing.T, nombre string) {
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", "http://localhost:8080/api/aceptarSolicitudAmistad/"+nombre, nil) // MAPS :D
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/aceptarSolicitudAmistad/"+nombre, nil) // MAPS :D
 	if err != nil {
 		t.Fatal("Error al construir request:", err)
 	}
@@ -333,7 +275,7 @@ func unirseAPartida(cookie *http.Cookie, t *testing.T, id int) {
 		"password":  {"password"},
 	}
 
-	req, err := http.NewRequest("POST", "http://localhost:8080/api/unirseAPartida", strings.NewReader(campos.Encode()))
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/unirseAPartida", strings.NewReader(campos.Encode()))
 	if err != nil {
 		t.Fatal("Error al construir request:", err)
 	}
@@ -354,7 +296,7 @@ func unirseAPartida(cookie *http.Cookie, t *testing.T, id int) {
 
 func obtenerPartidas(cookie *http.Cookie, t *testing.T) {
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", "http://localhost:8080/api/obtenerPartidas", nil)
+	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerPartidas", nil)
 	if err != nil {
 		t.Fatal("Error al construir request:", err)
 	}

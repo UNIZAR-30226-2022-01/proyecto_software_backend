@@ -15,4 +15,5 @@ const (
 	PUERTO_API         = "PUERTO_API"
 	USUARIO_DB         = "USUARIO_DB"
 	PASSWORD_DB        = "PASSWORD_DB"
+	CARPETA_FRONTEND   = "web"
 )
