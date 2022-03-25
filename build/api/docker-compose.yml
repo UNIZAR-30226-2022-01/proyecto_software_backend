@@ -24,6 +24,8 @@ services:
     # Espera a que el contenedor de la base de datos indique que esté en marcha
     depends_on:
      - postgres
+    env_file:
+     - servidor.env
 # Declaraciones de volúmenes a usar
 volumes:
     volumen-postgres:

@@ -43,13 +43,15 @@ func main() {
 	} else {
 		// Instancia un servidor HTTP con el router programado indicado
 		if os.Args[1] == "-web" {
-			server = &http.Server{Addr: ":8080", Handler: routerWeb()}
+			log.Println("Escuchando por el puerto", os.Getenv(globales.PUERTO_WEB))
+			server = &http.Server{Addr: ":" + os.Getenv(globales.PUERTO_WEB), Handler: routerWeb()}
 		} else if os.Args[1] == "-api" {
-			server = &http.Server{Addr: ":8080", Handler: routerAPI()}
+			log.Println("Escuchando por el puerto", os.Getenv(globales.PUERTO_API))
+			server = &http.Server{Addr: ":" + os.Getenv(globales.PUERTO_API), Handler: routerAPI()}
 
 			// El objeto de base de datos es seguro para uso concurrente y controla su
-			// propia pool de conexiones independientemente.
-			globales.Db = dao.InicializarConexionDb()
+			// propio pool de conexiones independientemente.
+			globales.Db = dao.InicializarConexionDb(false)
 		} else {
 			log.Println("Uso:\n\t ./ejecutable -web : Servir contenido web \n\t ./ejecutable -api : Servir API")
 			os.Exit(1)

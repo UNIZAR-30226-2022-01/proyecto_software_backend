@@ -1,5 +1,8 @@
 #!/bin/bash
-sudo docker stop build_webserver_react
-sudo docker rm build_webserver_react
+
+cd ../../build/react
+sudo docker-compose stop
+sudo docker-compose rm
+
 # Borra los volúmenes e imágenes también
-sudo docker image rm webserver_react
+sudo docker image rm react_backend

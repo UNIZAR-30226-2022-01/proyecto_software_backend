@@ -1,2 +1,3 @@
 #!/bin/bash
-sudo docker stop build_webserver_react
+cd ../../build/react
+sudo docker-compose stop

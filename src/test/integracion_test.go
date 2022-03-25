@@ -121,7 +121,7 @@ func TestCreacionYObtencionPartidas(t *testing.T) {
 }
 
 func iniciarServidor() {
-	globales.Db = dao.InicializarConexionDb()
+	globales.Db = dao.InicializarConexionDb(true)
 
 	// Instancia un servidor HTTP con el router programado indicado
 	server := &http.Server{Addr: ":8080", Handler: router()}

@@ -1,0 +1,11 @@
+version: '3.0'
+services:
+  backend:
+    # Ejecuta el DockerFile local
+    build: .
+    # Abre el puerto 8080 al exterior (80 en producción)
+    ports:
+     - 8080:8080
+    env_file:
+     - servidor.env
+    container_name: webserver_react

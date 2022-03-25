@@ -1,19 +1,25 @@
 package dao
 
 import (
+	"backend/globales"
 	"database/sql"
 	_ "github.com/lib/pq" // Driver que usa el paquete de sql, para postgres
 	"log"
+	"os"
 	"time"
 )
 
 // InicializarConexionDb devuelve el objeto de base de datos, en el cual realiza la conexión a la misma
-func InicializarConexionDb() *sql.DB {
-	//db, err := sql.Open("postgres", "postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable")
+func InicializarConexionDb(test bool) *sql.DB {
 	//db, err := sql.Open("postgres", "postgres://{user}:{password}@{hostname}:{port}/{database-name}?sslmode=disable")
-
-	// Para pruebas fuera de Docker:
-	db, err := sql.Open("postgres", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
+	var db *sql.DB
+	var err error
+	if test {
+		// Para pruebas fuera de Docker:
+		db, err = sql.Open("postgres", "postgres://"+os.Getenv(globales.USUARIO_DB)+":"+os.Getenv(globales.PASSWORD_DB)+"@"+os.Getenv(globales.DIRECCION_DB_TESTS)+":5432/postgres?sslmode=disable")
+	} else {
+		db, err = sql.Open("postgres", "postgres://"+os.Getenv(globales.USUARIO_DB)+":"+os.Getenv(globales.PASSWORD_DB)+"@"+os.Getenv(globales.DIRECCION_DB)+":5432/postgres?sslmode=disable")
+	}
 
 	if err != nil {
 		log.Fatal(err)

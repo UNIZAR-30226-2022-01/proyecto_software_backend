@@ -7,3 +7,12 @@ import (
 )
 
 var Db *sql.DB // Base de datos thread safe, a compartir entre los módulos
+
+const (
+	DIRECCION_DB       = "DIRECCION_DB"
+	DIRECCION_DB_TESTS = "DIRECCION_DB_TESTS"
+	PUERTO_WEB         = "PUERTO_WEB"
+	PUERTO_API         = "PUERTO_API"
+	USUARIO_DB         = "USUARIO_DB"
+	PASSWORD_DB        = "PASSWORD_DB"
+)

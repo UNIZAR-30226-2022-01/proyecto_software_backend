@@ -1,2 +1,3 @@
 #!/bin/bash
-sudo docker stop build_webserver_angular
+cd ../../build/angular
+sudo docker-compose stop
