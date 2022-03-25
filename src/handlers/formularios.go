@@ -79,6 +79,6 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 // hashPassword crea un hash de clave utilizando bcrypt
 // https://gowebexamples.com/password-hashing/
 func hashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14) // Coste fijo generoso
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 10) // Coste fijo por defecto para evitar tiempos de cálculo excesivos
 	return string(bytes), err
 }
