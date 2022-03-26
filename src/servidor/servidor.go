@@ -21,7 +21,7 @@ import (
 
 func IniciarServidor(test bool) {
 	var server *http.Server
-	if len(os.Args) < 2 {
+	if len(os.Args) < 2 && !test {
 		log.Println("Uso:\n\t ./ejecutable -web : Servir contenido web \n\t ./ejecutable -api : Servir API")
 		os.Exit(1)
 	} else {
@@ -29,7 +29,7 @@ func IniciarServidor(test bool) {
 		if os.Args[len(os.Args)-1] == "-web" {
 			log.Println("Escuchando por el puerto", os.Getenv(globales.PUERTO_WEB))
 			server = &http.Server{Addr: ":" + os.Getenv(globales.PUERTO_WEB), Handler: routerWeb()}
-		} else if os.Args[len(os.Args)-1] == "-api" {
+		} else if os.Args[len(os.Args)-1] == "-api" || test {
 			log.Println("Escuchando por el puerto", os.Getenv(globales.PUERTO_API))
 			server = &http.Server{Addr: ":" + os.Getenv(globales.PUERTO_API), Handler: routerAPI()}
 
@@ -119,7 +119,8 @@ func routerAPI() http.Handler {
 
 		// Partidas
 		r.Post("/crearPartida", handlers.CrearPartida)
-		r.Post("/unirseAPartida", handlers.UnirseAPartida) // TODO: Mejor con URL?
+		r.Post("/unirseAPartida", handlers.UnirseAPartida)
+		r.Post("/abandonarLobby", handlers.AbandonarLobby)
 		r.Get("/obtenerPartidas", handlers.ObtenerPartidas)
 
 		// Usuarios

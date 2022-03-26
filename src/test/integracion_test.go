@@ -16,15 +16,9 @@ import (
 	"time"
 )
 
-// Prueba, del lado del cliente, de:
-//		Crear una serie de usuarios
-//		Crear una serie de partidas
-//		Obtener y comprobar ordenación de partidas
-//
-// Asume una BD limpia
-func TestCreacionYObtencionPartidas(t *testing.T) {
-	// Inyecta el parámetro para actuar como API y variables de entorno
-	os.Args = append(os.Args, "-api")
+// Función que se ejecuta automáticamente antes de los test
+func init() {
+	// Inyecta las variables de entorno
 	os.Setenv("DIRECCION_DB", "postgres")
 	os.Setenv("DIRECCION_DB_TESTS", "localhost")
 	os.Setenv("PUERTO_API", "8090")
@@ -33,10 +27,16 @@ func TestCreacionYObtencionPartidas(t *testing.T) {
 	os.Setenv("PASSWORD_DB", "postgres")
 
 	go servidor.IniciarServidor(true)
-
-	t.Log("Iniciando servidor...")
 	time.Sleep(5 * time.Second)
+}
 
+// Prueba, del lado del cliente, de:
+//		Crear una serie de usuarios
+//		Crear una serie de partidas
+//		Obtener y comprobar ordenación de partidas
+//
+// Asume una BD limpia
+func TestCreacionYObtencionPartidas(t *testing.T) {
 	t.Log("Purgando DB...")
 	purgarDB()
 
@@ -114,7 +114,55 @@ func TestCreacionYObtencionPartidas(t *testing.T) {
 
 	// Orden: P1, P2, P3, P4, P5, P6
 
-	obtenerPartidas(cookieUsuarioPrincipal, t)
+	partidas := obtenerPartidas(cookieUsuarioPrincipal, t)
+
+	if partidas[0].IdPartida != 1 {
+		t.Fatal("Se esperaba obtener partida de ID", 1, "en posición", 0)
+	} else if partidas[1].IdPartida != 2 {
+		t.Fatal("Se esperaba obtener partida de ID", 2, "en posición", 1)
+	} else if partidas[2].IdPartida != 4 {
+		t.Fatal("Se esperaba obtener partida de ID", 4, "en posición", 2)
+	} else if partidas[3].IdPartida != 5 {
+		t.Fatal("Se esperaba obtener partida de ID", 5, "en posición", 3)
+	} else if partidas[4].IdPartida != 6 {
+		t.Fatal("Se esperaba obtener partida de ID", 1, "en posición", 4)
+	} else if partidas[5].IdPartida != 3 {
+		t.Fatal("Se esperaba obtener partida de ID", 1, "en posición", 5)
+	} else {
+		t.Log("Partidas ordenadas correctamente!")
+	}
+}
+
+func TestUnionYAbandonoDePartidas(t *testing.T) {
+	t.Log("Purgando DB...")
+	purgarDB()
+
+	t.Log("Creando usuario...")
+	cookie := crearUsuario("usuario1", t)
+	cookie2 := crearUsuario("usuario2", t)
+
+	t.Log("Creando partida...")
+	crearPartida(cookie, t, false)
+
+	partidas := obtenerPartidas(cookie, t)
+	if len(partidas) != 1 {
+		t.Fatal("No hay partidas.")
+	}
+
+	unirseAPartida(cookie2, t, 1)
+	abandonarLobby(cookie, t)
+	partidas = obtenerPartidas(cookie, t)
+	// Aunque se ha ido el creador, el lobby debería seguir existiendo al haber otro usuario
+	if len(partidas) != 1 {
+		t.Fatal("No hay partidas, aunque hay un usuario aún.")
+	}
+
+	abandonarLobby(cookie2, t)
+	// Ahora se de debería haber borrado
+	partidas = obtenerPartidas(cookie, t)
+	if len(partidas) != 0 {
+		t.Fatal("Sigue habiendo partidas tras quedar con 0 usuarios.")
+	}
 }
 
 func purgarDB() {
@@ -225,6 +273,29 @@ func crearPartida(cookie *http.Cookie, t *testing.T, publica bool) {
 	}
 }
 
+func abandonarLobby(cookie *http.Cookie, t *testing.T) {
+	// O usar cookie jar de https://stackoverflow.com/questions/12756782/go-http-post-and-use-cookies
+	client := &http.Client{}
+
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/abandonarLobby", nil)
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // Para indicar que el formulario "va en la url", porque campos.Encode() hace eso
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		t.Fatal("Error en POST de abandonar partida:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al abandonar una partida:", resp.StatusCode)
+	}
+}
+
 func solicitarAmistad(cookie *http.Cookie, t *testing.T, nombre string) {
 	t.Log("Solicitando amistad de userPrincipal a", nombre)
 
@@ -294,7 +365,7 @@ func unirseAPartida(cookie *http.Cookie, t *testing.T, id int) {
 	}
 }
 
-func obtenerPartidas(cookie *http.Cookie, t *testing.T) {
+func obtenerPartidas(cookie *http.Cookie, t *testing.T) []vo.ElementoListaPartidas {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerPartidas", nil)
 	if err != nil {
@@ -319,21 +390,8 @@ func obtenerPartidas(cookie *http.Cookie, t *testing.T) {
 		}
 
 		t.Log("Respuesta de obtenerPartidas:", partidas)
-
-		if partidas[0].IdPartida != 1 {
-			t.Fatal("Se esperaba obtener partida de ID", 1, "en posición", 0)
-		} else if partidas[1].IdPartida != 2 {
-			t.Fatal("Se esperaba obtener partida de ID", 2, "en posición", 1)
-		} else if partidas[2].IdPartida != 4 {
-			t.Fatal("Se esperaba obtener partida de ID", 4, "en posición", 2)
-		} else if partidas[3].IdPartida != 5 {
-			t.Fatal("Se esperaba obtener partida de ID", 5, "en posición", 3)
-		} else if partidas[4].IdPartida != 6 {
-			t.Fatal("Se esperaba obtener partida de ID", 1, "en posición", 4)
-		} else if partidas[5].IdPartida != 3 {
-			t.Fatal("Se esperaba obtener partida de ID", 1, "en posición", 5)
-		} else {
-			t.Log("Partidas ordenadas correctamente!")
-		}
+		return partidas
 	}
+
+	return nil
 }

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"golang.org/x/crypto/bcrypt"
+	"log"
 	"net/http"
 	"sort"
 	"strconv"
@@ -90,7 +91,7 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	// Comprobames que el usuario no esté participando en otra partida
+	// Comprobamos que el usuario no esté participando en otra partida
 	enPartida, err := dao.UsuarioEnPartida(globales.Db, &usuario)
 	if err != nil {
 		devolverErrorSQL(writer)
@@ -125,6 +126,24 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	devolverExito(writer)
+}
+
+// AbandonarLobby deja la partida en la que el usuario esté participando. Responde con status 200 si ha habido éxito,
+// o status 500 si ha habido un error junto a su motivo en el cuerpo.
+func AbandonarLobby(writer http.ResponseWriter, request *http.Request) {
+	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
+
+	err := dao.AbandonarLobby(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario})
+	// AbandonarLobby ya da el error formateado
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		_, err = writer.Write([]byte(err.Error()))
+		if err != nil {
+			log.Println("Error al escribir respuesta en:", err)
+		}
+	} else {
+		devolverExito(writer)
+	}
 }
 
 // ObtenerPartidas devuelve un listado de partidas codificado en JSON, con el siguiente orden:
