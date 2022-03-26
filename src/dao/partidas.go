@@ -5,8 +5,6 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/gob"
-	"encoding/hex"
-	"log"
 )
 
 // CrearPartida crea una nueva partida, la cual será añadida a la base de datos
@@ -19,14 +17,6 @@ func CrearPartida(db *sql.DB, usuario *vo.Usuario, partida *vo.Partida) (err err
 	var estado bytes.Buffer
 	encoder := gob.NewEncoder(&estado)
 	err = encoder.Encode(partida.Estado)
-
-	log.Println("partida.Estado antes:", partida.Estado)
-	var estadoPartida []byte
-	buf := bytes.NewBuffer(estadoPartida)
-	decoder := gob.NewDecoder(buf)
-	err = decoder.Decode(&partida.Estado)
-	log.Println("partida.Estado despues:", partida.Estado)
-	log.Println("bytes:", hex.EncodeToString(estado.Bytes()))
 
 	var mensajes bytes.Buffer
 	encoder = gob.NewEncoder(&mensajes)
@@ -173,18 +163,11 @@ func ObtenerPartidas(db *sql.DB) (partidas []vo.Partida, err error) {
 		// Una vez escaneadas las columnas en los campos del struct, se obtiene el resto de campos no directos
 		partida.PasswordHash = passwordHash.String
 
-		log.Println("bytes en obtener:", hex.EncodeToString(estadoPartida))
-
-		var estadoMio vo.EstadoPartida
 		buf := bytes.NewBuffer(estadoPartida)
-		log.Println("buffer:", hex.EncodeToString(buf.Bytes()))
 		decoder := gob.NewDecoder(buf)
-		err = decoder.Decode(&estadoMio)
+		err = decoder.Decode(&partida.Estado)
 		if err != nil {
-			log.Println("que ha pasado", err)
 			return partidas, err
-		} else {
-			log.Println("funciona")
 		}
 
 		buf = bytes.NewBuffer(mensajes)

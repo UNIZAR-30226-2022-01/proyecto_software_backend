@@ -113,14 +113,14 @@ func (nr NumRegion) String() string {
 }
 
 type EstadoRegion struct {
-	ocupante  string
-	numTropas int
+	Ocupante  string
+	NumTropas int
 }
 
 type Carta struct {
-	tipo      TipoTropa
-	region    NumRegion
-	esComodin bool
+	Tipo      TipoTropa
+	Region    NumRegion
+	EsComodin bool
 }
 
 /*
@@ -200,23 +200,23 @@ type AccionObtenerCarta struct {
 //func (act AccionCambioTurno) A() {}
 
 type EstadoPartida struct {
-	acciones    []interface{}
-	jugador     string
-	fase        Fase
-	numeroTurno int
+	Acciones    []interface{}
+	Jugador     string
+	Fase        Fase
+	NumeroTurno int
 
-	estadoMapa map[NumRegion]EstadoRegion
+	EstadoMapa map[NumRegion]EstadoRegion
 
 	// Baraja
-	cartas          []Carta
-	cartasJugadores map[string][]Carta
-	numCambios      int
+	Cartas          []Carta
+	CartasJugadores map[string][]Carta
+	NumCambios      int
 
 	// ...
 }
 
 func (p *Partida) InicializarAcciones() {
-	p.Estado.acciones = make([]interface{}, 0)
+	p.Estado.Acciones = make([]interface{}, 0)
 
 	//p.Estado.acciones = append(p.Estado.acciones, AccionCambioTurno{29278927289728})
 	//p.Estado.acciones = append(p.Estado.acciones, AccionCambioTurno2{"adsasdadsadsads"})
@@ -225,7 +225,7 @@ func (p *Partida) InicializarAcciones() {
 func crearEstadoMapa() (mapa map[NumRegion]EstadoRegion) {
 	mapa = make(map[NumRegion]EstadoRegion)
 	for i := Eastern_australia; i <= Alberta; i++ {
-		mapa[i] = EstadoRegion{ocupante: "", numTropas: 0}
+		mapa[i] = EstadoRegion{Ocupante: "", NumTropas: 0}
 	}
 
 	return mapa
@@ -245,9 +245,9 @@ func crearBaraja() (cartas []Carta) {
 		}
 
 		carta = Carta{
-			tipo:      tipo,
-			region:    i,
-			esComodin: false,
+			Tipo:      tipo,
+			Region:    i,
+			EsComodin: false,
 		}
 
 		numTiposTropa = numTiposTropa + 1
@@ -255,8 +255,8 @@ func crearBaraja() (cartas []Carta) {
 		cartas = append(cartas, carta)
 	}
 
-	cartas = append(cartas, Carta{esComodin: true})
-	cartas = append(cartas, Carta{esComodin: true})
+	cartas = append(cartas, Carta{EsComodin: true})
+	cartas = append(cartas, Carta{EsComodin: true})
 
 	// Se baraja aleatoriamente
 	rand.Seed(time.Now().UnixNano())
@@ -266,22 +266,22 @@ func crearBaraja() (cartas []Carta) {
 }
 
 func (p *Partida) crearMapaCartasJugadores() {
-	p.Estado.cartasJugadores = make(map[string][]Carta, p.MaxNumeroJugadores)
+	p.Estado.CartasJugadores = make(map[string][]Carta, p.MaxNumeroJugadores)
 
 	for _, j := range p.Jugadores {
-		p.Estado.cartasJugadores[j.NombreUsuario] = []Carta{}
+		p.Estado.CartasJugadores[j.NombreUsuario] = []Carta{}
 	}
 }
 
 func (p *Partida) CrearEstadoPartida() {
 	p.Estado = EstadoPartida{
-		jugador:         "",
-		fase:            Refuerzo,
-		numeroTurno:     0,
-		estadoMapa:      crearEstadoMapa(),
-		cartas:          crearBaraja(),
-		cartasJugadores: nil,
-		numCambios:      0,
+		Jugador:         "",
+		Fase:            Refuerzo,
+		NumeroTurno:     0,
+		EstadoMapa:      crearEstadoMapa(),
+		Cartas:          crearBaraja(),
+		CartasJugadores: nil,
+		NumCambios:      0,
 	}
 
 	p.crearMapaCartasJugadores()
