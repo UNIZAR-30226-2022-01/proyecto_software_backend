@@ -44,6 +44,9 @@ func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 
 	usuario := vo.Usuario{"", nombreUsuario, "", "", http.Cookie{}, 0, 0, 0, 0, 0}
 	partida = vo.Partida{0, esPublica, partida.PasswordHash, false, maxJugadores, nil, []vo.Mensaje{}, vo.EstadoPartida{}}
+	partida.CrearEstadoPartida()
+	partida.InicializarAcciones()
+
 	partida.Jugadores = make([]vo.Usuario, 6)
 	partida.Jugadores = append(partida.Jugadores, usuario)
 
