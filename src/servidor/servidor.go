@@ -132,6 +132,7 @@ func routerAPI() http.Handler {
 
 	// Para debugging
 	r.Use(middleware.Logger)
+	// TODO: Por refinar
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"https://*", "http://*"},
 		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
