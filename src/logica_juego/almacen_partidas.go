@@ -8,7 +8,7 @@ import (
 )
 
 type AlmacenPartidas struct {
-	Mtx sync.RWMutex
+	Mtx sync.RWMutex // Mutex 1 Escritor - N lectores
 
 	Partidas map[int]vo.Partida
 
@@ -16,6 +16,7 @@ type AlmacenPartidas struct {
 	CanalParada        chan struct{}
 }
 
+// ObtenerPartida devuelve una copia de la partida con ID dado, y si existe o no
 func (ap *AlmacenPartidas) ObtenerPartida(idp int) (partida vo.Partida, existe bool) {
 	ap.Mtx.RLock()
 	defer ap.Mtx.RUnlock()
@@ -25,6 +26,7 @@ func (ap *AlmacenPartidas) ObtenerPartida(idp int) (partida vo.Partida, existe b
 	return partida, existe
 }
 
+// AlmacenarPartida almacena o sobreescribe una partida en el almacén
 func (ap *AlmacenPartidas) AlmacenarPartida(partida vo.Partida) {
 	ap.Mtx.Lock()
 	defer ap.Mtx.Unlock()
@@ -32,6 +34,7 @@ func (ap *AlmacenPartidas) AlmacenarPartida(partida vo.Partida) {
 	ap.Partidas[partida.IdPartida] = partida
 }
 
+// EliminarPartida elimina una partida del almacén
 func (ap *AlmacenPartidas) EliminarPartida(partida vo.Partida) {
 	ap.Mtx.Lock()
 	defer ap.Mtx.Unlock()

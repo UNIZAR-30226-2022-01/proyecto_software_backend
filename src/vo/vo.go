@@ -49,9 +49,9 @@ func CrearPartida(esPublica bool, passwordHash string, maxNumeroJugadores int) *
 }
 
 // IniciarPartida marca una partida como iniciada y crea un estado para ella con los jugadores indicados
-func (p *Partida) IniciarPartida(jugadores []string) {
+func (p *Partida) IniciarPartida(jugadores []Usuario) {
 	p.EnCurso = true
-	p.Estado = *CrearEstadoPartida(jugadores, p.MaxNumeroJugadores)
+	p.Estado = *CrearEstadoPartida(jugadores)
 }
 
 ///////////////////////////////////////////

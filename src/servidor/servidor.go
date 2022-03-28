@@ -162,12 +162,15 @@ func routerAPI() http.Handler {
 		r.Post("/unirseAPartida", handlers.UnirseAPartida)
 		r.Post("/abandonarLobby", handlers.AbandonarLobby)
 		r.Get("/obtenerPartidas", handlers.ObtenerPartidas)
+		//r.Get("/obtenerEstadoLobby", handlers.ObtenerEstadoLobby)
+		r.Get("/obtenerEstadoPartida", handlers.ObtenerEstadoPartida)
 
 		// Usuarios
 		r.Post("/aceptarSolicitudAmistad/{nombre}", handlers.AceptarSolicitudAmistad)
 		r.Post("/rechazarSolicitudAmistad/{nombre}", handlers.RechazarSolicitudAmistad)
 		r.Post("/enviarSolicitudAmistad/{nombre}", handlers.EnviarSolicitudAmistad)
 		r.Get("/obtenerNotificaciones/", handlers.ObtenerNotificaciones)
+
 	})
 
 	return r

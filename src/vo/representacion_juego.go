@@ -10,7 +10,8 @@ type TipoTropa int
 type NumRegion int
 
 const (
-	Refuerzo Fase = iota
+	Inicio Fase = iota // Repartir regiones
+	Refuerzo
 	Ataque
 	Fortificar
 )
@@ -94,6 +95,12 @@ type Carta struct {
 /*
 Lista de acciones:
 */
+type RecibirRegion struct {
+	IDAccion int
+	Region   NumRegion
+	Jugador  string
+}
+
 type AccionCambioTurno struct {
 	IDAccion int
 	Turno    int
@@ -166,9 +173,9 @@ type AccionObtenerCarta struct {
 }
 
 type EstadoPartida struct {
-	Acciones     []interface{}
-	Jugadores    []string // Lista de nombres de los jugadores en la partida
-	TurnoJugador int      // Índice de la lista que corresponde a qué jugador le toca
+	Acciones     []interface{}  // Acciones realizadas durante la partida
+	Jugadores    map[string]int // Mapa de nombres de los jugadores en la partida y su último índice no leído de la lista de acciones
+	TurnoJugador int            // Índice de la lista que corresponde a qué jugador le toca
 
 	Fase        Fase
 	NumeroTurno int
@@ -226,20 +233,28 @@ func crearBaraja() (cartas []Carta) {
 	return cartas
 }
 
-func crearMapaCartasJugadores(e *EstadoPartida, jugadores []string, maxNumeroJugadores int) {
-	e.CartasJugadores = make(map[string][]Carta, maxNumeroJugadores)
+func crearMapaCartasJugadores(e *EstadoPartida, jugadores []Usuario) {
+	e.CartasJugadores = make(map[string][]Carta, len(jugadores))
 
 	for _, j := range jugadores {
-		e.CartasJugadores[j] = []Carta{}
+		e.CartasJugadores[j.NombreUsuario] = []Carta{}
 	}
 }
 
-func CrearEstadoPartida(jugadores []string, maxNumeroJugadores int) (e *EstadoPartida) {
+func crearMapaIndicesJugadores(e *EstadoPartida, jugadores []Usuario) {
+	e.Jugadores = make(map[string]int, len(jugadores))
+
+	for _, j := range jugadores {
+		e.Jugadores[j.NombreUsuario] = -1 // Empezarán leyendo el índice 0
+	}
+}
+
+func CrearEstadoPartida(jugadores []Usuario) (e *EstadoPartida) {
 	*e = EstadoPartida{
 		Acciones:        make([]interface{}, 0),
-		Jugadores:       jugadores,
+		Jugadores:       nil,
 		TurnoJugador:    0,
-		Fase:            Refuerzo,
+		Fase:            Inicio,
 		NumeroTurno:     0,
 		EstadoMapa:      crearEstadoMapa(),
 		Cartas:          crearBaraja(),
@@ -247,7 +262,8 @@ func CrearEstadoPartida(jugadores []string, maxNumeroJugadores int) (e *EstadoPa
 		NumCambios:      0,
 	}
 
-	crearMapaCartasJugadores(e, jugadores, maxNumeroJugadores)
+	crearMapaCartasJugadores(e, jugadores)
+	crearMapaIndicesJugadores(e, jugadores)
 
 	return e
 }
