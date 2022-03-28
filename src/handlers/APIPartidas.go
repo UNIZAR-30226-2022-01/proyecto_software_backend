@@ -7,15 +7,21 @@ import (
 	"backend/vo"
 	"encoding/json"
 	"errors"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
 	"sort"
 	"strconv"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // CrearPartida crea una nueva partida, para la que se definirá el número máximo de jugadores,
 // si es pública o privada, y la contraseña en caso de que fuera necesario
+// Parámetros del formulario recibido:
+//	"maxJugadores" indica el número máximo de jugadores
+//	"tipo"	indica si la partida es pública o privada
+//		si tipo== "Publica", será publica, en cualquier otro caso será privada
+//  "password" define la contraseña necesaria para el acceso a una partida privada
 func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 	password := request.FormValue("password")
 	maxJugadores, err := strconv.Atoi(request.FormValue("maxJugadores"))
@@ -32,7 +38,6 @@ func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	var partida vo.Partida
 	hash := ""
 	if !esPublica {
 		hash, err = hashPassword(password)
@@ -40,16 +45,11 @@ func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 			devolverError(writer, errors.New("Se ha producido un error al procesar los datos."))
 			return
 		}
-		partida.PasswordHash = hash
+		hash = hash
 	}
 
 	usuario := vo.Usuario{"", nombreUsuario, "", "", http.Cookie{}, 0, 0, 0, 0, 0}
-	partida = vo.Partida{0, esPublica, partida.PasswordHash, false, maxJugadores, nil, []vo.Mensaje{}, vo.EstadoPartida{}}
-	partida.CrearEstadoPartida()
-	partida.InicializarAcciones()
-
-	partida.Jugadores = make([]vo.Usuario, 6)
-	partida.Jugadores = append(partida.Jugadores, usuario)
+	//partida = vo.Partida{0, esPublica, partida.PasswordHash, false, maxJugadores, nil, []vo.Mensaje{}, vo.EstadoPartida{}}
 
 	enPartida, err := dao.UsuarioEnPartida(globales.Db, &usuario)
 	if enPartida {
@@ -57,11 +57,19 @@ func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	partida := *vo.CrearPartida(esPublica, hash, maxJugadores)
+
+	// TODO
+	//partida.Jugadores = make([]vo.Usuario, 6)
+	//partida.Jugadores = append(partida.Jugadores, usuario)
+
 	err = dao.CrearPartida(globales.Db, &usuario, &partida)
 	if err != nil {
 		devolverErrorSQL(writer)
 		return
 	}
+
+	globales.AlmacenPartidas.AlmacenarPartida(partida)
 
 	devolverExito(writer)
 }
@@ -125,6 +133,10 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	// TODO
+	//partidaAlmacen, existe := globales.AlmacenPartidas.ObtenerPartida(idPartida)
+	//partidaAlmacen.Jugadores
+	//globales.AlmacenPartidas.AlmacenarPartida(idPartida)
 	devolverExito(writer)
 }
 
@@ -144,6 +156,11 @@ func AbandonarLobby(writer http.ResponseWriter, request *http.Request) {
 	} else {
 		devolverExito(writer)
 	}
+
+	// TODO
+	//partidaAlmacen, existe := globales.AlmacenPartidas.ObtenerPartida(idPartida)
+	//partidaAlmacen.Jugadores
+	//globales.AlmacenPartidas.AlmacenarPartida(idPartida)
 }
 
 // ObtenerPartidas devuelve un listado de partidas codificado en JSON, con el siguiente orden:

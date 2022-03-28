@@ -4,11 +4,11 @@ import (
 	"backend/dao"
 	"backend/globales"
 	"backend/handlers"
+	"backend/logica_juego"
+	"backend/vo"
 
 	middlewarePropio "backend/middleware" // Middleware a utilizar escrito por nosotros
 	"context"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"log"
 	"net/http"
 	"os"
@@ -17,6 +17,9 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 func IniciarServidor(test bool) {
@@ -44,7 +47,31 @@ func IniciarServidor(test bool) {
 
 	canalCierre := tratarContextoCierreServidor(server)
 
-	err := server.ListenAndServe()
+	// Inicio de lógica del juego
+	globales.InicializarGrafoMapa()
+	globales.AlmacenPartidas = logica_juego.IniciarAlmacenPartidas()
+
+	go func(cs chan vo.Partida, cp chan struct{}) {
+		for {
+			select {
+			case partida := <-cs:
+				dao.AlmacenarEstadoSerializado(globales.Db, &partida)
+			case <-cp:
+				break
+			}
+		}
+	}(globales.AlmacenPartidas.CanalSerializacion, globales.AlmacenPartidas.CanalParada)
+
+	partidas, err := dao.ObtenerPartidas(globales.Db)
+	if err != nil {
+		log.Fatal("Error al recuperar partidas almacenadas:", err)
+	}
+
+	for _, p := range partidas {
+		globales.AlmacenPartidas.AlmacenarPartida(p)
+	}
+
+	err = server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}

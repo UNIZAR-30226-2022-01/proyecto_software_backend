@@ -6,11 +6,14 @@ import (
 	"database/sql"
 	"encoding/gob"
 	"errors"
+	"log"
 )
 
 // CrearPartida crea una nueva partida, la cual será añadida a la base de datos
 // El usuario especificará el número de jugadores máximos, si la partida es pública
 // o privada, y la contraseña cuando sea necesario
+// Modifica el objeto partida utilizando, especificando su identificador asignado
+// al almacenarla en la base de datos
 func CrearPartida(db *sql.DB, usuario *vo.Usuario, partida *vo.Partida) (err error) {
 	var IdPartida int
 	password := sql.NullString{String: partida.PasswordHash, Valid: len(partida.PasswordHash) > 0}
@@ -32,6 +35,8 @@ func CrearPartida(db *sql.DB, usuario *vo.Usuario, partida *vo.Partida) (err err
 
 	_, err = db.Exec(`INSERT INTO "backend"."Participa"("ID_partida", "nombreUsuario") 
 					VALUES ($1, $2)`, IdPartida, usuario.NombreUsuario)
+	partida.IdPartida = IdPartida
+	log.Println("partida creada con id", IdPartida)
 	return err
 }
 
@@ -175,7 +180,7 @@ func ObtenerMensajes(db *sql.DB, partida *vo.Partida) (err error) {
 	return err
 }
 
-// ObtenerPartidas devuelve un listado de todas las partidas que no están en curso almacenadas,
+// ObtenerPartidas devuelve un listado de todas las partidas que no están en curso almacenadas,				// TODO
 // ordenadas de privadas a públicas.
 func ObtenerPartidas(db *sql.DB) (partidas []vo.Partida, err error) {
 	// Ordena por defecto de false a true

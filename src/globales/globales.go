@@ -3,6 +3,7 @@
 package globales
 
 import (
+	"backend/logica_juego"
 	"backend/vo"
 	"database/sql" // Funciones de sql
 
@@ -12,6 +13,8 @@ import (
 var Db *sql.DB // Base de datos thread safe, a compartir entre los módulos
 
 var GrafoMapa *grafos.UndirectedGraph
+
+var AlmacenPartidas *logica_juego.AlmacenPartidas
 
 func InicializarGrafoMapa() {
 	GrafoMapa = grafos.NewUndirectedGraph()
