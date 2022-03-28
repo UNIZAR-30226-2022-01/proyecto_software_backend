@@ -87,14 +87,14 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 
 	usuario := vo.Usuario{NombreUsuario: nombreUsuario}
 	partida := vo.Partida{IdPartida: idPartida}
-	jugadores, maxJugadores, err := dao.ConsultarNumeroJugadores(globales.Db, &partida)
+	jugadores, maxJugadores, err := dao.ConsultarJugadoresPartida(globales.Db, &partida)
 	if err != nil {
 		devolverErrorSQL(writer)
 		return
 	}
 
 	// Comprobamos que la partida no esté completa
-	if jugadores == maxJugadores {
+	if len(jugadores) == maxJugadores {
 		devolverError(writer, errors.New("No hay hueco en la partida."))
 		return
 	}
@@ -230,7 +230,7 @@ func ObtenerPartidas(writer http.ResponseWriter, request *http.Request) {
 		devolverErrorSQL(writer)
 	}
 
-	partidas, err := dao.ObtenerPartidas(globales.Db)
+	partidas, err := dao.ObtenerPartidasNoEnCurso(globales.Db)
 	if err != nil {
 		devolverErrorSQL(writer)
 	}
@@ -276,14 +276,14 @@ func ObtenerPartidas(writer http.ResponseWriter, request *http.Request) {
 func ordenarPorNumeroJugadores(writer http.ResponseWriter, partidasPrivadasSinAmigos []vo.Partida) {
 	sort.SliceStable(partidasPrivadasSinAmigos, func(i, j int) bool {
 		// Orden: > a <
-		numeroJugadoresI, _, err1 := dao.ConsultarNumeroJugadores(globales.Db, &partidasPrivadasSinAmigos[i])
-		numeroJugadoresJ, _, err2 := dao.ConsultarNumeroJugadores(globales.Db, &partidasPrivadasSinAmigos[i])
+		jugadoresI, _, err1 := dao.ConsultarJugadoresPartida(globales.Db, &partidasPrivadasSinAmigos[i])
+		jugadoresJ, _, err2 := dao.ConsultarJugadoresPartida(globales.Db, &partidasPrivadasSinAmigos[j])
 
 		if err1 != nil || err2 != nil {
 			devolverErrorSQL(writer)
 		}
 
-		return numeroJugadoresI > numeroJugadoresJ
+		return len(jugadoresI) > len(jugadoresJ)
 	})
 }
 
@@ -292,7 +292,11 @@ func dividirPartidasPorAmigos(partidasPrivadas []vo.Partida, amigos []vo.Usuario
 	var partidasPrivadasSinAmigos []vo.Partida
 	for _, partida := range partidasPrivadas {
 		// Se ha llegado al punto en el slice a partir del cual no hay amigos
-		if vo.ContarAmigos(amigos, partida) == 0 {
+		jugadores, _, _ := dao.ConsultarJugadoresPartida(globales.Db, &partida)
+
+		amigos := obtenerAmigos(amigos, jugadores)
+
+		if len(amigos) == 0 {
 			partidasPrivadasSinAmigos = append(partidasPrivadasSinAmigos, partida)
 		} else {
 			partidasPrivadasConAmigos = append(partidasPrivadasConAmigos, partida)
@@ -303,8 +307,14 @@ func dividirPartidasPorAmigos(partidasPrivadas []vo.Partida, amigos []vo.Usuario
 
 func ordenarPorNumeroAmigos(partidasPrivadas []vo.Partida, amigos []vo.Usuario) {
 	sort.SliceStable(partidasPrivadas, func(i, j int) bool {
+		jugadores, _, _ := dao.ConsultarJugadoresPartida(globales.Db, &partidasPrivadas[i])
+		listaAmigosI := obtenerAmigos(amigos, jugadores)
+
+		jugadores, _, _ = dao.ConsultarJugadoresPartida(globales.Db, &partidasPrivadas[j])
+		listaAmigosJ := obtenerAmigos(amigos, jugadores)
+
 		// Orden: > a <
-		return vo.ContarAmigos(amigos, partidasPrivadas[i]) > vo.ContarAmigos(amigos, partidasPrivadas[j])
+		return len(listaAmigosI) > len(listaAmigosJ)
 	})
 }
 
@@ -326,16 +336,13 @@ func dividirPartidasPrivadasYPublicas(partidas []vo.Partida) ([]vo.Partida, []vo
 // dada una lista de amigos de un usuario. Se asume que la partida existe en la DB.
 // No puede localizarse en el módulo VO porque causaría una dependencia cíclica con DAO
 func transformarAElementoListaPartidas(p *vo.Partida, amigos []vo.Usuario) vo.ElementoListaPartidas {
-	listaAmigos := obtenerAmigos(amigos, p)
-	numeroJugadores, _, err := dao.ConsultarNumeroJugadores(globales.Db, p)
-	if err != nil {
-		numeroJugadores = 0
-	}
+	jugadores, _, _ := dao.ConsultarJugadoresPartida(globales.Db, p)
+	listaAmigos := obtenerAmigos(amigos, jugadores)
 
 	return vo.ElementoListaPartidas{
 		IdPartida:          p.IdPartida,
 		EsPublica:          p.EsPublica,
-		NumeroJugadores:    numeroJugadores,
+		NumeroJugadores:    len(jugadores),
 		MaxNumeroJugadores: p.MaxNumeroJugadores,
 		AmigosPresentes:    listaAmigos,
 		NumAmigosPresentes: len(listaAmigos),
@@ -344,11 +351,11 @@ func transformarAElementoListaPartidas(p *vo.Partida, amigos []vo.Usuario) vo.El
 
 // obtenerAmigos obtiene una lista de nombres amigos presentes en
 // una partida, dada una lista previa
-func obtenerAmigos(amigos []vo.Usuario, partida *vo.Partida) (listaFiltrada []string) {
+func obtenerAmigos(amigos []vo.Usuario, jugadores []vo.Usuario) (listaFiltrada []string) {
 	for _, amigo := range amigos {
 		// Como máximo hay 6 jugadores en la partida, así que
 		// la complejidad la dicta el número de amigos del usuario
-		for _, jugador := range partida.Jugadores {
+		for _, jugador := range jugadores {
 			if amigo.NombreUsuario == jugador.NombreUsuario {
 				listaFiltrada = append(listaFiltrada, amigo.NombreUsuario)
 			}

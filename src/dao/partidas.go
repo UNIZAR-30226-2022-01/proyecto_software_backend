@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"encoding/gob"
 	"errors"
-	"log"
 )
 
 // CrearPartida crea una nueva partida, la cual será añadida a la base de datos
@@ -36,7 +35,7 @@ func CrearPartida(db *sql.DB, usuario *vo.Usuario, partida *vo.Partida) (err err
 	_, err = db.Exec(`INSERT INTO "backend"."Participa"("ID_partida", "nombreUsuario") 
 					VALUES ($1, $2)`, IdPartida, usuario.NombreUsuario)
 	partida.IdPartida = IdPartida
-	log.Println("partida creada con id", IdPartida)
+
 	return err
 }
 
@@ -112,13 +111,29 @@ func ConsultarAcceso(db *sql.DB, partida *vo.Partida) (esPublica bool, hash stri
 	return esPublica, hash, err
 }
 
-// ConsultarNumeroJugadores devuelve el número actual de jugadores de una partida, además
+// ConsultarJugadoresPartida devuelve los jugadores de una partida, además
 // del número máximo de jugadores permitidos
-func ConsultarNumeroJugadores(db *sql.DB, partida *vo.Partida) (jugadores, maxJugadores int, err error) {
+func ConsultarJugadoresPartida(db *sql.DB, partida *vo.Partida) (jugadores []vo.Usuario, maxJugadores int, err error) {
 	err = db.QueryRow(`SELECT "backend"."Partida"."maxJugadores" FROM "backend"."Partida"
 		WHERE "backend"."Partida"."id" = $1`, partida.IdPartida).Scan(&maxJugadores)
-	err = db.QueryRow(`SELECT count(*) from (select distinct * from backend."Participa" 
-		WHERE "ID_partida" = $1) AS sq`, partida.IdPartida).Scan(&jugadores)
+	if err != nil {
+		return jugadores, maxJugadores, err
+	}
+	rows, err := db.Query(`select "nombreUsuario" from backend."Participa" WHERE "ID_partida" = $1`, partida.IdPartida)
+	defer rows.Close()
+
+	if err != nil {
+		return jugadores, maxJugadores, err
+	}
+
+	for rows.Next() {
+		var jugador vo.Usuario
+		err = rows.Scan(&jugador.NombreUsuario)
+		if err != nil {
+			return jugadores, maxJugadores, err
+		}
+		jugadores = append(jugadores, jugador)
+	}
 
 	return jugadores, maxJugadores, err
 }
@@ -180,11 +195,52 @@ func ObtenerMensajes(db *sql.DB, partida *vo.Partida) (err error) {
 	return err
 }
 
-// ObtenerPartidas devuelve un listado de todas las partidas que no están en curso almacenadas,				// TODO
-// ordenadas de privadas a públicas.
+// ObtenerPartidas devuelve un listado de todas las partidas, ordenadas de privadas a públicas.
 func ObtenerPartidas(db *sql.DB) (partidas []vo.Partida, err error) {
 	// Ordena por defecto de false a true
 	rows, err := db.Query(`SELECT id, "estadoPartida", mensajes, "esPublica", "passwordHash", "enCurso", "maxJugadores" FROM backend."Partida" order by backend."Partida"."esPublica"`)
+	defer rows.Close()
+	if err != nil {
+		return partidas, err
+	}
+
+	for rows.Next() {
+		var estadoPartida []byte
+		var mensajes []byte
+		var partida vo.Partida
+		var passwordHash sql.NullString
+		err = rows.Scan(&partida.IdPartida, &estadoPartida, &mensajes, &partida.EsPublica, &passwordHash, &partida.EnCurso, &partida.MaxNumeroJugadores)
+		if err != nil {
+			return partidas, err
+		}
+
+		// Una vez escaneadas las columnas en los campos del struct, se obtiene el resto de campos no directos
+		partida.PasswordHash = passwordHash.String
+
+		buf := bytes.NewBuffer(estadoPartida)
+		decoder := gob.NewDecoder(buf)
+		err = decoder.Decode(&partida.Estado)
+		if err != nil {
+			return partidas, err
+		}
+
+		buf = bytes.NewBuffer(mensajes)
+		decoder = gob.NewDecoder(buf)
+		err = decoder.Decode(&partida.Mensajes)
+		if err != nil {
+			return partidas, err
+		} else {
+			partidas = append(partidas, partida)
+		}
+	}
+
+	return partidas, nil
+}
+
+// ObtenerPartidasNoEnCurso devuelve un listado de todas las partidas que no están en curso almacenadas, ordenadas de privadas a públicas.
+func ObtenerPartidasNoEnCurso(db *sql.DB) (partidas []vo.Partida, err error) {
+	// Ordena por defecto de false a true
+	rows, err := db.Query(`SELECT id, "estadoPartida", mensajes, "esPublica", "passwordHash", "enCurso", "maxJugadores" FROM backend."Partida" WHERE "enCurso" = false ORDER BY backend."Partida"."esPublica"`)
 	defer rows.Close()
 	if err != nil {
 		return partidas, err
@@ -214,7 +270,7 @@ func ObtenerPartidas(db *sql.DB) (partidas []vo.Partida, err error) {
 				return partidas, err
 			}
 
-			partida.Jugadores = append(partida.Jugadores, vo.Usuario{NombreUsuario: nombre})
+			//partida.Jugadores = append(partida.Jugadores, vo.Usuario{NombreUsuario: nombre})
 		}
 
 		// Una vez escaneadas las columnas en los campos del struct, se obtiene el resto de campos no directos

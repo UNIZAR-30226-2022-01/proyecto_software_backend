@@ -165,11 +165,11 @@ type AccionObtenerCarta struct {
 	Jugador  string
 }
 
-//func (act AccionCambioTurno) A() {}
-
 type EstadoPartida struct {
-	Acciones    []interface{}
-	Jugador     string
+	Acciones     []interface{}
+	Jugadores    []string // Lista de nombres de los jugadores en la partida
+	TurnoJugador int      // Índice de la lista que corresponde a qué jugador le toca
+
 	Fase        Fase
 	NumeroTurno int
 
@@ -237,7 +237,8 @@ func crearMapaCartasJugadores(e *EstadoPartida, jugadores []string, maxNumeroJug
 func CrearEstadoPartida(jugadores []string, maxNumeroJugadores int) (e *EstadoPartida) {
 	*e = EstadoPartida{
 		Acciones:        make([]interface{}, 0),
-		Jugador:         "",
+		Jugadores:       jugadores,
+		TurnoJugador:    0,
 		Fase:            Refuerzo,
 		NumeroTurno:     0,
 		EstadoMapa:      crearEstadoMapa(),

@@ -25,9 +25,8 @@ type Partida struct {
 	PasswordHash       string
 	EnCurso            bool
 	MaxNumeroJugadores int
-	Jugadores          []Usuario // TODO: Eliminar
 
-	// TODO: representar estado del juego y chat de la partida
+	// TODO: representar chat de la partida
 	Mensajes []Mensaje
 	Estado   EstadoPartida
 }
@@ -36,6 +35,7 @@ type Mensaje struct {
 	// TODO
 }
 
+// CrearPartida devuelve una partida sin estado ni ID asignado.
 func CrearPartida(esPublica bool, passwordHash string, maxNumeroJugadores int) *Partida {
 	partida := Partida{
 		IdPartida:          0,
@@ -43,12 +43,12 @@ func CrearPartida(esPublica bool, passwordHash string, maxNumeroJugadores int) *
 		PasswordHash:       passwordHash,
 		EnCurso:            false,
 		MaxNumeroJugadores: maxNumeroJugadores,
-		//Estado: logica_juego.CrearEstadoPartida()
 	}
 
 	return &partida
 }
 
+// IniciarPartida marca una partida como iniciada y crea un estado para ella con los jugadores indicados
 func (p *Partida) IniciarPartida(jugadores []string) {
 	p.EnCurso = true
 	p.Estado = *CrearEstadoPartida(jugadores, p.MaxNumeroJugadores)
@@ -65,19 +65,4 @@ type ElementoListaPartidas struct {
 	MaxNumeroJugadores int
 	AmigosPresentes    []string
 	NumAmigosPresentes int
-}
-
-// ContarAmigos devuelve cuántos amigos de un usuario están en una partida dada
-func ContarAmigos(amigos []Usuario, partida Partida) (num int) {
-	for _, amigo := range amigos {
-		// Como máximo hay 6 jugadores en la partida, así que
-		// la complejidad la dicta el número de amigos del usuario
-		for _, jugador := range partida.Jugadores {
-			if amigo.NombreUsuario == jugador.NombreUsuario {
-				num = num + 1
-			}
-		}
-	}
-
-	return num
 }
