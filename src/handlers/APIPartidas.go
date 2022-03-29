@@ -22,6 +22,9 @@ import (
 //	"tipo"	indica si la partida es pública o privada
 //		si tipo== "Publica", será publica, en cualquier otro caso será privada
 //  "password" define la contraseña necesaria para el acceso a una partida privada
+//
+// Si se produciera un error durante el procesado, se devolverá código 500
+// En cualquier otro caso, se devolverá código 200
 func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 	password := request.FormValue("password")
 	maxJugadores, err := strconv.Atoi(request.FormValue("maxJugadores"))
@@ -76,6 +79,8 @@ func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 
 // UnirseAPartida permite al usuario unirse a una partida en caso de que no esté en otra,
 // no esté completa la partida, sea pública, o tenga su contraseña si es privada.
+// Si se produciera algún error, devuelve código 500, en caso contrario 200
+// Los campos del formulario son "password" e "idPartida"
 func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 	password := request.FormValue("password")
 	idPartida, err := strconv.Atoi(request.FormValue("idPartida"))
