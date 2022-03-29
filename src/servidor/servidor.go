@@ -4,7 +4,6 @@ import (
 	"backend/dao"
 	"backend/globales"
 	"backend/handlers"
-	"backend/logica_juego"
 	"backend/vo"
 
 	middlewarePropio "backend/middleware" // Middleware a utilizar escrito por nosotros
@@ -51,7 +50,7 @@ func IniciarServidor(test bool) {
 	// Inicio de lógica del juego
 	if os.Args[len(os.Args)-1] == "-api" || test {
 		globales.InicializarGrafoMapa()
-		globales.AlmacenPartidas = logica_juego.IniciarAlmacenPartidas()
+		globales.CachePartidas = globales.IniciarAlmacenPartidas()
 
 		go func(cs chan vo.Partida, cp chan struct{}) {
 			for {
@@ -62,7 +61,7 @@ func IniciarServidor(test bool) {
 					break
 				}
 			}
-		}(globales.AlmacenPartidas.CanalSerializacion, globales.AlmacenPartidas.CanalParada)
+		}(globales.CachePartidas.CanalSerializacion, globales.CachePartidas.CanalParada)
 
 		partidas, err := dao.ObtenerPartidas(globales.Db)
 		if err != nil {
@@ -70,7 +69,7 @@ func IniciarServidor(test bool) {
 		}
 
 		for _, p := range partidas {
-			globales.AlmacenPartidas.AlmacenarPartida(p)
+			globales.CachePartidas.AlmacenarPartida(p)
 		}
 	}
 
@@ -162,6 +161,9 @@ func routerAPI() http.Handler {
 		r.Post("/unirseAPartida", handlers.UnirseAPartida)
 		r.Post("/abandonarLobby", handlers.AbandonarLobby)
 		r.Get("/obtenerPartidas", handlers.ObtenerPartidas)
+		//r.Get("/obtenerEstadoLobby", handlers.ObtenerEstadoLobby)
+		r.Get("/obtenerEstadoPartida", handlers.ObtenerEstadoPartida)
+		r.Post("/reforzarTerritorio/{id}/{numTropas}", handlers.ReforzarTerritorio)
 
 		// Usuarios
 		r.Post("/aceptarSolicitudAmistad/{nombre}", handlers.AceptarSolicitudAmistad)

@@ -269,6 +269,35 @@ func ObtenerPartidas(db *sql.DB) (partidas []vo.Partida, err error) {
 	return partidas, nil
 }
 
+// ObtenerPartida devuelve una partida, dado su id, o error en cualquier otro caso.
+func ObtenerPartida(db *sql.DB, idP int) (partida vo.Partida, err error) {
+	var estadoPartida []byte
+	var mensajes []byte
+	var passwordHash sql.NullString
+
+	err = db.QueryRow(`SELECT id, "estadoPartida", mensajes, "esPublica", "passwordHash", "enCurso", "maxJugadores" FROM backend."Partida" WHERE backend."Partida".id = $1`, idP).Scan(
+		&partida.IdPartida, &estadoPartida, &mensajes, &partida.EsPublica, &passwordHash, &partida.EnCurso, &partida.MaxNumeroJugadores)
+	if err != nil {
+		return partida, err
+	}
+
+	// Una vez escaneadas las columnas en los campos del struct, se obtiene el resto de campos no directos
+	partida.PasswordHash = passwordHash.String
+
+	buf := bytes.NewBuffer(estadoPartida)
+	decoder := gob.NewDecoder(buf)
+	err = decoder.Decode(&partida.Estado)
+	if err != nil {
+		return partida, err
+	}
+
+	buf = bytes.NewBuffer(mensajes)
+	decoder = gob.NewDecoder(buf)
+	err = decoder.Decode(&partida.Mensajes)
+
+	return partida, err
+}
+
 // ObtenerPartidasNoEnCurso devuelve un listado de todas las partidas que no están en curso almacenadas, ordenadas de privadas a públicas.
 func ObtenerPartidasNoEnCurso(db *sql.DB) (partidas []vo.Partida, err error) {
 	// Ordena por defecto de false a true
@@ -301,8 +330,6 @@ func ObtenerPartidasNoEnCurso(db *sql.DB) (partidas []vo.Partida, err error) {
 			if err != nil {
 				return partidas, err
 			}
-
-			//partida.Jugadores = append(partida.Jugadores, vo.Usuario{NombreUsuario: nombre})
 		}
 
 		// Una vez escaneadas las columnas en los campos del struct, se obtiene el resto de campos no directos
@@ -326,4 +353,9 @@ func ObtenerPartidasNoEnCurso(db *sql.DB) (partidas []vo.Partida, err error) {
 	}
 
 	return partidas, nil
+}
+
+func EmpezarPartida(db *sql.DB, idP int) error {
+	_, err := db.Exec(`UPDATE backend."Partida" SET "enCurso"=true WHERE id=$1`, idP)
+	return err
 }

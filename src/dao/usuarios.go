@@ -114,6 +114,13 @@ func UsuarioEnPartida(db *sql.DB, usuario *vo.Usuario) (EnPartida bool, err erro
 	return EnPartida, err
 }
 
+// PartidaUsuario devuelve el ID de la partida en la que participa un usuario, y error en cualquier otro caso
+func PartidaUsuario(db *sql.DB, usuario *vo.Usuario) (idPartida int, err error) {
+	err = db.QueryRow(`SELECT backend."Participa"."ID_partida"  FROM backend."Participa" WHERE "nombreUsuario" = $1`, usuario.NombreUsuario).Scan(&idPartida)
+
+	return idPartida, err
+}
+
 // ObtenerAmigos devuelve una lista de usuarios (con su nombre de usuario rellenado)
 // que son amigos del usuario indicado, o error en caso de fallo.
 func ObtenerAmigos(db *sql.DB, usuario *vo.Usuario) (amigos []vo.Usuario, err error) {

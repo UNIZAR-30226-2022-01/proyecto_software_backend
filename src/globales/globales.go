@@ -3,18 +3,26 @@
 package globales
 
 import (
-	"backend/logica_juego"
 	"backend/vo"
 	"database/sql" // Funciones de sql
+	"sync"
 
 	grafos "gonum.org/v1/gonum/graph/simple"
+)
+
+const (
+	DIRECCION_DB       = "DIRECCION_DB"
+	DIRECCION_DB_TESTS = "DIRECCION_DB_TESTS"
+	PUERTO_WEB         = "PUERTO_WEB"
+	PUERTO_API         = "PUERTO_API"
+	USUARIO_DB         = "USUARIO_DB"
+	PASSWORD_DB        = "PASSWORD_DB"
+	CARPETA_FRONTEND   = "web"
 )
 
 var Db *sql.DB // Base de datos thread safe, a compartir entre los módulos
 
 var GrafoMapa *grafos.UndirectedGraph
-
-var AlmacenPartidas *logica_juego.AlmacenPartidas
 
 func InicializarGrafoMapa() {
 	GrafoMapa = grafos.NewUndirectedGraph()
@@ -145,12 +153,51 @@ func Conectadas(region1 vo.NumRegion, region2 vo.NumRegion) bool {
 	return GrafoMapa.HasEdgeBetween(nodo1.ID(), nodo2.ID())
 }
 
-const (
-	DIRECCION_DB       = "DIRECCION_DB"
-	DIRECCION_DB_TESTS = "DIRECCION_DB_TESTS"
-	PUERTO_WEB         = "PUERTO_WEB"
-	PUERTO_API         = "PUERTO_API"
-	USUARIO_DB         = "USUARIO_DB"
-	PASSWORD_DB        = "PASSWORD_DB"
-	CARPETA_FRONTEND   = "web"
-)
+var CachePartidas *AlmacenPartidas
+
+type AlmacenPartidas struct {
+	Mtx sync.RWMutex // Mutex 1 Escritor - N lectores
+
+	Partidas map[int]vo.Partida
+
+	CanalSerializacion chan vo.Partida
+	CanalParada        chan struct{}
+}
+
+// ObtenerPartida devuelve una copia de la partida con ID dado, y si existe o no
+func (ap *AlmacenPartidas) ObtenerPartida(idp int) (partida vo.Partida, existe bool) {
+	ap.Mtx.RLock()
+	defer ap.Mtx.RUnlock()
+
+	partida, existe = ap.Partidas[idp]
+
+	return partida, existe
+}
+
+// AlmacenarPartida almacena o sobreescribe una partida en el almacén
+func (ap *AlmacenPartidas) AlmacenarPartida(partida vo.Partida) {
+	ap.Mtx.Lock()
+	defer ap.Mtx.Unlock()
+
+	ap.Partidas[partida.IdPartida] = partida
+}
+
+// EliminarPartida elimina una partida del almacén
+func (ap *AlmacenPartidas) EliminarPartida(partida vo.Partida) {
+	ap.Mtx.Lock()
+	defer ap.Mtx.Unlock()
+	delete(ap.Partidas, partida.IdPartida)
+}
+
+func IniciarAlmacenPartidas() *AlmacenPartidas {
+	var ap AlmacenPartidas
+	ap.Partidas = make(map[int]vo.Partida)
+	ap.CanalSerializacion = make(chan vo.Partida, 50) // Estimación de partidas posibles a la vez
+	ap.CanalParada = make(chan struct{})
+
+	return &ap
+}
+
+func (ap *AlmacenPartidas) PararAlmacenPartidas() {
+	ap.CanalParada <- struct{}{}
+}

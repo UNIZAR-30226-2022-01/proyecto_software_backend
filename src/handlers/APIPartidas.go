@@ -5,12 +5,12 @@ import (
 	"backend/globales"
 	"backend/middleware"
 	"backend/vo"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
-	"sort"
 	"strconv"
 
 	"golang.org/x/crypto/bcrypt"
@@ -63,17 +63,13 @@ func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 
 	partida := *vo.CrearPartida(esPublica, hash, maxJugadores)
 
-	// TODO
-	//partida.Jugadores = make([]vo.Usuario, 6)
-	//partida.Jugadores = append(partida.Jugadores, usuario)
-
 	err = dao.CrearPartida(globales.Db, &usuario, &partida)
 	if err != nil {
 		devolverErrorSQL(writer)
 		return
 	}
 
-	globales.AlmacenPartidas.AlmacenarPartida(partida)
+	globales.CachePartidas.AlmacenarPartida(partida)
 
 	devolverExito(writer)
 }
@@ -99,7 +95,7 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	// Comprobamos que la partida no esté completa
+	// Comprobamos que la partida no esté completa (Puede haber intentado entrar justo antes de haber empezado la partida)
 	if len(jugadores) == maxJugadores {
 		devolverError(writer, errors.New("No hay hueco en la partida."))
 		return
@@ -139,10 +135,30 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	// TODO
-	//partidaAlmacen, existe := globales.AlmacenPartidas.ObtenerPartida(idPartida)
-	//partidaAlmacen.Jugadores
-	//globales.AlmacenPartidas.AlmacenarPartida(idPartida)
+	// Ya se puede empezar la partida
+	if (len(jugadores) + 1) == maxJugadores {
+		partida, err = dao.ObtenerPartida(globales.Db, idPartida)
+		if err != nil {
+			devolverErrorSQL(writer)
+		}
+
+		err = dao.EmpezarPartida(globales.Db, idPartida)
+		if err != nil {
+			devolverErrorSQL(writer)
+		}
+
+		// Se añade al usuario e inicia, creando su estado
+		jugadores = append(jugadores, usuario)
+
+		partida.IniciarPartida(jugadores)
+
+		// Se añade al almacén
+		globales.CachePartidas.AlmacenarPartida(partida)
+
+		// Y se encola un trabajo de serialización de su estado
+		globales.CachePartidas.CanalSerializacion <- partida
+	}
+
 	devolverExito(writer)
 }
 
@@ -189,11 +205,6 @@ func AbandonarLobby(writer http.ResponseWriter, request *http.Request) {
 	} else {
 		devolverExito(writer)
 	}
-
-	// TODO
-	//partidaAlmacen, existe := globales.AlmacenPartidas.ObtenerPartida(idPartida)
-	//partidaAlmacen.Jugadores
-	//globales.AlmacenPartidas.AlmacenarPartida(idPartida)
 }
 
 // ObtenerPartidas devuelve un listado de partidas codificado en JSON, con el siguiente orden:
@@ -306,94 +317,71 @@ func ObtenerPartidas(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func ordenarPorNumeroJugadores(writer http.ResponseWriter, partidasPrivadasSinAmigos []vo.Partida) {
-	sort.SliceStable(partidasPrivadasSinAmigos, func(i, j int) bool {
-		// Orden: > a <
-		jugadoresI, _, err1 := dao.ConsultarJugadoresPartida(globales.Db, &partidasPrivadasSinAmigos[i])
-		jugadoresJ, _, err2 := dao.ConsultarJugadoresPartida(globales.Db, &partidasPrivadasSinAmigos[j])
+// TODO: documentar y probar
+func ObtenerEstadoPartida(writer http.ResponseWriter, request *http.Request) {
+	usuario := vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)}
 
-		if err1 != nil || err2 != nil {
-			devolverErrorSQL(writer)
-		}
-
-		return len(jugadoresI) > len(jugadoresJ)
-	})
-}
-
-func dividirPartidasPorAmigos(partidasPrivadas []vo.Partida, amigos []vo.Usuario) ([]vo.Partida, []vo.Partida) {
-	var partidasPrivadasConAmigos []vo.Partida
-	var partidasPrivadasSinAmigos []vo.Partida
-	for _, partida := range partidasPrivadas {
-		// Se ha llegado al punto en el slice a partir del cual no hay amigos
-		jugadores, _, _ := dao.ConsultarJugadoresPartida(globales.Db, &partida)
-
-		amigos := obtenerAmigos(amigos, jugadores)
-
-		if len(amigos) == 0 {
-			partidasPrivadasSinAmigos = append(partidasPrivadasSinAmigos, partida)
-		} else {
-			partidasPrivadasConAmigos = append(partidasPrivadasConAmigos, partida)
-		}
-	}
-	return partidasPrivadasConAmigos, partidasPrivadasSinAmigos
-}
-
-func ordenarPorNumeroAmigos(partidasPrivadas []vo.Partida, amigos []vo.Usuario) {
-	sort.SliceStable(partidasPrivadas, func(i, j int) bool {
-		jugadores, _, _ := dao.ConsultarJugadoresPartida(globales.Db, &partidasPrivadas[i])
-		listaAmigosI := obtenerAmigos(amigos, jugadores)
-
-		jugadores, _, _ = dao.ConsultarJugadoresPartida(globales.Db, &partidasPrivadas[j])
-		listaAmigosJ := obtenerAmigos(amigos, jugadores)
-
-		// Orden: > a <
-		return len(listaAmigosI) > len(listaAmigosJ)
-	})
-}
-
-func dividirPartidasPrivadasYPublicas(partidas []vo.Partida) ([]vo.Partida, []vo.Partida) {
-	// Extrae las partidas privadas del slice y deja las partidas públicas
-	var partidasPrivadas []vo.Partida
-	var partidasPublicas []vo.Partida
-	for _, partida := range partidas {
-		if !partida.EsPublica {
-			partidasPrivadas = append(partidasPrivadas, partida)
-		} else {
-			partidasPublicas = append(partidasPublicas, partida)
-		}
-	}
-	return partidasPrivadas, partidasPublicas
-}
-
-// transformarAElementoListaPartidas convierte una partida en un elemento de lista de partidas,
-// dada una lista de amigos de un usuario. Se asume que la partida existe en la DB.
-// No puede localizarse en el módulo VO porque causaría una dependencia cíclica con DAO
-func transformarAElementoListaPartidas(p *vo.Partida, amigos []vo.Usuario) vo.ElementoListaPartidas {
-	jugadores, _, _ := dao.ConsultarJugadoresPartida(globales.Db, p)
-	listaAmigos := obtenerAmigos(amigos, jugadores)
-
-	return vo.ElementoListaPartidas{
-		IdPartida:          p.IdPartida,
-		EsPublica:          p.EsPublica,
-		NumeroJugadores:    len(jugadores),
-		MaxNumeroJugadores: p.MaxNumeroJugadores,
-		AmigosPresentes:    listaAmigos,
-		NumAmigosPresentes: len(listaAmigos),
-	}
-}
-
-// obtenerAmigos obtiene una lista de nombres amigos presentes en
-// una partida, dada una lista previa
-func obtenerAmigos(amigos []vo.Usuario, jugadores []vo.Usuario) (listaFiltrada []string) {
-	for _, amigo := range amigos {
-		// Como máximo hay 6 jugadores en la partida, así que
-		// la complejidad la dicta el número de amigos del usuario
-		for _, jugador := range jugadores {
-			if amigo.NombreUsuario == jugador.NombreUsuario {
-				listaFiltrada = append(listaFiltrada, amigo.NombreUsuario)
-			}
-		}
+	idPartida, err := dao.PartidaUsuario(globales.Db, &usuario)
+	if err == sql.ErrNoRows {
+		devolverError(writer, errors.New("No estás participando en ninguna partida."))
+	} else if err != nil {
+		devolverErrorSQL(writer)
 	}
 
-	return listaFiltrada
+	// Se obtiene una copia de la partida
+	partida, existe := globales.CachePartidas.ObtenerPartida(idPartida)
+	if !existe {
+		devolverErrorSQL(writer)
+	}
+
+	// Indexado de slices en go: [x:y)
+	// Se obtiene acciones de [UltimoIndiceLeido+1...)
+	acciones := partida.Estado.Acciones[partida.Estado.EstadosJugadores[usuario.NombreUsuario].UltimoIndiceLeido+1:]
+
+	// Se marca que el usuario ha leído hasta el último índice
+	partida.Estado.EstadosJugadores[usuario.NombreUsuario].UltimoIndiceLeido = len(partida.Estado.Acciones) - 1
+
+	// Se sobreescribe en el almacén
+	globales.CachePartidas.AlmacenarPartida(partida)
+
+	// Y se encola un trabajo de serialización de su estado
+	globales.CachePartidas.CanalSerializacion <- partida
+
+	writer.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(writer).Encode(acciones)
+}
+
+// TODO: documentar y probar
+func ReforzarTerritorio(writer http.ResponseWriter, request *http.Request) {
+	idTerritorio, err := strconv.Atoi(chi.URLParam(request, "id"))
+	if err != nil {
+		devolverError(writer, errors.New("Se ha introducido un identificador de territorio inválido: "+chi.URLParam(request, "id")))
+	}
+
+	numTropas, err := strconv.Atoi(chi.URLParam(request, "numTropas"))
+	if err != nil {
+		devolverError(writer, errors.New("Se ha introducido un número de tropas inválido: "+chi.URLParam(request, "numTropas")))
+	}
+
+	usuario := vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)}
+
+	idPartida, err := dao.PartidaUsuario(globales.Db, &usuario)
+	if err == sql.ErrNoRows {
+		devolverError(writer, errors.New("No estás participando en ninguna partida."))
+	} else if err != nil {
+		devolverErrorSQL(writer)
+	}
+
+	partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
+
+	err = partida.Estado.ReforzarTerritorio(idTerritorio, numTropas, usuario.NombreUsuario)
+	if err != nil {
+		devolverError(writer, err)
+	} else {
+		// Se sobreescribe en el almacén
+		globales.CachePartidas.AlmacenarPartida(partida)
+
+		// Y se encola un trabajo de serialización de su estado
+		globales.CachePartidas.CanalSerializacion <- partida
+	}
 }
