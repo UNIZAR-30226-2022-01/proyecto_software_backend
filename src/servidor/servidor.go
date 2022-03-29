@@ -169,6 +169,8 @@ func routerAPI() http.Handler {
 		r.Post("/enviarSolicitudAmistad/{nombre}", handlers.EnviarSolicitudAmistad)
 		r.Get("/obtenerNotificaciones/", handlers.ObtenerNotificaciones)
 		r.Get("/listarAmigos", handlers.ListarAmigos)
+		r.Get("/obtenerPerfil/{nombre}", handlers.ObtenerPerfilUsuario)
+		r.Get("/obtenerUsuariosSimilares/{patron}", handlers.ObtenerUsuariosSimilares)
 	})
 
 	return r

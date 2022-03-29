@@ -67,6 +67,17 @@ type ElementoListaPartidas struct {
 	NumAmigosPresentes int
 }
 
-type ElementoListaAmigos struct {
+type ElementoListaNombresUsuario struct {
 	Nombres []string
+}
+
+type ElementoListaUsuarios struct {
+	Email           string
+	NombreUsuario   string
+	Biografia       string
+	PartidasGanadas int
+	PartidasTotales int
+	Puntos          int
+	ID_dado         int
+	ID_ficha        int
 }

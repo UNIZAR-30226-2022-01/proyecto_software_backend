@@ -60,6 +60,21 @@ func InsertarUsuario(db *sql.DB, usuario *vo.Usuario) (err error) {
 	return err
 }
 
+func ObtenerUsuario(db *sql.DB, nombreUsuario string) (usuario vo.Usuario, err error) {
+	var b bytes.Buffer
+	decoder := gob.NewDecoder(&b)
+
+	var bytearray []byte
+	err = db.QueryRow(`SELECT "email", "nombreUsuario", "passwordHash", "biografia", "cookieSesion", 
+		"partidasGanadas", "partidasTotales", "puntos", "ID_dado", "ID_ficha" 
+		FROM backend."Usuario" WHERE backend."Usuario"."nombreUsuario" = $1`, nombreUsuario).Scan(
+		&usuario.Email, &usuario.NombreUsuario, &usuario.PasswordHash, &usuario.Biografia, &bytearray,
+		&usuario.PartidasGanadas, &usuario.PartidasTotales, &usuario.Puntos, &usuario.ID_dado, &usuario.ID_ficha)
+	b.Write(bytearray)
+	err = decoder.Decode(&usuario.CookieSesion)
+	return usuario, err
+}
+
 // ConsultarPasswordHash devuelve el hash de contraseña del usuario dado, buscando por su nombre. En caso de fallo o no
 // encontrarse, devuelve un error.
 func ConsultarPasswordHash(db *sql.DB, usuario *vo.Usuario) (hash string, err error) {
@@ -130,4 +145,28 @@ func ObtenerAmigos(db *sql.DB, usuario *vo.Usuario) (amigos []vo.Usuario, err er
 	}
 
 	return amigos, nil
+}
+
+// ObtenerUsuariosSimilares devuelve el nombre de usuario de todos los usuarios registrados cuyo nombre sea similar
+// a uno indicado, ordenados alfabéticamente
+func ObtenerUsuariosSimilares(db *sql.DB, nombre string) (usuarios []string, err error) {
+	patron := nombre + "%"
+	rows, err := db.Query(`SELECT backend."Usuario"."nombreUsuario" FROM backend."Usuario" 
+		WHERE "nombreUsuario" LIKE $1 ORDER BY backend."Usuario"."nombreUsuario" ASC `, patron)
+	defer rows.Close()
+	if err != nil {
+		return usuarios, err
+	}
+
+	for rows.Next() {
+		var usuario string
+		err = rows.Scan(&usuario)
+		if err != nil {
+			return usuarios, err
+		}
+
+		usuarios = append(usuarios, usuario)
+	}
+
+	return usuarios, err
 }

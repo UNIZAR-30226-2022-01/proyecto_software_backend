@@ -65,6 +65,8 @@ func RechazarSolicitudAmistad(writer http.ResponseWriter, request *http.Request)
 }
 
 // ListarAmigos devuelve una lista con los nombres de los amigos del usuario que genera la solicitud
+// Si ocurre algún error durante el procesamiento, enviará código de error 500
+// En cualquier otro caso, enviará códgo 200
 // Dicha lista se devuelve en el siguiente formato JSON:
 //	[ string, string, ...]
 func ListarAmigos(writer http.ResponseWriter, request *http.Request) {
@@ -81,8 +83,67 @@ func ListarAmigos(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
-	envioAmigos := vo.ElementoListaAmigos{Nombres: amigosString}
+	envioAmigos := vo.ElementoListaNombresUsuario{Nombres: amigosString}
 	err = json.NewEncoder(writer).Encode(envioAmigos)
+}
+
+// ObtenerPerfilUsuario devuelve la información del perfil de un usuario, definido como parte de la URL
+// Si ocurre algún error durante el procesamiento, enviará código de error 500
+// En cualquier otro caso, enviará códgo 200
+// El formato de la respuesta JSON es el siguiente:
+// [
+//	"Email": string
+//	"Nombre": string
+//	"Biografia": string
+// 	"PartidasGanadas": int
+// 	"PartidasTotales": int
+// 	"Puntos": int
+// 	"ID_dado": int
+// 	"ID_ficha": int
+// ]
+func ObtenerPerfilUsuario(writer http.ResponseWriter, request *http.Request) {
+	nombreUsuario := chi.URLParam(request, "nombre")
+	usuario, err := dao.ObtenerUsuario(globales.Db, nombreUsuario)
+	if err != nil {
+		devolverErrorSQL(writer)
+	}
+
+	envioUsuario := transformaAElementoListaUsuarios(usuario)
+	writer.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(writer).Encode(envioUsuario)
+}
+
+// ObtenerUsuariosSimilares devuelve una lista de nombres de usuario que coincidan con un patrón,
+// especificado en al parámetro "patron" de la URL, ordenados alfabéticamente
+// Los nombres de usuario coincidirán con dicho patrón o empezarán por él
+// Si ocurre algún error durante el procesamiento, enviará código de error 500
+// En cualquier otro caso, enviará códgo 200
+// El formato de la respuesta JSON es el siguiente:
+// [string, string, ...]
+func ObtenerUsuariosSimilares(writer http.ResponseWriter, request *http.Request) {
+	patron := chi.URLParam(request, "patron")
+	usuarios, err := dao.ObtenerUsuariosSimilares(globales.Db, patron)
+	if err != nil {
+		devolverErrorSQL(writer)
+	}
+
+	envioUsuarios := vo.ElementoListaNombresUsuario{Nombres: usuarios}
+
+	writer.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(writer).Encode(envioUsuarios)
+}
+
+func transformaAElementoListaUsuarios(usuario vo.Usuario) vo.ElementoListaUsuarios {
+	return vo.ElementoListaUsuarios{
+		NombreUsuario:   usuario.NombreUsuario,
+		Email:           usuario.Email,
+		Biografia:       usuario.Biografia,
+		PartidasGanadas: usuario.PartidasGanadas,
+		PartidasTotales: usuario.PartidasTotales,
+		Puntos:          usuario.Puntos,
+		ID_dado:         usuario.ID_dado,
+		ID_ficha:        usuario.ID_ficha,
+	}
 }
 
 // ObtenerNotificaciones devuelve un listado codificado en JSON de notificaciones

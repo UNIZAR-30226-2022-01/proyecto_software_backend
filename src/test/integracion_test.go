@@ -198,6 +198,30 @@ func TestFuncionesSociales(t *testing.T) {
 			t.Fatal("No se han recuperado todos los amigos")
 		}
 	}
+
+	// Recuperamos la información de perfil del primer usuario
+	usuarioRecuperado := obtenerPerfilUsuario(cookie, "usuario", t)
+	if usuarioRecuperado.NombreUsuario != "usuario" {
+		t.Fatal("No se ha obtenido correctamente el perfil del usuario")
+	}
+
+	if usuarioRecuperado.Email != "usuario@usuario.com" {
+		t.Fatal("No se ha obtenido correctamente el perfil del usuario")
+	}
+
+	// TODO -> probar si recuperamos la biografia y otros campos correctamente una vez se puedan modificar
+
+	// Buscamos usuarios cuyo nombre empiece por "Amigo"
+	resultadoBusqueda := buscarUsuariosSimilares(cookie, "Amigo", t)
+	if len(amigos) != len(resultadoBusqueda) {
+		t.Fatal("No se han recuperado todos los usuarios con nombre empezado por Amigo")
+	}
+
+	for i := range amigos {
+		if amigos[i] != resultadoBusqueda[i] {
+			t.Fatal("No se han recuperado todos los usuarios con nombre empezado por Amigo")
+		}
+	}
 }
 
 func purgarDB() {
@@ -389,7 +413,7 @@ func listarAmigos(cookie *http.Cookie, t *testing.T) []string {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("Obtenido código de error no 200 al listar amigos:", resp.StatusCode)
 	} else {
-		var amigos vo.ElementoListaAmigos
+		var amigos vo.ElementoListaNombresUsuario
 		err = json.NewDecoder(resp.Body).Decode(&amigos)
 		if err != nil {
 			t.Fatal("Error al leer JSON de respuesta al listar amigos:", err)
@@ -397,6 +421,62 @@ func listarAmigos(cookie *http.Cookie, t *testing.T) []string {
 
 		t.Log("Respuesta de listarAmigos:", amigos)
 		return amigos.Nombres
+	}
+
+	return nil
+}
+
+func obtenerPerfilUsuario(cookie *http.Cookie, nombre string, t *testing.T) vo.ElementoListaUsuarios {
+	cliente := &http.Client{}
+	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerPerfil/"+nombre, nil)
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	resp, err := cliente.Do(req)
+	if err != nil {
+		t.Fatal("Error en GET de consultar perfil:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al obtener perfil:", resp.StatusCode)
+	} else {
+		var usuario vo.ElementoListaUsuarios
+		err = json.NewDecoder(resp.Body).Decode(&usuario)
+		if err != nil {
+			t.Fatal("Error al leer JSON de respuesta al obtener perfil:", err)
+		}
+
+		return usuario
+	}
+
+	return vo.ElementoListaUsuarios{}
+}
+
+func buscarUsuariosSimilares(cookie *http.Cookie, patron string, t *testing.T) []string {
+	cliente := &http.Client{}
+	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerUsuariosSimilares/"+patron, nil)
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	resp, err := cliente.Do(req)
+	if err != nil {
+		t.Fatal("Error en GET de buscar usuarios:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al buscar usuarios:", resp.StatusCode)
+	} else {
+		var usuarios vo.ElementoListaNombresUsuario
+		err = json.NewDecoder(resp.Body).Decode(&usuarios)
+		if err != nil {
+			t.Fatal("Error al leer JSON de respuesta al buscar usuarios:", err)
+		}
+		log.Println("Usuarios recuperados:", usuarios.Nombres)
+		return usuarios.Nombres
 	}
 
 	return nil
