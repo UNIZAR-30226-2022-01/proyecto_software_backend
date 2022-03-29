@@ -31,6 +31,14 @@ func Registro(writer http.ResponseWriter, request *http.Request) {
 	email := request.FormValue("email")
 	password := request.FormValue("password")
 
+	if dao.ExisteEmail(globales.Db, email) {
+		devolverError(writer, errors.New("El email introducido ya está registrado"))
+	}
+
+	if dao.ExisteUsuario(globales.Db, nombre) {
+		devolverError(writer, errors.New("El nombre de usuario introducido ya existe"))
+	}
+
 	hash, err := hashPassword(password)
 
 	if err != nil {

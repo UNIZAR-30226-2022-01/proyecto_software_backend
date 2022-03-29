@@ -37,7 +37,7 @@ func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 		devolverError(writer, errors.New("Se ha introducido un valor no numérico en el número de jugadores."))
 		return
 	}
-	if maxJugadores < 2 || maxJugadores > 6 {
+	if maxJugadores < 3 || maxJugadores > 6 {
 		devolverError(writer, errors.New("El número de jugadores debe ser un valor numérico entre 2 y 6."))
 		return
 	}

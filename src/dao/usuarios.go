@@ -153,11 +153,10 @@ func ObtenerUsuariosSimilares(db *sql.DB, nombre string) (usuarios []string, err
 	patron := nombre + "%"
 	rows, err := db.Query(`SELECT backend."Usuario"."nombreUsuario" FROM backend."Usuario" 
 		WHERE "nombreUsuario" LIKE $1 ORDER BY backend."Usuario"."nombreUsuario" ASC `, patron)
-	defer rows.Close()
 	if err != nil {
 		return usuarios, err
 	}
-
+	defer rows.Close()
 	for rows.Next() {
 		var usuario string
 		err = rows.Scan(&usuario)
@@ -169,4 +168,26 @@ func ObtenerUsuariosSimilares(db *sql.DB, nombre string) (usuarios []string, err
 	}
 
 	return usuarios, err
+}
+
+// ExisteUsuario devuelve true si hay algún usuario con el nombre "nombre" registrado
+func ExisteUsuario(db *sql.DB, nombre string) bool {
+	var existe bool
+	err := db.QueryRow(`SELECT EXISTS(SELECT * FROM backend."Usuario"
+		WHERE "nombreUsuario" = $1)`, nombre).Scan(existe)
+	if err != nil {
+		return false
+	}
+	return existe
+}
+
+// ExisteEmail devuelve true si hay algún usuario con el email "email" registrado
+func ExisteEmail(db *sql.DB, email string) bool {
+	var existe bool
+	err := db.QueryRow(`SELECT EXISTS(SELECT * FROM backend."Usuario"
+		WHERE "email" = $1)`, email).Scan(existe)
+	if err != nil {
+		return false
+	}
+	return existe
 }

@@ -111,6 +111,7 @@ func ObtenerEstadoLobby(db *sql.DB, idPartida int) (estado vo.EstadoLobby, err e
 
 	rows, err := db.Query(`SELECT backend."Participa"."nombreUsuario" FROM backend."Participa" WHERE
 			"ID_partida" = $1 ORDER BY "nombreUsuario" ASC`, idPartida)
+	defer rows.Close()
 	if err != nil {
 		return estado, err
 	}
