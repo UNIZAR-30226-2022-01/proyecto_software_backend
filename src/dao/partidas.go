@@ -322,3 +322,8 @@ func ObtenerPartidasNoEnCurso(db *sql.DB) (partidas []vo.Partida, err error) {
 
 	return partidas, nil
 }
+
+func EmpezarPartida(db *sql.DB, idP int) error {
+	_, err := db.Exec(`UPDATE backend."Partida" SET "enCurso"=true WHERE id=$1`, idP)
+	return err
+}

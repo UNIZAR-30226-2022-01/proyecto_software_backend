@@ -130,13 +130,21 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	// TODO: Probar
 	// Ya se puede empezar la partida
 	if (len(jugadores) + 1) == maxJugadores {
 		partida, err = dao.ObtenerPartida(globales.Db, idPartida)
+		if err != nil {
+			devolverErrorSQL(writer)
+		}
+
+		err = dao.EmpezarPartida(globales.Db, idPartida)
+		if err != nil {
+			devolverErrorSQL(writer)
+		}
 
 		// Se añade al usuario e inicia, creando su estado
 		jugadores = append(jugadores, usuario)
+
 		partida.IniciarPartida(jugadores)
 
 		// Se añade al almacén

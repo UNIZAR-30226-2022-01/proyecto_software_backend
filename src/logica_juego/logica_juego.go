@@ -8,8 +8,10 @@ import (
 
 var onlyOnce sync.Once
 
+// LanzarDados devuelve un número entre [0-5] (utilizado para indexar,
+// que se debe aumentar en una unidad para
 func LanzarDados() int {
-	var dados = []int{1, 2, 3, 4, 5, 6}
+	var dados = []int{0, 1, 2, 3, 4, 5}
 
 	onlyOnce.Do(func() {
 		rand.Seed(time.Now().UnixNano())
