@@ -5,6 +5,7 @@ import (
 	"backend/globales"
 	"backend/middleware"
 	"backend/vo"
+	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"net/http"
 )
@@ -61,6 +62,27 @@ func RechazarSolicitudAmistad(writer http.ResponseWriter, request *http.Request)
 	}
 
 	devolverExito(writer)
+}
+
+// ListarAmigos devuelve una lista con los nombres de los amigos del usuario que genera la solicitud
+// Dicha lista se devuelve en el siguiente formato JSON:
+//	[ string, string, ...]
+func ListarAmigos(writer http.ResponseWriter, request *http.Request) {
+	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
+	usuario := vo.Usuario{NombreUsuario: nombreUsuario}
+	amigos, err := dao.ObtenerAmigos(globales.Db, &usuario)
+	if err != nil {
+		devolverErrorSQL(writer)
+	}
+
+	var amigosString []string
+	for _, a := range amigos {
+		amigosString = append(amigosString, a.NombreUsuario)
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	envioAmigos := vo.ElementoListaAmigos{Nombres: amigosString}
+	err = json.NewEncoder(writer).Encode(envioAmigos)
 }
 
 // ObtenerNotificaciones devuelve un listado codificado en JSON de notificaciones

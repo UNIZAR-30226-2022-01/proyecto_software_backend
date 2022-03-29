@@ -168,6 +168,7 @@ func routerAPI() http.Handler {
 		r.Post("/rechazarSolicitudAmistad/{nombre}", handlers.RechazarSolicitudAmistad)
 		r.Post("/enviarSolicitudAmistad/{nombre}", handlers.EnviarSolicitudAmistad)
 		r.Get("/obtenerNotificaciones/", handlers.ObtenerNotificaciones)
+		r.Get("/listarAmigos", handlers.ListarAmigos)
 	})
 
 	return r

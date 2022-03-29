@@ -66,3 +66,7 @@ type ElementoListaPartidas struct {
 	AmigosPresentes    []string
 	NumAmigosPresentes int
 }
+
+type ElementoListaAmigos struct {
+	Nombres []string
+}

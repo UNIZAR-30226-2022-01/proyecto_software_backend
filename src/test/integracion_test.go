@@ -79,7 +79,7 @@ func TestCreacionYObtencionPartidas(t *testing.T) {
 	crearPartida(cookiesCreadores[4], t, true)
 	crearPartida(cookiesCreadores[5], t, true)
 
-	for i, _ := range cookiesAmigos {
+	for i := range cookiesAmigos {
 		solicitarAmistad(cookieUsuarioPrincipal, t, "amigo"+strconv.Itoa(i+1))
 	}
 
@@ -162,6 +162,41 @@ func TestUnionYAbandonoDePartidas(t *testing.T) {
 	partidas = obtenerPartidas(cookie, t)
 	if len(partidas) != 0 {
 		t.Fatal("Sigue habiendo partidas tras quedar con 0 usuarios.")
+	}
+}
+
+// Prueba las llamadas a la API de listar amigos, obtener información de perfil y buscar usuarios que coincidan con
+// un nombre
+func TestFuncionesSociales(t *testing.T) {
+	t.Log("Purgando DB...")
+	purgarDB()
+
+	cookie := crearUsuario("usuario", t)
+	amigos := []string{"Amigo1", "Amigo2", "Amigo3", "Amigo4", "Amigo5"}
+	cookiesAmigos := make([]*http.Cookie, 5)
+	for i, a := range amigos {
+		cookiesAmigos[i] = crearUsuario(a, t)
+	}
+
+	// Solicita amistad al resto de usuarios
+	for _, a := range amigos {
+		solicitarAmistad(cookie, t, a)
+	}
+
+	// Cada uno acepta la solicitud
+	for _, c := range cookiesAmigos {
+		aceptarSolicitudDeAmistad(c, t, "usuario")
+	}
+
+	amigosRegistrados := listarAmigos(cookie, t)
+	if len(amigos) != len(amigosRegistrados) {
+		t.Fatal("No se han recuperado todos los amigos")
+	}
+
+	for i := range amigos {
+		if amigos[i] != amigosRegistrados[i] {
+			t.Fatal("No se han recuperado todos los amigos")
+		}
 	}
 }
 
@@ -336,6 +371,35 @@ func aceptarSolicitudDeAmistad(cookie *http.Cookie, t *testing.T, nombre string)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("Obtenido código de error no 200 al aceptar amistad:", resp.StatusCode)
 	}
+}
+
+func listarAmigos(cookie *http.Cookie, t *testing.T) []string {
+	cliente := &http.Client{}
+	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/listarAmigos", nil)
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	resp, err := cliente.Do(req)
+	if err != nil {
+		t.Fatal("Error en GET de listar amigos:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al listar amigos:", resp.StatusCode)
+	} else {
+		var amigos vo.ElementoListaAmigos
+		err = json.NewDecoder(resp.Body).Decode(&amigos)
+		if err != nil {
+			t.Fatal("Error al leer JSON de respuesta al listar amigos:", err)
+		}
+
+		t.Log("Respuesta de listarAmigos:", amigos)
+		return amigos.Nombres
+	}
+
+	return nil
 }
 
 func unirseAPartida(cookie *http.Cookie, t *testing.T, id int) {
