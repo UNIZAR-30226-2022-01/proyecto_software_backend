@@ -98,6 +98,37 @@ func AbandonarLobby(db *sql.DB, usuario *vo.Usuario) (err error) {
 	}
 }
 
+// ObtenerEstadoLobby devuelve el estado del lobby de una partida identificada por su id
+// Devuelve si es pública o no, si está o no en curso, el número máximo de jugadores y
+// los jugadores que se encuentran en el lobby
+func ObtenerEstadoLobby(db *sql.DB, idPartida int) (estado vo.EstadoLobby, err error) {
+	err = db.QueryRow(`SELECT "enCurso", "esPublica", "maxJugadores" 
+		FROM backend."Partida" WHERE "Partida".id = $1`, idPartida).Scan(&estado.EnCurso,
+		&estado.EsPublico, &estado.MaxJugadores)
+	if err != nil {
+		return estado, err
+	}
+
+	rows, err := db.Query(`SELECT backend."Participa"."nombreUsuario" FROM backend."Participa" WHERE
+			"ID_partida" = $1 ORDER BY "nombreUsuario" ASC`, idPartida)
+	if err != nil {
+		return estado, err
+	}
+
+	for rows.Next() {
+		var jugador string
+		err = rows.Scan(&jugador)
+		if err != nil {
+			return estado, err
+		}
+
+		estado.NombresJugadores = append(estado.NombresJugadores, jugador)
+	}
+
+	estado.Jugadores = len(estado.NombresJugadores)
+	return estado, err
+}
+
 // ConsultarAcceso devuelve los permisos de acceso de una partida en concreto
 // El parámetro de salida "esPublica" indicará si la partida es pública o no
 // El parámetro hash corresponderá al hash de la contraseña para el acceso a la partida

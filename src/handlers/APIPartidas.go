@@ -7,6 +7,7 @@ import (
 	"backend/vo"
 	"encoding/json"
 	"errors"
+	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
 	"sort"
@@ -143,6 +144,33 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 	//partidaAlmacen.Jugadores
 	//globales.AlmacenPartidas.AlmacenarPartida(idPartida)
 	devolverExito(writer)
+}
+
+// ObtenerEstadoLobby devuelve el estado del lobby de una partida identificada por su id
+// Devuelve si es pública o no, si está o no en curso, el número máximo de jugadores y
+// los jugadores que se encuentran en el lobby
+// Devuelve código de error 500 en caso de error, código 200 en cualquier otro caso
+// El JSON devuelto tiene el siguiente formato
+// [
+//  "EnCurso":bool
+// 	"EsPublico":bool
+//  "Jugadores":int
+//  "MaxJugadores":int
+//  "NombresJugadores": [string, string, ...]
+// ]
+func ObtenerEstadoLobby(writer http.ResponseWriter, request *http.Request) {
+	partida, err := strconv.Atoi(chi.URLParam(request, "id"))
+	if err != nil {
+		devolverError(writer, errors.New("El id de la partida debe ser un número entero"))
+	}
+
+	estadoLobby, err := dao.ObtenerEstadoLobby(globales.Db, partida)
+	if err != nil {
+		devolverErrorSQL(writer)
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(writer).Encode(estadoLobby)
 }
 
 // AbandonarLobby deja la partida en la que el usuario esté participando. Responde con status 200 si ha habido éxito,

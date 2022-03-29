@@ -81,3 +81,11 @@ type ElementoListaUsuarios struct {
 	ID_dado         int
 	ID_ficha        int
 }
+
+type EstadoLobby struct {
+	EnCurso          bool
+	EsPublico        bool
+	Jugadores        int
+	MaxJugadores     int
+	NombresJugadores []string
+}

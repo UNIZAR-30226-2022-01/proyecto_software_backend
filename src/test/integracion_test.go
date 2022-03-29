@@ -92,6 +92,21 @@ func TestCreacionYObtencionPartidas(t *testing.T) {
 	unirseAPartida(cookiesAmigos[1], t, 1)
 	unirseAPartida(cookiesNoAmigos[0], t, 1)
 
+	// Consultamos el estado del lobby
+	estadoLobby := consultarEstadoLobby(cookiesAmigos[0], 1, t)
+	if estadoLobby.EsPublico {
+		t.Fatal("La partida debería ser privada")
+	}
+	if estadoLobby.Jugadores != 4 {
+		t.Fatal("Debería haber 4 jugadores en el lobby")
+	}
+	if estadoLobby.MaxJugadores != 6 {
+		t.Fatal("El máximo de jugadores debería ser 6")
+	}
+	if estadoLobby.EnCurso {
+		t.Fatal("La partida no debería estar en curso")
+	}
+
 	// P2 privada con 1 amigo, 2 no
 	unirseAPartida(cookiesAmigos[2], t, 2)
 	unirseAPartida(cookiesNoAmigos[1], t, 2)
@@ -104,6 +119,21 @@ func TestCreacionYObtencionPartidas(t *testing.T) {
 	unirseAPartida(cookiesAmigos[3], t, 4)
 	unirseAPartida(cookiesAmigos[4], t, 4)
 	unirseAPartida(cookiesNoAmigos[4], t, 4)
+
+	// Consultamos el estado del lobby
+	estadoLobby = consultarEstadoLobby(cookiesAmigos[0], 4, t)
+	if !estadoLobby.EsPublico {
+		t.Fatal("La partida debería ser pública")
+	}
+	if estadoLobby.Jugadores != 4 {
+		t.Fatal("Debería haber 4 jugadores en el lobby")
+	}
+	if estadoLobby.MaxJugadores != 6 {
+		t.Fatal("El máximo de jugadores debería ser 6")
+	}
+	if estadoLobby.EnCurso {
+		t.Fatal("La partida no debería estar en curso")
+	}
 
 	// P5 pública con 0 amigos, 2 no
 	unirseAPartida(cookiesNoAmigos[5], t, 5)
@@ -330,6 +360,37 @@ func crearPartida(cookie *http.Cookie, t *testing.T, publica bool) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("Obtenido código de error no 200 al crear una partida:", resp.StatusCode)
 	}
+}
+
+func consultarEstadoLobby(cookie *http.Cookie, idPartida int, t *testing.T) (estado vo.EstadoLobby) {
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerEstadoLobby/"+strconv.Itoa(idPartida), nil)
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // Para indicar que el formulario "va en la url", porque campos.Encode() hace eso
+
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal("Error en GET de consultar lobby:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al consultar lobby:", resp.StatusCode)
+	} else {
+		err = json.NewDecoder(resp.Body).Decode(&estado)
+		if err != nil {
+			t.Fatal("Error al leer JSON de respuesta al consultar el lobby:", err)
+		}
+
+		t.Log("Respuesta de consultar lobby:", estado)
+		return estado
+	}
+
+	return estado
 }
 
 func abandonarLobby(cookie *http.Cookie, t *testing.T) {
