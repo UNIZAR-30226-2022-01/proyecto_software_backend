@@ -50,14 +50,16 @@ func Registro(writer http.ResponseWriter, request *http.Request) {
 		if err != nil {
 			devolverErrorSQL(writer)
 		} else {
-			err = middleware.GenerarCookieUsuario(&writer, nombre)
+			err, cookie := middleware.GenerarCookieUsuario(&writer, nombre)
 			if err != nil {
 				devolverErrorSQL(writer)
+			} else {
+				writer.Write([]byte(cookie.String())) // La escribe en el body directamente
 			}
 		}
 	}
 
-	devolverExito(writer)
+	//devolverExito(writer)
 }
 
 // Login atiende respuestas de un formulario de campos 'nombre' y 'password'
@@ -75,13 +77,15 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 	if err != nil || existe != nil {
 		devolverError(writer, errors.New("Se ha producido un error al procesar los datos."))
 	} else {
-		err = middleware.GenerarCookieUsuario(&writer, nombre)
+		err, cookie := middleware.GenerarCookieUsuario(&writer, nombre)
 		if err != nil {
 			devolverErrorSQL(writer)
+		} else {
+			writer.Write([]byte(cookie.String())) // La escribe en el body directamente
 		}
 	}
 
-	devolverExito(writer)
+	//devolverExito(writer)
 }
 
 // hashPassword crea un hash de clave utilizando bcrypt

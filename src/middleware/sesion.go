@@ -84,7 +84,7 @@ func CargarCookieUsuario(request *http.Request) (cookie http.Cookie, cookieReque
 
 // GenerarCookieUsuario genera una cookie para el nombre de usuario dado, la devuelve y la almacena. En caso de fallo o
 // usuario no existente devuelve un error.
-func GenerarCookieUsuario(writer *http.ResponseWriter, nombreUsuario string) (err error) {
+func GenerarCookieUsuario(writer *http.ResponseWriter, nombreUsuario string) (err error, cookie http.Cookie) {
 	expiracion := time.Now().Add(TIEMPO_EXPIRACION_COOKIES_USUARIO)
 
 	if !strings.Contains(nombreUsuario, "|") {
@@ -92,7 +92,6 @@ func GenerarCookieUsuario(writer *http.ResponseWriter, nombreUsuario string) (er
 
 		cookie := http.Cookie{Name: NOMBRE_COOKIE_USUARIO, Value: valorCookie, Expires: expiracion}
 		http.SetCookie(*writer, &cookie)
-
 		usuarioVO := vo.Usuario{"", nombreUsuario, "", "", cookie, 0, 0, 0, 0, 0}
 
 		err = dao.InsertarCookie(globales.Db, &usuarioVO)
@@ -102,7 +101,7 @@ func GenerarCookieUsuario(writer *http.ResponseWriter, nombreUsuario string) (er
                         No se ha generado ninguna cookie.`)
 	}
 
-	return err
+	return err, cookie
 }
 
 // BorrarCookieUsuario borrar la cookie para el nombre de usuario dado en el cliente y en el almacén para el nombre de
