@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
 	"strconv"
@@ -65,7 +66,7 @@ func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	globales.AlmacenPartidas.AlmacenarPartida(partida)
+	globales.CachePartidas.AlmacenarPartida(partida)
 
 	devolverExito(writer)
 }
@@ -139,10 +140,10 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 		partida.IniciarPartida(jugadores)
 
 		// Se añade al almacén
-		globales.AlmacenPartidas.AlmacenarPartida(partida)
+		globales.CachePartidas.AlmacenarPartida(partida)
 
 		// Y se encola un trabajo de serialización de su estado
-		globales.AlmacenPartidas.CanalSerializacion <- partida
+		globales.CachePartidas.CanalSerializacion <- partida
 	}
 
 	devolverExito(writer)
@@ -288,24 +289,59 @@ func ObtenerEstadoPartida(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	// Se obtiene una copia de la partida
-	partida, existe := globales.AlmacenPartidas.ObtenerPartida(idPartida)
+	partida, existe := globales.CachePartidas.ObtenerPartida(idPartida)
 	if !existe {
 		devolverErrorSQL(writer)
 	}
 
 	// Indexado de slices en go: [x:y)
-	// Se obtiene acciones de [ultimo_indice_obtenido+1...)
-	acciones := partida.Estado.Acciones[partida.Estado.Jugadores[usuario.NombreUsuario]+1:]
+	// Se obtiene acciones de [UltimoIndiceLeido+1...)
+	acciones := partida.Estado.Acciones[partida.Estado.EstadosJugadores[usuario.NombreUsuario].UltimoIndiceLeido+1:]
 
 	// Se marca que el usuario ha leído hasta el último índice
-	partida.Estado.Jugadores[usuario.NombreUsuario] = len(partida.Estado.Acciones) - 1
+	partida.Estado.EstadosJugadores[usuario.NombreUsuario].UltimoIndiceLeido = len(partida.Estado.Acciones) - 1
 
 	// Se sobreescribe en el almacén
-	globales.AlmacenPartidas.AlmacenarPartida(partida)
+	globales.CachePartidas.AlmacenarPartida(partida)
 
 	// Y se encola un trabajo de serialización de su estado
-	globales.AlmacenPartidas.CanalSerializacion <- partida
+	globales.CachePartidas.CanalSerializacion <- partida
 
 	writer.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(writer).Encode(acciones)
+}
+
+// TODO: documentar y probar
+func ReforzarTerritorio(writer http.ResponseWriter, request *http.Request) {
+	idTerritorio, err := strconv.Atoi(chi.URLParam(request, "id"))
+	if err != nil {
+		devolverError(writer, errors.New("Se ha introducido un identificador de territorio inválido: "+chi.URLParam(request, "id")))
+	}
+
+	numTropas, err := strconv.Atoi(chi.URLParam(request, "numTropas"))
+	if err != nil {
+		devolverError(writer, errors.New("Se ha introducido un número de tropas inválido: "+chi.URLParam(request, "numTropas")))
+	}
+
+	usuario := vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)}
+
+	idPartida, err := dao.PartidaUsuario(globales.Db, &usuario)
+	if err == sql.ErrNoRows {
+		devolverError(writer, errors.New("No estás participando en ninguna partida."))
+	} else if err != nil {
+		devolverErrorSQL(writer)
+	}
+
+	partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
+
+	err = partida.Estado.ReforzarTerritorio(idTerritorio, numTropas, usuario.NombreUsuario)
+	if err != nil {
+		devolverError(writer, err)
+	} else {
+		// Se sobreescribe en el almacén
+		globales.CachePartidas.AlmacenarPartida(partida)
+
+		// Y se encola un trabajo de serialización de su estado
+		globales.CachePartidas.CanalSerializacion <- partida
+	}
 }

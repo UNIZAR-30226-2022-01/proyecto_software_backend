@@ -1,7 +1,10 @@
 package vo
 
 import (
+	"backend/logica_juego"
+	"errors"
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -20,6 +23,10 @@ const (
 	Infanteria TipoTropa = iota
 	Caballeria
 	Artilleria
+)
+
+const (
+	NUM_REGIONES = 42
 )
 
 const (
@@ -95,10 +102,13 @@ type Carta struct {
 /*
 Lista de acciones:
 */
+
 type RecibirRegion struct {
-	IDAccion int
-	Region   NumRegion
-	Jugador  string
+	IDAccion             int
+	Region               NumRegion
+	TropasRestantes      int
+	TerritoriosRestantes int
+	Jugador              string
 }
 
 type AccionCambioTurno struct {
@@ -172,28 +182,74 @@ type AccionObtenerCarta struct {
 	Jugador  string
 }
 
+type EstadoJugador struct {
+	Cartas            []Carta
+	UltimoIndiceLeido int
+	Tropas            int
+}
+
 type EstadoPartida struct {
-	Acciones     []interface{}  // Acciones realizadas durante la partida
-	Jugadores    map[string]int // Mapa de nombres de los jugadores en la partida y su último índice no leído de la lista de acciones
-	TurnoJugador int            // Índice de la lista que corresponde a qué jugador le toca
+	Acciones         []interface{}             // Acciones realizadas durante la partida
+	EstadosJugadores map[string]*EstadoJugador // Mapa de nombres de los jugadores en la partida y sus estados
+	TurnoJugador     int                       // Índice de la lista que corresponde a qué jugador le toca
 
 	Fase        Fase
 	NumeroTurno int
 
-	EstadoMapa map[NumRegion]EstadoRegion
+	EstadoMapa map[NumRegion]*EstadoRegion
 
 	// Baraja
-	Cartas          []Carta
-	CartasJugadores map[string][]Carta
-	NumCambios      int
+	Cartas     []Carta
+	NumCambios int
 
 	// ...
 }
 
-func crearEstadoMapa() (mapa map[NumRegion]EstadoRegion) {
-	mapa = make(map[NumRegion]EstadoRegion)
+func CrearEstadoPartida(jugadores []Usuario) (e *EstadoPartida) {
+	*e = EstadoPartida{
+		Acciones:         make([]interface{}, 0),
+		EstadosJugadores: crearMapaEstadosJugadores(jugadores),
+		TurnoJugador:     logica_juego.LanzarDados(), // Primer jugador aleatorio
+		Fase:             Inicio,
+		NumeroTurno:      0,
+		EstadoMapa:       crearEstadoMapa(),
+		Cartas:           crearBaraja(),
+		NumCambios:       0,
+	}
+
+	return e
+}
+
+func crearEstadoMapa() (mapa map[NumRegion]*EstadoRegion) {
+	mapa = make(map[NumRegion]*EstadoRegion)
 	for i := Eastern_australia; i <= Alberta; i++ {
-		mapa[i] = EstadoRegion{Ocupante: "", NumTropas: 0}
+		mapa[i] = &EstadoRegion{Ocupante: "", NumTropas: 0}
+	}
+
+	return mapa
+}
+
+func crearMapaEstadosJugadores(jugadores []Usuario) (mapa map[string]*EstadoJugador) {
+	mapa = make(map[string]*EstadoJugador, len(jugadores))
+
+	// Tropas iniciales, según el número de jugadores
+	numTropas := 0
+	if len(jugadores) == 3 {
+		numTropas = 35
+	} else if len(jugadores) == 4 {
+		numTropas = 30
+	} else if len(jugadores) == 5 {
+		numTropas = 25
+	} else if len(jugadores) == 6 {
+		numTropas = 20
+	}
+
+	for _, j := range jugadores {
+		mapa[j.NombreUsuario] = &EstadoJugador{}
+
+		mapa[j.NombreUsuario].Cartas = []Carta{}
+		mapa[j.NombreUsuario].UltimoIndiceLeido = -1
+		mapa[j.NombreUsuario].Tropas = numTropas
 	}
 
 	return mapa
@@ -233,37 +289,95 @@ func crearBaraja() (cartas []Carta) {
 	return cartas
 }
 
-func crearMapaCartasJugadores(e *EstadoPartida, jugadores []Usuario) {
-	e.CartasJugadores = make(map[string][]Carta, len(jugadores))
+func (e *EstadoPartida) SiguienteJugador() {
+	e.TurnoJugador = (e.TurnoJugador + 1) % len(e.EstadosJugadores)
+}
 
-	for _, j := range jugadores {
-		e.CartasJugadores[j.NombreUsuario] = []Carta{}
+// TODO: Más elaborado (pseudo-random, con recorridos por el grafo, etc.)
+func (e *EstadoPartida) RellenarRegiones() {
+	// Extrae los nombres de jugador del mapa
+	jugadores := make([]string, len(e.EstadosJugadores))
+	for jugador := range e.EstadosJugadores {
+		jugadores = append(jugadores, jugador)
+	}
+
+	regionesAsignadas := 0
+	for i := Eastern_australia; i <= Alberta; i++ {
+		if e.EstadosJugadores[jugadores[e.TurnoJugador]].Tropas >= 1 {
+			e.EstadoMapa[i].Ocupante = jugadores[e.TurnoJugador]
+			e.EstadoMapa[i].NumTropas = 1
+
+			e.EstadosJugadores[jugadores[e.TurnoJugador]].Tropas = e.EstadosJugadores[jugadores[e.TurnoJugador]].Tropas - 1
+
+			regionesAsignadas = regionesAsignadas + 1
+
+			// Añadir una nueva acción
+			e.Acciones = append(e.Acciones, RecibirRegion{
+				IDAccion:             0,
+				Region:               i,
+				TropasRestantes:      e.EstadosJugadores[jugadores[e.TurnoJugador]].Tropas,
+				TerritoriosRestantes: NUM_REGIONES - regionesAsignadas,
+				Jugador:              jugadores[e.TurnoJugador],
+			})
+		} else {
+			// Repite la iteración para el siguiente jugador
+			e.SiguienteJugador()
+			i = i - 1
+		}
 	}
 }
 
-func crearMapaIndicesJugadores(e *EstadoPartida, jugadores []Usuario) {
-	e.Jugadores = make(map[string]int, len(jugadores))
+// TODO documentar
+func (e *EstadoPartida) ReforzarTerritorio(idTerritorio int, numTropas int, jugador string) error {
+	region, existe := e.EstadoMapa[NumRegion(idTerritorio)]
+	if !existe {
+		return errors.New("La región indicada," + strconv.Itoa(idTerritorio) + ", es inválida")
+	}
 
-	for _, j := range jugadores {
-		e.Jugadores[j.NombreUsuario] = -1 // Empezarán leyendo el índice 0
+	if region.Ocupante != jugador {
+		return errors.New("La región indicada," + strconv.Itoa(idTerritorio) + ", tiene por ocupante a otro jugador: " + region.Ocupante)
+	}
+
+	estado, existe := e.EstadosJugadores[jugador]
+	if !existe {
+		return errors.New("El jugador indicado," + jugador + ", no está en la partida")
+	} else if e.esTurnoJugador(jugador) {
+		return errors.New("Se ha solicitado una acción fuera de turno, el jugador en este turno es " + e.obtenerJugadorTurno())
+	}
+
+	if estado.Tropas-numTropas < 0 {
+		return errors.New("No tienes tropas suficientes para reforzar un territorio, tropas restantes: " + strconv.Itoa(estado.Tropas))
+	} else {
+		estado.Tropas = estado.Tropas - 1
+		region.NumTropas = region.NumTropas + numTropas
+
+		// Añadir una nueva acción
+		e.Acciones = append(e.Acciones, AccionReforzar{
+			IDAccion:            0,
+			TerritorioReforzado: NumRegion(idTerritorio),
+			TropasRefuerzo:      numTropas,
+		})
+
+		return nil
 	}
 }
 
-func CrearEstadoPartida(jugadores []Usuario) (e *EstadoPartida) {
-	*e = EstadoPartida{
-		Acciones:        make([]interface{}, 0),
-		Jugadores:       nil,
-		TurnoJugador:    0,
-		Fase:            Inicio,
-		NumeroTurno:     0,
-		EstadoMapa:      crearEstadoMapa(),
-		Cartas:          crearBaraja(),
-		CartasJugadores: nil,
-		NumCambios:      0,
+func (e *EstadoPartida) esTurnoJugador(jugador string) bool {
+	// Extrae los nombres de jugador del mapa
+	jugadores := make([]string, len(e.EstadosJugadores))
+	for jugador := range e.EstadosJugadores {
+		jugadores = append(jugadores, jugador)
 	}
 
-	crearMapaCartasJugadores(e, jugadores)
-	crearMapaIndicesJugadores(e, jugadores)
+	return jugadores[e.TurnoJugador] == jugador
+}
 
-	return e
+func (e *EstadoPartida) obtenerJugadorTurno() string {
+	// Extrae los nombres de jugador del mapa
+	jugadores := make([]string, len(e.EstadosJugadores))
+	for jugador := range e.EstadosJugadores {
+		jugadores = append(jugadores, jugador)
+	}
+
+	return jugadores[e.TurnoJugador]
 }
