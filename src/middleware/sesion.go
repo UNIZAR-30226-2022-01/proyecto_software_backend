@@ -95,13 +95,16 @@ func GenerarCookieUsuario(writer *http.ResponseWriter, nombreUsuario string) (er
 		usuarioVO := vo.Usuario{"", nombreUsuario, "", "", cookie, 0, 0, 0, 0, 0}
 
 		err = dao.InsertarCookie(globales.Db, &usuarioVO)
+
+		return err, cookie
 	} else {
 		// No debería ocurrir
 		log.Println(`Se ha proporcionado un nombre de usuario que contiene el carácter separador. 
                         No se ha generado ninguna cookie.`)
+
+		return err, cookie
 	}
 
-	return err, cookie
 }
 
 // BorrarCookieUsuario borrar la cookie para el nombre de usuario dado en el cliente y en el almacén para el nombre de
