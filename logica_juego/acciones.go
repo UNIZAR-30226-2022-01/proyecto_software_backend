@@ -1,5 +1,7 @@
 package logica_juego
 
+import "encoding/gob"
+
 const (
 	IDAccionRecibirRegion Fase = iota
 	IDAccionCambioFase
@@ -267,4 +269,17 @@ func NewAccionObtenerCarta(carta Carta, jugador string) AccionObtenerCarta {
 		Carta:    carta,
 		Jugador:  jugador,
 	}
+}
+
+func RegistrarAcciones() {
+	gob.Register(AccionRecibirRegion{})
+	gob.Register(AccionCambioFase{})
+	gob.Register(AccionInicioTurno{})
+	gob.Register(AccionCambioCartas{})
+	gob.Register(AccionReforzar{})
+	gob.Register(AccionAtaque{})
+	gob.Register(AccionOcupar{})
+	gob.Register(AccionFortificar{})
+	gob.Register(AccionObtenerCarta{})
+	gob.Register(struct{}{}) // Placeholder de acciones no implementadas
 }

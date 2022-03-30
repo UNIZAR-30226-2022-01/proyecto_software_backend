@@ -1,7 +1,6 @@
 package integracion
 
 import (
-	"encoding/json"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/servidor"
 	"net/http"
@@ -158,6 +157,7 @@ func TestCreacionYObtencionPartidas(t *testing.T) {
 	}
 }
 
+// Prueba de unión y abandono de partidas sin errores
 func TestUnionYAbandonoDePartidas(t *testing.T) {
 	t.Log("Purgando DB...")
 	purgarDB()
@@ -190,6 +190,7 @@ func TestUnionYAbandonoDePartidas(t *testing.T) {
 	}
 }
 
+// Prueba de la funcionalidad de inicio de una partida desde 0
 func TestInicioPartida(t *testing.T) {
 	t.Log("Purgando DB...")
 	purgarDB()
@@ -264,6 +265,7 @@ func TestInicioPartida(t *testing.T) {
 	comprobarAcciones(t, cookie6)
 }
 
+// Prueba de la funcionalidad de la fase de refuerzo de una partida desde 0
 func TestFaseRefuerzoInicial(t *testing.T) {
 	t.Log("Purgando DB...")
 	purgarDB()
@@ -454,6 +456,7 @@ func TestFuncionesSociales(t *testing.T) {
 
 }
 
+// Prueba de imprimir acciones en JSON
 func TestImpresiónEnJSON(t *testing.T) {
 	acciones := make([]interface{}, 9)
 
@@ -472,12 +475,70 @@ func TestImpresiónEnJSON(t *testing.T) {
 	}
 }
 
-func serializarAJSONEImprimir(t *testing.T, obj interface{}) {
-	bytes, err := json.MarshalIndent(obj, "", "\t")
+// Prueba de consistencia entre la caché de partidas y la base de datos
+func TestConsistencia(t *testing.T) {
+	t.Log("Purgando DB...")
+	purgarDB()
 
-	if err != nil {
-		t.Fatal("Error al serializar a JSON", obj, ":", err)
-	} else {
-		t.Log("JSON de", obj, ":", string(bytes))
+	t.Log("Creando usuarios...")
+	cookie := crearUsuario("usuario1", t)
+	cookie2 := crearUsuario("usuario2", t)
+	cookie3 := crearUsuario("usuario3", t)
+	cookie4 := crearUsuario("usuario4", t)
+	cookie5 := crearUsuario("usuario5", t)
+	cookie6 := crearUsuario("usuario6", t)
+
+	t.Log("Creando partida...")
+	crearPartida(cookie, t, true)
+
+	partidas := obtenerPartidas(cookie, t)
+	if len(partidas) != 1 {
+		t.Fatal("No hay partidas.")
 	}
+
+	partidaCache := comprobarPartidaNoEnCurso(t, 1)
+	comprobarConsistenciaEnCurso(t, partidaCache)
+
+	t.Log("Uniéndose a partida...")
+	unirseAPartida(cookie2, t, 1)
+	partidas = obtenerPartidas(cookie, t)
+	if len(partidas) != 1 {
+		t.Fatal("No hay partidas, aunque aún no ha empezado.")
+	}
+	partidaCache = comprobarPartidaNoEnCurso(t, 1)
+	comprobarConsistenciaEnCurso(t, partidaCache)
+
+	unirseAPartida(cookie3, t, 1)
+	partidas = obtenerPartidas(cookie, t)
+	if len(partidas) != 1 {
+		t.Fatal("No hay partidas, aunque aún no ha empezado.")
+	}
+	partidaCache = comprobarPartidaNoEnCurso(t, 1)
+	comprobarConsistenciaEnCurso(t, partidaCache)
+
+	unirseAPartida(cookie4, t, 1)
+	partidas = obtenerPartidas(cookie, t)
+	if len(partidas) != 1 {
+		t.Fatal("No hay partidas, aunque aún no ha empezado.")
+	}
+	partidaCache = comprobarPartidaNoEnCurso(t, 1)
+	comprobarConsistenciaEnCurso(t, partidaCache)
+
+	unirseAPartida(cookie5, t, 1)
+	partidas = obtenerPartidas(cookie, t)
+	if len(partidas) != 1 {
+		t.Fatal("No hay partidas, aunque aún no ha empezado.")
+	}
+	partidaCache = comprobarPartidaNoEnCurso(t, 1)
+	comprobarConsistenciaEnCurso(t, partidaCache)
+
+	unirseAPartida(cookie6, t, 1)
+	partidas = obtenerPartidas(cookie, t)
+	if len(partidas) != 0 {
+		t.Fatal("Hay partidas, aunque ya ha tenido que empezar:", partidas)
+	}
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	comprobarConsistenciaEnCurso(t, partidaCache)
+
+	comprobarConsistenciaAcciones(t, partidaCache)
 }

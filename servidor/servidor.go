@@ -54,10 +54,16 @@ func IniciarServidor(test bool) {
 		globales.CachePartidas = globales.IniciarAlmacenPartidas()
 
 		go func(cs chan vo.Partida, cp chan struct{}) {
+			// Registra los tipos a decodificar por gob a partir de interface{}
+			logica_juego.RegistrarAcciones()
 			for {
 				select {
 				case partida := <-cs:
-					dao.AlmacenarEstadoSerializado(globales.Db, &partida)
+					err := dao.AlmacenarEstadoSerializado(globales.Db, &partida)
+
+					if err != nil { // Se ha roto la consistencia, no se puede seguir
+						log.Fatal("Error al almacenar estado serializado:", err)
+					}
 				case <-cp:
 					break
 				}

@@ -2,6 +2,7 @@ package integracion
 
 import (
 	"encoding/json"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware"
@@ -11,9 +12,11 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func purgarDB() {
@@ -539,4 +542,48 @@ func obtenerPartidas(cookie *http.Cookie, t *testing.T) []vo.ElementoListaPartid
 	}
 
 	return nil
+}
+
+func serializarAJSONEImprimir(t *testing.T, obj interface{}) {
+	bytes, err := json.MarshalIndent(obj, "", "\t")
+
+	if err != nil {
+		t.Fatal("Error al serializar a JSON", obj, ":", err)
+	} else {
+		t.Log("JSON de", obj, ":", string(bytes))
+	}
+}
+
+func obtenerPartidaDB(t *testing.T, idP int) vo.Partida {
+	partidaDB, err := dao.ObtenerPartida(globales.Db, idP)
+
+	if err != nil {
+		t.Fatal("Error al obtener partida de DB:", idP)
+	}
+	return partidaDB
+}
+
+func comprobarConsistenciaEnCurso(t *testing.T, partidaCache vo.Partida) {
+	partidaDB := obtenerPartidaDB(t, 1)
+
+	if partidaDB.EnCurso != partidaCache.EnCurso {
+		t.Fatal("partidaDB.EnCurso=", partidaDB.EnCurso, "y partidaCache.Encurso=", partidaCache.EnCurso)
+	} else {
+		if partidaDB.EnCurso {
+			t.Log("Ambas partidas en curso")
+		} else {
+			t.Log("Ambas partidas no en curso")
+		}
+	}
+}
+
+func comprobarConsistenciaAcciones(t *testing.T, partidaCache vo.Partida) {
+	time.Sleep(50 * time.Millisecond) // La base de datos no debería tardar mucho más
+	partidaDB := obtenerPartidaDB(t, 1)
+
+	if len(partidaDB.Estado.Acciones) != len(partidaCache.Estado.Acciones) {
+		t.Fatal("longitud de acciones para partidaDB=", len(partidaDB.Estado.Acciones), ", longitud de acciones para partidaCache=", len(partidaCache.Estado.Acciones))
+	} else if !reflect.DeepEqual(partidaDB.Estado.Acciones, partidaCache.Estado.Acciones) {
+		t.Fatal("Los estados de la partida en cache y la partida en DB no son consistentes")
+	}
 }
