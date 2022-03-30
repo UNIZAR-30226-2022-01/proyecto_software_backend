@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"backend/dao"
-	"backend/globales"
-	"backend/middleware"
-	"backend/vo"
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"

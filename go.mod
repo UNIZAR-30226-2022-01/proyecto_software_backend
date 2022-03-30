@@ -1,4 +1,4 @@
-module backend
+module github.com/UNIZAR-30226-2022-01/proyecto_software_backend
 
 go 1.17
 

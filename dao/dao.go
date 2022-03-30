@@ -1,8 +1,8 @@
 package dao
 
 import (
-	"backend/globales"
 	"database/sql"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	_ "github.com/lib/pq" // Driver que usa el paquete de sql, para postgres
 	"log"
 	"os"

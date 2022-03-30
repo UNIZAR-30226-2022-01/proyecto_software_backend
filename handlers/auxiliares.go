@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"backend/dao"
-	"backend/globales"
-	"backend/vo"
 	"errors"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"

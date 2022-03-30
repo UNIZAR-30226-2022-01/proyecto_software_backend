@@ -1,11 +1,11 @@
 package integracion
 
 import (
-	"backend/globales"
-	"backend/logica_juego"
-	"backend/middleware"
-	"backend/vo"
 	"encoding/json"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"io/ioutil"
 	"log"
 	"net/http"

@@ -1,10 +1,10 @@
 package dao
 
 import (
-	"backend/vo"
 	"bytes"
 	"database/sql"
 	"encoding/gob"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"net/http"
 )
 

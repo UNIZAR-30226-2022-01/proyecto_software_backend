@@ -1,14 +1,14 @@
 package servidor
 
 import (
-	"backend/dao"
-	"backend/globales"
-	"backend/handlers"
-	"backend/logica_juego"
-	"backend/vo"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/handlers"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 
-	middlewarePropio "backend/middleware" // Middleware a utilizar escrito por nosotros
 	"context"
+	middlewarePropio "github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware" // Middleware a utilizar escrito por nosotros
 	"log"
 	"net/http"
 	"os"

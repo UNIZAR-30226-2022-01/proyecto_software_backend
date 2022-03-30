@@ -1,7 +1,7 @@
 package main
 
 import (
-	"backend/servidor"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/servidor"
 )
 
 func main() {

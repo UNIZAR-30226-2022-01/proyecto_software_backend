@@ -4,9 +4,9 @@
 package middleware
 
 import (
-	"backend/dao"
-	"backend/globales"
-	"backend/vo"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"log"
 	"math/rand"
 	"net/http"

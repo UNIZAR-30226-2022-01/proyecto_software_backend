@@ -1,9 +1,9 @@
 package integracion
 
 import (
-	"backend/logica_juego"
-	"backend/servidor"
 	"encoding/json"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/servidor"
 	"net/http"
 	"os"
 	"strconv"

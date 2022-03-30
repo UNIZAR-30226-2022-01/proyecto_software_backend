@@ -3,8 +3,8 @@
 package globales
 
 import (
-	"backend/vo"
 	"database/sql" // Funciones de sql
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"sync"
 )
 
