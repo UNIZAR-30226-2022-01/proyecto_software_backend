@@ -379,6 +379,33 @@ func TestFuncionesSociales(t *testing.T) {
 		cookiesAmigos[i] = crearUsuario(a, t)
 	}
 
+	// Prueba para la consulta de amigos pendientes
+	// El resto de usuarios solicitan amistad al primer usuario
+	for _, c := range cookiesAmigos {
+		solicitarAmistad(c, t, "usuario")
+	}
+
+	solicitudesPendientes := consultarSolicitudesPendientes(cookie, t)
+	if len(solicitudesPendientes) != len(amigos) {
+		t.Fatal("No se han recuperado todas las solicitudes pendientes")
+	}
+
+	for i := range amigos {
+		if amigos[i] != solicitudesPendientes[i] {
+			t.Fatal("No se han recuperado todas las solicitudes pendientes")
+		}
+	}
+
+	// Rechazamos todas las solicitudes
+	for _, a := range amigos {
+		rechazarSolicitudDeAmistad(cookie, t, a)
+	}
+
+	solicitudesPendientes = consultarSolicitudesPendientes(cookie, t)
+	if len(solicitudesPendientes) != 0 {
+		t.Fatal("Se han recuperado solicitudes pendientes cuando no debería haberlas")
+	}
+
 	// Solicita amistad al resto de usuarios
 	for _, a := range amigos {
 		solicitarAmistad(cookie, t, a)
@@ -423,4 +450,5 @@ func TestFuncionesSociales(t *testing.T) {
 			t.Fatal("No se han recuperado todos los usuarios con nombre empezado por Amigo")
 		}
 	}
+
 }
