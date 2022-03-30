@@ -108,6 +108,29 @@ func RechazarSolicitudAmistad(db *sql.DB, emisor *vo.Usuario, receptor *vo.Usuar
 	return err
 }
 
+// ConsultarSolicitudesPendientes devuelve una lista en la que se indican los nombres de usuario
+// que han enviado una solicitud de amistad a "usuario", estando dicha solicitud pendiente.
+func ConsultarSolicitudesPendientes(db *sql.DB, usuario *vo.Usuario) (usuarios []string, err error) {
+	rows, err := db.Query(`SELECT "nombreUsuario1" FROM backend."EsAmigo" 
+		WHERE "nombreUsuario1" = $1 AND pendiente ORDER BY "nombreUsuario1" ASC`, usuario.NombreUsuario)
+	if err != nil {
+		return []string{}, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var usuario string
+		err = rows.Scan(&usuario)
+		if err != nil {
+			return []string{}, err
+		}
+
+		usuarios = append(usuarios, usuario)
+	}
+	return usuarios, err
+}
+
 // UsuarioEnPartida devolverá true en caso de que un usuario ya esté participando en una partida
 func UsuarioEnPartida(db *sql.DB, usuario *vo.Usuario) (EnPartida bool, err error) {
 	err = db.QueryRow(`SELECT EXISTS(SELECT * FROM backend."Participa" WHERE "nombreUsuario" = $1)`, usuario.NombreUsuario).Scan(&EnPartida)
