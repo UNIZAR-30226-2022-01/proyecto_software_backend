@@ -92,3 +92,40 @@ func barajarCartas(cartas []Carta) {
 
 	rand.Shuffle(len(cartas), func(i, j int) { cartas[i], cartas[j] = cartas[j], cartas[i] })
 }
+
+// esCambioValido devuelve true si se puede realizar un cambio correctamente con las cartas introducidas
+// Será necesario que haya 3 cartas del mismo tipo o 2 cartas del mismo tipo además de un comodín o
+// 3 cartas de cada tipo
+func esCambioValido(cartas []Carta) bool {
+	if len(cartas) != 3 {
+		return false
+	}
+
+	comodines := 0
+	infanteria := 0
+	caballeria := 0
+	artilleria := 0
+
+	for _, c := range cartas {
+		if c.EsComodin {
+			comodines++
+		} else if c.Tipo == Infanteria {
+			infanteria++
+		} else if c.Tipo == Caballeria {
+			caballeria++
+		} else {
+			artilleria++
+		}
+	}
+
+	return (comodines == 1 && (artilleria == 2 || caballeria == 2 || infanteria == 2)) ||
+		artilleria == 3 || caballeria == 3 || infanteria == 3 ||
+		(artilleria == 1 && caballeria == 1 && infanteria == 1)
+}
+
+func obtenerRegionesCartas(cartas []Carta) (regiones []NumRegion) {
+	for _, c := range cartas {
+		regiones = append(regiones, c.Region)
+	}
+	return regiones
+}
