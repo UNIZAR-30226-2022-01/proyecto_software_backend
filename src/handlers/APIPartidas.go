@@ -71,7 +71,7 @@ func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 
 	globales.CachePartidas.AlmacenarPartida(partida)
 
-	devolverExito(writer)
+	escribirHeaderExito(writer)
 }
 
 // UnirseAPartida permite al usuario unirse a una partida en caso de que no esté en otra,
@@ -150,7 +150,12 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 		// Se añade al usuario e inicia, creando su estado
 		jugadores = append(jugadores, usuario)
 
-		partida.IniciarPartida(jugadores)
+		nombresJugadores := []string{}
+		for _, j := range jugadores {
+			nombresJugadores = append(nombresJugadores, j.NombreUsuario)
+		}
+
+		partida.IniciarPartida(nombresJugadores)
 
 		// Se añade al almacén
 		globales.CachePartidas.AlmacenarPartida(partida)
@@ -159,7 +164,7 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 		globales.CachePartidas.CanalSerializacion <- partida
 	}
 
-	devolverExito(writer)
+	escribirHeaderExito(writer)
 }
 
 // ObtenerEstadoLobby devuelve el estado del lobby de una partida identificada por su id
@@ -187,6 +192,7 @@ func ObtenerEstadoLobby(writer http.ResponseWriter, request *http.Request) {
 
 	writer.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(writer).Encode(estadoLobby)
+	escribirHeaderExito(writer)
 }
 
 // AbandonarLobby deja la partida en la que el usuario esté participando. Responde con status 200 si ha habido éxito,
@@ -203,7 +209,7 @@ func AbandonarLobby(writer http.ResponseWriter, request *http.Request) {
 			log.Println("Error al escribir respuesta en:", err)
 		}
 	} else {
-		devolverExito(writer)
+		escribirHeaderExito(writer)
 	}
 }
 
@@ -314,6 +320,7 @@ func ObtenerPartidas(writer http.ResponseWriter, request *http.Request) {
 
 		writer.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(writer).Encode(elementos)
+		escribirHeaderExito(writer)
 	}
 }
 
@@ -349,6 +356,7 @@ func ObtenerEstadoPartida(writer http.ResponseWriter, request *http.Request) {
 
 	writer.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(writer).Encode(acciones)
+	escribirHeaderExito(writer)
 }
 
 // TODO: documentar y probar
@@ -383,5 +391,6 @@ func ReforzarTerritorio(writer http.ResponseWriter, request *http.Request) {
 
 		// Y se encola un trabajo de serialización de su estado
 		globales.CachePartidas.CanalSerializacion <- partida
+		escribirHeaderExito(writer)
 	}
 }

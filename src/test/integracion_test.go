@@ -1,8 +1,8 @@
 package integracion
 
 import (
+	"backend/logica_juego"
 	"backend/servidor"
-	"backend/vo"
 	"net/http"
 	"os"
 	"strconv"
@@ -247,7 +247,7 @@ func TestInicioPartida(t *testing.T) {
 	}
 	partidaCache = comprobarPartidaEnCurso(t, 1)
 
-	if len(partidaCache.Estado.Acciones) != (int(vo.NUM_REGIONES) + 1) { // 42 regiones y acción de cambio de turno
+	if len(partidaCache.Estado.Acciones) != (int(logica_juego.NUM_REGIONES) + 1) { // 42 regiones y acción de cambio de turno
 		t.Fatal("No se han asignado todas las regiones. Regiones asignadas:", len(partidaCache.Estado.Acciones))
 	}
 
@@ -321,20 +321,20 @@ func TestFaseRefuerzoInicial(t *testing.T) {
 	}
 	partidaCache = comprobarPartidaEnCurso(t, 1)
 
-	if len(partidaCache.Estado.Acciones) != (int(vo.NUM_REGIONES) + 1) { // 42 regiones y acción de cambio de turno
+	if len(partidaCache.Estado.Acciones) != (int(logica_juego.NUM_REGIONES) + 1) { // 42 regiones y acción de cambio de turno
 		t.Fatal("No se han asignado todas las regiones. Regiones asignadas:", len(partidaCache.Estado.Acciones))
 	}
 
 	numRegion := 0
 	// Buscar región ocupada por usuario1
-	for i := vo.Eastern_australia; i <= vo.Alberta; i++ {
+	for i := logica_juego.Eastern_australia; i <= logica_juego.Alberta; i++ {
 		if partidaCache.Estado.EstadoMapa[i].Ocupante == "usuario1" {
 			numRegion = int(i)
 			break
 		}
 	}
 
-	numTropasRegionPrevio := partidaCache.Estado.EstadoMapa[vo.NumRegion(numRegion)].NumTropas
+	numTropasRegionPrevio := partidaCache.Estado.EstadoMapa[logica_juego.NumRegion(numRegion)].NumTropas
 	numTropasPrevio := partidaCache.Estado.EstadosJugadores["usuario1"].Tropas
 
 	saltarTurnos(t, partidaCache, "usuario1")
@@ -345,7 +345,7 @@ func TestFaseRefuerzoInicial(t *testing.T) {
 	partidaCache = comprobarPartidaEnCurso(t, 1)
 
 	numTropasPost := partidaCache.Estado.EstadosJugadores["usuario1"].Tropas
-	numTropasRegionPost := partidaCache.Estado.EstadoMapa[vo.NumRegion(numRegion)].NumTropas
+	numTropasRegionPost := partidaCache.Estado.EstadoMapa[logica_juego.NumRegion(numRegion)].NumTropas
 
 	if numTropasPrevio <= numTropasPost || numTropasPost != 0 {
 		t.Fatal("Números de tropas incorrecto al agotarlas en una región. Prev:" + strconv.Itoa(numTropasPrevio) + "Post:" + strconv.Itoa(numTropasPost))

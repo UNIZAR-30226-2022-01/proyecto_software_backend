@@ -2,6 +2,7 @@ package vo
 
 import (
 	//"backend/logica_juego"
+	"backend/logica_juego"
 	"net/http"
 )
 
@@ -28,7 +29,7 @@ type Partida struct {
 
 	// TODO: representar chat de la partida
 	Mensajes []Mensaje
-	Estado   EstadoPartida
+	Estado   logica_juego.EstadoPartida
 }
 
 type Mensaje struct {
@@ -50,9 +51,9 @@ func CrearPartida(esPublica bool, passwordHash string, maxNumeroJugadores int) *
 
 // IniciarPartida marca una partida como iniciada y crea un estado para ella con los jugadores indicados, iniciando la
 // primera fase (asignación de territorios) tras ello.
-func (p *Partida) IniciarPartida(jugadores []Usuario) {
+func (p *Partida) IniciarPartida(jugadores []string) {
 	p.EnCurso = true
-	p.Estado = CrearEstadoPartida(jugadores)
+	p.Estado = logica_juego.CrearEstadoPartida(jugadores)
 
 	p.Estado.RellenarRegiones()
 }

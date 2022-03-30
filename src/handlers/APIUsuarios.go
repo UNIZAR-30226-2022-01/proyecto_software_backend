@@ -25,7 +25,7 @@ func EnviarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) {
 		devolverErrorSQL(writer)
 	}
 
-	devolverExito(writer)
+	escribirHeaderExito(writer)
 }
 
 // AceptarSolicitudAmistad acepta una solicitud de amistad entre el usuario que genera
@@ -43,7 +43,7 @@ func AceptarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) 
 		devolverErrorSQL(writer)
 	}
 
-	devolverExito(writer)
+	escribirHeaderExito(writer)
 }
 
 // RechazarSolicitudAmistad rechaza una solicitud de amistad entre el usuario que genera
@@ -61,7 +61,7 @@ func RechazarSolicitudAmistad(writer http.ResponseWriter, request *http.Request)
 		devolverErrorSQL(writer)
 	}
 
-	devolverExito(writer)
+	escribirHeaderExito(writer)
 }
 
 // ListarAmigos devuelve una lista con los nombres de los amigos del usuario que genera la solicitud
@@ -85,6 +85,7 @@ func ListarAmigos(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Content-Type", "application/json")
 	envioAmigos := vo.ElementoListaNombresUsuario{Nombres: amigosString}
 	err = json.NewEncoder(writer).Encode(envioAmigos)
+	escribirHeaderExito(writer)
 }
 
 // ObtenerPerfilUsuario devuelve la información del perfil de un usuario, definido como parte de la URL
@@ -111,6 +112,7 @@ func ObtenerPerfilUsuario(writer http.ResponseWriter, request *http.Request) {
 	envioUsuario := transformaAElementoListaUsuarios(usuario)
 	writer.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(writer).Encode(envioUsuario)
+	escribirHeaderExito(writer)
 }
 
 // ObtenerUsuariosSimilares devuelve una lista de nombres de usuario que coincidan con un patrón,
@@ -131,19 +133,7 @@ func ObtenerUsuariosSimilares(writer http.ResponseWriter, request *http.Request)
 
 	writer.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(writer).Encode(envioUsuarios)
-}
-
-func transformaAElementoListaUsuarios(usuario vo.Usuario) vo.ElementoListaUsuarios {
-	return vo.ElementoListaUsuarios{
-		NombreUsuario:   usuario.NombreUsuario,
-		Email:           usuario.Email,
-		Biografia:       usuario.Biografia,
-		PartidasGanadas: usuario.PartidasGanadas,
-		PartidasTotales: usuario.PartidasTotales,
-		Puntos:          usuario.Puntos,
-		ID_dado:         usuario.ID_dado,
-		ID_ficha:        usuario.ID_ficha,
-	}
+	escribirHeaderExito(writer)
 }
 
 // ObtenerNotificaciones devuelve un listado codificado en JSON de notificaciones

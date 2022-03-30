@@ -4,6 +4,7 @@ import (
 	"backend/dao"
 	"backend/globales"
 	"backend/handlers"
+	"backend/logica_juego"
 	"backend/vo"
 
 	middlewarePropio "backend/middleware" // Middleware a utilizar escrito por nosotros
@@ -49,7 +50,7 @@ func IniciarServidor(test bool) {
 
 	// Inicio de lógica del juego
 	if os.Args[len(os.Args)-1] == "-api" || test {
-		globales.InicializarGrafoMapa()
+		logica_juego.InicializarGrafoMapa()
 		globales.CachePartidas = globales.IniciarAlmacenPartidas()
 
 		go func(cs chan vo.Partida, cp chan struct{}) {
@@ -146,10 +147,6 @@ func routerAPI() http.Handler {
 	r.Post("/registro", handlers.Registro)
 	r.Post("/login", handlers.Login)
 	//TODO: Otro POST para formularios de cambiar perfil de usuario
-
-	// Pruebas
-	r.Get("/formularioRegistro", handlers.MenuRegistro)
-	r.Get("/formulariologin", handlers.MenuLogin)
 
 	// Rutas REST
 	r.Route("/api", func(r chi.Router) {

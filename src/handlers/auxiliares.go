@@ -4,6 +4,9 @@ import (
 	"backend/dao"
 	"backend/globales"
 	"backend/vo"
+	"errors"
+	"golang.org/x/crypto/bcrypt"
+	"log"
 	"net/http"
 	"sort"
 )
@@ -100,4 +103,53 @@ func obtenerAmigos(amigos []vo.Usuario, jugadores []vo.Usuario) (listaFiltrada [
 	}
 
 	return listaFiltrada
+}
+
+// hashPassword crea un hash de clave utilizando bcrypt
+// https://gowebexamples.com/password-hashing/
+func hashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 10) // Coste fijo por defecto para evitar tiempos de cálculo excesivos
+	return string(bytes), err
+}
+
+// Devuelve una respuesta con status 500 junto al mensaje de error y la función
+// en la que se ha dado.
+func devolverError(writer http.ResponseWriter, err error) {
+	log.Println("Error:", err)
+	writer.WriteHeader(http.StatusInternalServerError)
+	_, err = writer.Write([]byte(err.Error()))
+	if err != nil {
+		log.Println("Error al escribir respuesta en:", err)
+	}
+}
+
+// Devuelve una respuesta con status 500 junto al mensaje de error y la función
+// en la que se ha dado.
+func devolverErrorSQL(writer http.ResponseWriter) {
+	err := errors.New("Se ha producido un error en la base de datos.")
+
+	log.Println("Error en:", err)
+	writer.WriteHeader(http.StatusInternalServerError)
+	_, err = writer.Write([]byte(err.Error()))
+	if err != nil {
+		log.Println("Error al escribir respuesta en:", err)
+	}
+}
+
+// Devuelve una respuesta con status 200.
+func escribirHeaderExito(writer http.ResponseWriter) {
+	writer.WriteHeader(http.StatusOK)
+}
+
+func transformaAElementoListaUsuarios(usuario vo.Usuario) vo.ElementoListaUsuarios {
+	return vo.ElementoListaUsuarios{
+		NombreUsuario:   usuario.NombreUsuario,
+		Email:           usuario.Email,
+		Biografia:       usuario.Biografia,
+		PartidasGanadas: usuario.PartidasGanadas,
+		PartidasTotales: usuario.PartidasTotales,
+		Puntos:          usuario.Puntos,
+		ID_dado:         usuario.ID_dado,
+		ID_ficha:        usuario.ID_ficha,
+	}
 }

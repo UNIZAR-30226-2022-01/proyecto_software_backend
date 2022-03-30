@@ -7,21 +7,8 @@ import (
 	"backend/vo"
 	"errors"
 	"golang.org/x/crypto/bcrypt"
-	"html/template"
 	"net/http"
 )
-
-// Pruebas
-
-func MenuRegistro(writer http.ResponseWriter, request *http.Request) {
-	tmpl := template.Must(template.ParseFiles("web/registro.html"))
-	tmpl.Execute(writer, nil)
-}
-
-func MenuLogin(writer http.ResponseWriter, request *http.Request) {
-	tmpl := template.Must(template.ParseFiles("web/login.html"))
-	tmpl.Execute(writer, nil)
-}
 
 // Registro atiende respuestas de un formulario de campos 'nombre', 'email' y 'password'
 // y registra un usuario acordemente. Responde con status 200 si ha habido éxito,
@@ -55,11 +42,10 @@ func Registro(writer http.ResponseWriter, request *http.Request) {
 				devolverErrorSQL(writer)
 			} else {
 				writer.Write([]byte(cookie.String())) // La escribe en el body directamente
+				escribirHeaderExito(writer)
 			}
 		}
 	}
-
-	//devolverExito(writer)
 }
 
 // Login atiende respuestas de un formulario de campos 'nombre' y 'password'
@@ -82,15 +68,7 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 			devolverErrorSQL(writer)
 		} else {
 			writer.Write([]byte(cookie.String())) // La escribe en el body directamente
+			escribirHeaderExito(writer)
 		}
 	}
-
-	//devolverExito(writer)
-}
-
-// hashPassword crea un hash de clave utilizando bcrypt
-// https://gowebexamples.com/password-hashing/
-func hashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 10) // Coste fijo por defecto para evitar tiempos de cálculo excesivos
-	return string(bytes), err
 }

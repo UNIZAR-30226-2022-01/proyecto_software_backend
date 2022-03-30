@@ -2,6 +2,7 @@ package integracion
 
 import (
 	"backend/globales"
+	"backend/logica_juego"
 	"backend/middleware"
 	"backend/vo"
 	"encoding/json"
@@ -110,8 +111,8 @@ func reforzarTerritorio(t *testing.T, cookie *http.Cookie, numRegion int, numTro
 func comprobarAcciones(t *testing.T, cookie *http.Cookie) {
 	estado := preguntarEstado(t, cookie)
 
-	if len(estado.Acciones) != (vo.NUM_REGIONES + 1) {
-		t.Fatal("Se esperaban", vo.NUM_REGIONES, "acciones en el log, y hay", len(estado.Acciones))
+	if len(estado.Acciones) != (logica_juego.NUM_REGIONES + 1) {
+		t.Fatal("Se esperaban", logica_juego.NUM_REGIONES, "acciones en el log, y hay", len(estado.Acciones))
 	} else {
 		t.Log("Contenidos de acciones:", estado.Acciones)
 	}
@@ -124,7 +125,7 @@ func comprobarAcciones(t *testing.T, cookie *http.Cookie) {
 	}
 }
 
-func preguntarEstado(t *testing.T, cookie *http.Cookie) (estado vo.EstadoPartida) {
+func preguntarEstado(t *testing.T, cookie *http.Cookie) (estado logica_juego.EstadoPartida) {
 	client := &http.Client{}
 
 	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerEstadoPartida", nil)
