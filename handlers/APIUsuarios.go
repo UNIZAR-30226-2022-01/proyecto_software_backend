@@ -88,6 +88,20 @@ func ListarAmigos(writer http.ResponseWriter, request *http.Request) {
 	escribirHeaderExito(writer)
 }
 
+func ConsultarSolicitudesPendientes(writer http.ResponseWriter, request *http.Request) {
+	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
+	usuario := vo.Usuario{NombreUsuario: nombreUsuario}
+	pendientes, err := dao.ConsultarSolicitudesPendientes(globales.Db, &usuario)
+	if err != nil {
+		devolverErrorSQL(writer)
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	envioPendientes := vo.ElementoListaNombresUsuario{Nombres: pendientes}
+	err = json.NewEncoder(writer).Encode(envioPendientes)
+	escribirHeaderExito(writer)
+}
+
 // ObtenerPerfilUsuario devuelve la información del perfil de un usuario, definido como parte de la URL
 // Si ocurre algún error durante el procesamiento, enviará código de error 500
 // En cualquier otro caso, enviará códgo 200

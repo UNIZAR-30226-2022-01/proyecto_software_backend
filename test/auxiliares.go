@@ -308,7 +308,7 @@ func abandonarLobby(cookie *http.Cookie, t *testing.T) {
 }
 
 func solicitarAmistad(cookie *http.Cookie, t *testing.T, nombre string) {
-	t.Log("Solicitando amistad de userPrincipal a", nombre)
+	//t.Log("Solicitando amistad de userPrincipal a", nombre)
 
 	client := &http.Client{}
 	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/enviarSolicitudAmistad/"+nombre, nil)
@@ -349,6 +349,26 @@ func aceptarSolicitudDeAmistad(cookie *http.Cookie, t *testing.T, nombre string)
 	}
 }
 
+func rechazarSolicitudDeAmistad(cookie *http.Cookie, t *testing.T, nombre string) {
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/rechazarSolicitudAmistad/"+nombre, nil) // MAPS :D
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		t.Fatal("Error en POST de rechazar amistad:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al rechazar amistad:", resp.StatusCode)
+	}
+}
+
 func listarAmigos(cookie *http.Cookie, t *testing.T) []string {
 	cliente := &http.Client{}
 	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/listarAmigos", nil)
@@ -376,6 +396,35 @@ func listarAmigos(cookie *http.Cookie, t *testing.T) []string {
 	}
 
 	return nil
+}
+
+func consultarSolicitudesPendientes(cookie *http.Cookie, t *testing.T) []string {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerSolicitudesPendientes", nil)
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal("Error en GET de consultar amigos pendientes:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al consultar pendientes:", resp.StatusCode)
+	} else {
+		var pendientes vo.ElementoListaNombresUsuario
+		err = json.NewDecoder(resp.Body).Decode(&pendientes)
+		if err != nil {
+			t.Fatal("Error al leer JSON de respuesta al listar pendientes:", err)
+		}
+
+		t.Log("Respuesta de consultarPendientes:", pendientes.Nombres)
+		return pendientes.Nombres
+	}
+
+	return []string{}
 }
 
 func obtenerPerfilUsuario(cookie *http.Cookie, nombre string, t *testing.T) vo.ElementoListaUsuarios {
