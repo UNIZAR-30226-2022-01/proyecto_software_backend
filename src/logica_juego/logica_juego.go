@@ -131,9 +131,7 @@ func (e *EstadoPartida) ReforzarTerritorio(idTerritorio int, numTropas int, juga
 		return errors.New("Se ha solicitado una acción fuera de turno, el jugador en este turno es " + e.ObtenerJugadorTurno())
 	}
 
-	if e.Fase != Refuerzo {
-		return errors.New("Solo se pueden reforzar territorios en la fase de refuerzo")
-	}
+	// TODO limitar refuerzos a la fase de refuerzo
 
 	if estado.Tropas-numTropas < 0 {
 		return errors.New("No tienes tropas suficientes para reforzar un territorio, tropas restantes: " + strconv.Itoa(estado.Tropas))
