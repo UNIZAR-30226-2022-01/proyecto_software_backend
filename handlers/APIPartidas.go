@@ -324,7 +324,29 @@ func ObtenerPartidas(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
-// TODO: documentar y probar
+// ObtenerEstadoPartida devuelve la lista de acciones transcurridas desde la última consulta del usuario hasta
+// el momento, que deberán ser procesadas en orden.
+// El formato es una lista de acciones, codificada en JSON de la siguiente forma:
+// [{acción}, {acción}]
+//
+// Donde cada acción es una acción específica a distinguir según el primer campo común a todas, "IDAccion", para su interpretación.
+//
+// Ejemplo:
+// [
+//   {
+//      "IDAccion":0,
+//      "Region":0,
+//      "TropasRestantes":19,
+//      "TerritoriosRestantes":41,
+//      "Jugador":"usuario4"
+//   },
+//   {
+//      "IDAccion":1,
+//      "Jugador":"usuario5"
+//   }
+//]
+//
+// La lista de acciones y su formato en JSON están disponibles en el módulo de logica_juego, en acciones.go
 func ObtenerEstadoPartida(writer http.ResponseWriter, request *http.Request) {
 	usuario := vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)}
 
@@ -359,7 +381,14 @@ func ObtenerEstadoPartida(writer http.ResponseWriter, request *http.Request) {
 	escribirHeaderExito(writer)
 }
 
-// TODO: documentar y probar
+// ReforzarTerritorio refuerza un territorio con su identificador numérico "id" con un valor de tropas numérico
+// codificado en "numTropas", ambos parámetros de la URL.
+//
+// En caso de éxito, se devolverá un código HTTP 200 y aparecerá una nueva acción "AccionReforzar" en la siguiente
+// consulta al estado indicando los detalles de la acción realizada.
+//
+// En caso de error (número de tropas incorrecto, el turno del jugador es incorrecto, etc.) se devolverá un código HTTP
+// 500 junto al mensaje de error en el cuerpo.
 func ReforzarTerritorio(writer http.ResponseWriter, request *http.Request) {
 	idTerritorio, err := strconv.Atoi(chi.URLParam(request, "id"))
 	if err != nil {
@@ -367,7 +396,7 @@ func ReforzarTerritorio(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	numTropas, err := strconv.Atoi(chi.URLParam(request, "numTropas"))
-	if err != nil {
+	if err != nil || numTropas <= 0 {
 		devolverError(writer, errors.New("Se ha introducido un número de tropas inválido: "+chi.URLParam(request, "numTropas")))
 	}
 

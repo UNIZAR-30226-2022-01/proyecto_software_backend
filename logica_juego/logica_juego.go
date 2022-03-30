@@ -11,7 +11,7 @@ import (
 var onlyOnce sync.Once
 
 // LanzarDados devuelve un número entre [0-5] (utilizado para indexar,
-// que se debe aumentar en una unidad para
+// que se debe aumentar en una unidad a la hora de mostrarse al usuario)
 func LanzarDados() int {
 	var dados = []int{0, 1, 2, 3, 4, 5}
 
@@ -67,18 +67,27 @@ func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
 	return e
 }
 
+// SiguienteJugadorSinAccion cambia el turno a otro jugador sin emitir ninguna acción.
+// Usar únicamente al rellenar regiones.
 func (e *EstadoPartida) SiguienteJugadorSinAccion() {
 	e.TurnoJugador = (e.TurnoJugador + 1) % len(e.EstadosJugadores)
 }
 
+// SiguienteJugador cambia el turno a otro jugador, emitiendo la acción correspondiente.
 func (e *EstadoPartida) SiguienteJugador() {
 	e.TurnoJugador = (e.TurnoJugador + 1) % len(e.EstadosJugadores)
 
-	e.Acciones = append(e.Acciones, AccionCambioTurno{IDAccion: 1, Jugador: e.Jugadores[e.TurnoJugador]})
+	// TODO: Encolar un AccionInicioTurno calculando el nº de tropas según las regiones y continentes ocupados
+	//e.Acciones = append(e.Acciones, AccionCambioTurno{IDAccion: 1, Jugador: e.Jugadores[e.TurnoJugador]})
+	e.Acciones = append(e.Acciones, struct{}{})
 }
 
-// TODO: documentar
-// TODO: Más elaborado (pseudo-random, con recorridos por el grafo, etc.)
+// RellenarRegiones rellena las regiones del estado de la partida equitativa y aleatoriamente entre los usuarios, consumiendo
+// una tropa por cada región para controlarla. Aunque se emite una acción de asignación de territorio por cada uno de ellos
+// asignado, no se emiten acciones de cambio de turno durante el proceso.
+//
+// Una vez terminado el proceso, se emite una acción de cambio de turno a un nuevo jugador.
+// TODO: Más elaborado (pseudo-random teniendo en cuenta adyacencias, recorridos por el grafo, etc.)
 func (e *EstadoPartida) RellenarRegiones() {
 	regionesAsignadas := 0
 	for i := Eastern_australia; i <= Alberta; i++ {
@@ -105,7 +114,14 @@ func (e *EstadoPartida) RellenarRegiones() {
 	e.SiguienteJugador()
 }
 
-// TODO documentar
+// ReforzarTerritorio refuerza un territorio dado su id con numTropas para un jugador dado.
+// Si la acción tiene éxito, se emite una acción de refuerzo, o nada y se devuelve un error ya formateado en caso contrario.
+//
+// Se hacen checks de:
+//		Región incorrecta
+//		Región ocupada por otro jugador
+//		Jugador fuera de turno
+//		Jugador con tropas insuficientes
 func (e *EstadoPartida) ReforzarTerritorio(idTerritorio int, numTropas int, jugador string) error {
 	region, existe := e.EstadoMapa[NumRegion(idTerritorio)]
 	if !existe {
