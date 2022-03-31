@@ -187,6 +187,8 @@ func ObtenerUsuariosSimilares(writer http.ResponseWriter, request *http.Request)
 // El formato de la respuesta JSON es el siguiente:
 //    [notificacion1..., notificacion2...]
 //
+// Ejemplo:
+//    [{"IDNotificacion":0,"Jugador":"usuario2"}, {"IDNotificacion":1,"JugadorPrevio":"usuario6"}]
 //
 // La lista de notificaciones y su formato en JSON están disponibles en el módulo de logica_juego, en notificaciones.go
 //

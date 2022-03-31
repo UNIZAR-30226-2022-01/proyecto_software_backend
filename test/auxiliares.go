@@ -645,9 +645,11 @@ func obtenerNotificaciones(t *testing.T, cookie *http.Cookie) (notificaciones []
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("Obtenido código de error no 200 al obtener notificaciones:", resp.StatusCode)
 	} else {
-		log.Println("Acciones recibidas:")
-		err = json.NewDecoder(resp.Body).Decode(&notificaciones)
+		//body, _ := ioutil.ReadAll(resp.Body)
+		//bodyString := string(body)
+		//t.Log("Respuesta al obtener notificaciones:", bodyString)
 
+		err = json.NewDecoder(resp.Body).Decode(&notificaciones)
 	}
 
 	return notificaciones
