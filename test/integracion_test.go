@@ -607,23 +607,28 @@ func TestBaraja(t *testing.T) {
 	// Cambiamos 3 cartas de infantería
 	estadoPartida.Fase = logica_juego.Refuerzo
 	t.Log("Cambiando 3 cartas de infanteria")
-	cambiarCartas(t, estadoJugador, err, &estadoPartida, 0, 1, 2, 1)
+	cambiarCartas(t, estadoJugador, &estadoPartida, 0, 1, 2, 1)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
 
 	// Cambiamos 3 cartas de caballeria
 	t.Log("Cambiando 3 cartas de caballeria")
-	cambiarCartas(t, estadoJugador, err, &estadoPartida, 18, 19, 20, 2)
+	cambiarCartas(t, estadoJugador, &estadoPartida, 18, 19, 20, 2)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
 
 	// Cambiamos 3 cartas de artilleria
 	t.Log("Cambiando 3 cartas de artilleria")
-	cambiarCartas(t, estadoJugador, err, &estadoPartida, 36, 37, 38, 3)
+	cambiarCartas(t, estadoJugador, &estadoPartida, 36, 37, 38, 3)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
 
 	// Cambiamos una de cada
 	t.Log("Cambiando 3 cartas, una de cada tipo")
-	cambiarCartas(t, estadoJugador, err, &estadoPartida, 3, 21, 39, 4)
+	cambiarCartas(t, estadoJugador, &estadoPartida, 3, 21, 39, 4)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
 
 	// Cambiamos 2 cartas de un tipo + un comodín
 	t.Log("Cambiando 3 cartas, una de cada tipo")
-	cambiarCartas(t, estadoJugador, err, &estadoPartida, 4, 5, 42, 5)
+	cambiarCartas(t, estadoJugador, &estadoPartida, 4, 5, 42, 5)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
 
 	// Prueba de errores en el canje
 	// Cambiar cartas que no tenemos
@@ -656,7 +661,8 @@ func TestBaraja(t *testing.T) {
 	estadoRegion.Ocupante = "Jugador1"
 	tropasIniciales := estadoRegion.NumTropas
 	t.Log("Cambiando 3 cartas, una de ellas con bonificación por territorio")
-	cambiarCartas(t, estadoJugador, err, &estadoPartida, 10, 11, 12, 6)
+	cambiarCartas(t, estadoJugador, &estadoPartida, 10, 11, 12, 6)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
 	if estadoRegion.NumTropas-tropasIniciales != 2 {
 		t.Fatal("No se han recibido tropas adicionales")
 	}
@@ -679,5 +685,13 @@ func TestBaraja(t *testing.T) {
 
 	t.Log("El último cambio de cartas fue:", accionCambio)
 
-	// TODO probar que se añaden y retiran cartas correctamente de baraja, descartes y mano del jugador
+	// Probar cambios de cartas de número > 6
+	t.Log("Cambiando 3 cartas, 7º cambio")
+	cambiarCartas(t, estadoJugador, &estadoPartida, 30, 31, 32, 7)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
+
+	t.Log("Cambiando 3 cartas, 8º cambio")
+	cambiarCartas(t, estadoJugador, &estadoPartida, 33, 34, 35, 8)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
+
 }

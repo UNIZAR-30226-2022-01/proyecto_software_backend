@@ -600,7 +600,7 @@ func robarBarajaCompleta(e *logica_juego.EstadoPartida, t *testing.T) {
 	t.Log("Ya no quedan cartas, o error:", err)
 }
 
-func cambiarCartas(t *testing.T, estadoJugador *logica_juego.EstadoJugador, err error, estadoPartida *logica_juego.EstadoPartida, id1, id2, id3, numCanje int) {
+func cambiarCartas(t *testing.T, estadoJugador *logica_juego.EstadoJugador, estadoPartida *logica_juego.EstadoPartida, id1, id2, id3, numCanje int) {
 	tropasIniciales := estadoJugador.Tropas
 	numCartasInicial := len(estadoJugador.Cartas)
 	var tropasEsperadas int
@@ -609,7 +609,7 @@ func cambiarCartas(t *testing.T, estadoJugador *logica_juego.EstadoJugador, err 
 	} else {
 		tropasEsperadas = 15 + (numCanje-6)*5
 	}
-	err = estadoPartida.CambiarCartas("Jugador1", id1, id2, id3)
+	err := estadoPartida.CambiarCartas("Jugador1", id1, id2, id3)
 	if err != nil {
 		t.Fatal("Error al cambiar 3 cartas:", err)
 	}
@@ -623,4 +623,14 @@ func cambiarCartas(t *testing.T, estadoJugador *logica_juego.EstadoJugador, err 
 	}
 
 	t.Log("Canje número:", numCanje, ";Se han recibido", estadoJugador.Tropas-tropasIniciales, "tropas a cambio de", numCartasInicial-len(estadoJugador.Cartas), "cartas")
+}
+
+// invarianteNumeroDeCartas comprueba que la suma de cartas de la baraja, descartes y mano del jugador es 44
+func invarianteNumeroDeCartas(eP logica_juego.EstadoPartida, eJ logica_juego.EstadoJugador, t *testing.T) {
+	t.Log("Cartas en la mano del jugador:", len(eJ.Cartas), ",cartas en la baraja:", len(eP.Cartas),
+		",cartas descartadas:", len(eP.Descartes))
+	cartas := len(eJ.Cartas) + len(eP.Cartas) + len(eP.Descartes)
+	if cartas != 44 {
+		t.Fatal("Hay un total de", cartas, "cartas, no se cumple el invariante")
+	}
 }
