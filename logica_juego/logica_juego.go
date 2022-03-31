@@ -48,7 +48,12 @@ type EstadoPartida struct {
 
 	// Baraja
 	Cartas     []Carta
+	Descartes  []Carta
 	NumCambios int
+
+	// Recibir carta
+	HaConquistado   bool // True si ha conquistado algún territorio en el turno
+	HaRecibidoCarta bool // True si ya ha robado carta, para evitar más de un robo
 
 	// ...
 }
@@ -58,12 +63,15 @@ func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
 		Acciones:         make([]interface{}, 0),
 		Jugadores:        crearSliceJugadores(jugadores),
 		EstadosJugadores: crearMapaEstadosJugadores(jugadores),
-		TurnoJugador:     LanzarDados(), // Primer jugador aleatorio
+		TurnoJugador:     LanzarDados(), // Primer jugador aleatorio TODO no tiene en cuenta el número de jugadores
 		Fase:             Inicio,
 		NumeroTurno:      0,
 		EstadoMapa:       crearEstadoMapa(),
 		Cartas:           crearBaraja(),
+		Descartes:        []Carta{},
 		NumCambios:       0,
+		HaConquistado:    false,
+		HaRecibidoCarta:  false,
 	}
 
 	return e
@@ -141,6 +149,8 @@ func (e *EstadoPartida) ReforzarTerritorio(idTerritorio int, numTropas int, juga
 		return errors.New("Se ha solicitado una acción fuera de turno, el jugador en este turno es " + e.ObtenerJugadorTurno())
 	}
 
+	// TODO limitar refuerzos a la fase de refuerzo
+
 	if estado.Tropas-numTropas < 0 {
 		return errors.New("No tienes tropas suficientes para reforzar un territorio, tropas restantes: " + strconv.Itoa(estado.Tropas))
 	} else {
@@ -152,6 +162,132 @@ func (e *EstadoPartida) ReforzarTerritorio(idTerritorio int, numTropas int, juga
 
 		return nil
 	}
+}
+
+// RecibirCarta da una carta a un jugador en caso de que haya conquistado un territorio durante su turno
+func (e *EstadoPartida) RecibirCarta(jugador string) error {
+	// Comprobamos que el jugador está en la partida y es su turno
+	estado, existe := e.EstadosJugadores[jugador]
+	if !existe {
+		return errors.New("El jugador indicado," + jugador + ", no está en la partida")
+	} else if !e.esTurnoJugador(jugador) {
+		return errors.New("Se ha solicitado una acción fuera de turno, el jugador en este turno es " + e.ObtenerJugadorTurno())
+	}
+
+	if e.Fase != Fortificar {
+		return errors.New("Solo se puede recibir una carta en la fase de fortificación")
+	}
+
+	if !e.HaConquistado {
+		return errors.New("Se debe conquistar algún territorio para recibir una carta")
+	}
+
+	if e.HaRecibidoCarta {
+		return errors.New("Solo se puede recibir una carta por turno")
+	}
+
+	e.HaRecibidoCarta = true
+	carta, cartas, err := retirarPrimeraCarta(e.Cartas)
+	if err != nil {
+		// No quedan cartas en la baraja
+		// Devolvemos los descartes a la baraja y barajamos
+		e.Cartas = e.Descartes
+		e.Descartes = nil
+		barajarCartas(e.Cartas)
+		carta, cartas, err = retirarPrimeraCarta(e.Cartas)
+
+		// Si aun así no hay cartas, devuelve error
+		if err != nil {
+			return err
+		}
+	}
+	e.Cartas = cartas
+	estado.Cartas = append(estado.Cartas, carta)
+
+	// Añadimos la acción
+	e.Acciones = append(e.Acciones, NewAccionObtenerCarta(carta, jugador))
+	return nil
+}
+
+// CambiarCartas permite al jugador cambiar un conjunto de 3 cartas por ejércitos.
+// Los cambios válidos son los siguientes:
+//		- 3 cartas del mismo tipo
+//		- 2 cartas del mismo tipo más un comodín
+//		- 3 cartas, una de cada tipo
+// Los cambios se realizarán durante la fase de refuerzo, o en fase de ataque, si el jugador tiene más
+// de 4 cartas tras derrotar a un rival.
+// Si alguno de los territorios de las cartas cambiadas están ocupados por el jugador, recibirá tropas extra.
+// El número de tropas recibidas dependerá del número de cambios totales:
+// 		- En el primer cambio se recibirán 4 cartas
+//		- Por cada cambio, se recibirán 2 cartas más que en el anterior
+//		- En el sexto cambio se recibirán 15 cartas
+// 		- A partir del sexto cambio, se recibirán 5 cartas más que en el cambio anterior
+
+func (e *EstadoPartida) CambiarCartas(jugador string, ID_carta1, ID_carta2, ID_carta3 int) error {
+	// Comprobamos que el jugador está en la partida y es su turno
+	estado, existe := e.EstadosJugadores[jugador]
+	if !existe {
+		return errors.New("El jugador indicado," + jugador + ", no está en la partida")
+	} else if !e.esTurnoJugador(jugador) {
+		return errors.New("Se ha solicitado una acción fuera de turno, el jugador en este turno es " + e.ObtenerJugadorTurno())
+	}
+
+	if e.Fase == Fortificar || (e.Fase == Ataque && len(estado.Cartas) < 5) {
+		return errors.New("Solo se pueden cambiar cartas durante el refuerzo o el ataque," +
+			" en caso de tener más de 5 tras derrotar a un rival")
+	}
+
+	if !existeCarta(ID_carta1, estado.Cartas) || !existeCarta(ID_carta2, estado.Cartas) ||
+		!existeCarta(ID_carta3, estado.Cartas) {
+		return errors.New("El jugador no dispone de todas las cartas para el cambio")
+	}
+
+	numeroCartasInicial := len(estado.Cartas)
+
+	// Obtenemos las 3 cartas de la mano del jugador
+	carta1, cartas, _ := RetirarCartaPorID(ID_carta1, estado.Cartas)
+	carta2, cartas, _ := RetirarCartaPorID(ID_carta2, cartas)
+	carta3, cartas, _ := RetirarCartaPorID(ID_carta3, cartas)
+	estado.Cartas = cartas
+
+	if !esCambioValido([]Carta{carta1, carta2, carta3}) {
+		// Devolvemos las 3 cartas a la mano del jugador
+		estado.Cartas = append(estado.Cartas, carta1, carta2, carta3)
+		return errors.New("Las cartas introducidas no son válidas para realizar un cambio")
+	}
+
+	// Descartamos las 3 cartas
+	e.Descartes = append(e.Descartes, carta1, carta2, carta3)
+
+	// Calculamos el número de tropas a asignar
+	numTropas := 0
+	e.NumCambios++
+	if e.NumCambios < 6 {
+		numTropas += 4 + (e.NumCambios-1)*2
+	} else {
+		// Número de cambios >= 6
+		numTropas += 15 + (e.NumCambios-6)*5
+	}
+	estado.Tropas += numTropas
+
+	// TODO en caso de que haya varias regiones que coincidan, el jugador debería poder elegir a que región asignar los dos ejércitos extra
+	hayBonificacion := false
+	var regionBonificacion NumRegion
+
+	regiones := obtenerRegionesCartas([]Carta{carta1, carta2, carta3})
+	for _, r := range regiones {
+		if e.EstadoMapa[r].Ocupante == jugador {
+			e.EstadoMapa[r].NumTropas += 2
+			hayBonificacion = true
+			regionBonificacion = r
+			break
+		}
+	}
+
+	// TODO cambiar accion de cambio de cartas -> se cambian conjuntos de uno en uno, numConjuntos no necesario
+
+	e.Acciones = append(e.Acciones, NewAccionCambioCartas(1, numTropas, hayBonificacion, regionBonificacion, numeroCartasInicial >= 5))
+	return nil
 }
 
 func (e *EstadoPartida) esTurnoJugador(jugador string) bool {

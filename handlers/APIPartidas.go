@@ -445,3 +445,52 @@ func ReforzarTerritorio(writer http.ResponseWriter, request *http.Request) {
 		escribirHeaderExito(writer)
 	}
 }
+
+// CambiarCartas permite a un jugador cambiar un conjunto de 3 cartas por tropas. El número de tropas recibidas
+// dependerá del número de cambios totales realizados:
+// 		- En el primer cambio se recibirán 4 cartas
+//		- Por cada cambio, se recibirán 2 cartas más que en el anterior
+//		- En el sexto cambio se recibirán 15 cartas
+// 		- A partir del sexto cambio, se recibirán 5 cartas más que en el cambio anterior
+//
+// Los cambios válidos son los siguientes:
+//		- 3 cartas del mismo tipo
+//		- 2 cartas del mismo tipo más un comodín
+//		- 3 cartas, una de cada tipo
+//
+// Si el jugador cambia una carta en la que aparece un territorio ocupado por él, se añadirán dos tropas a ese territorio.
+// Ruta: /api/cambiarCartas/{carta1}/{carta2}/{carta3}/
+// Tipo: GET
+func CambiarCartas(writer http.ResponseWriter, request *http.Request) {
+	idCarta1, err1 := strconv.Atoi(chi.URLParam(request, "carta1"))
+	idCarta2, err2 := strconv.Atoi(chi.URLParam(request, "carta2"))
+	idCarta3, err3 := strconv.Atoi(chi.URLParam(request, "carta3"))
+
+	if err1 != nil || err2 != nil || err3 != nil {
+		devolverError(writer, errors.New("Los identificadores de las cartas deben ser números naturales"))
+		return
+	}
+	usuario := vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)}
+
+	idPartida, err := dao.PartidaUsuario(globales.Db, &usuario)
+	if err == sql.ErrNoRows {
+		devolverError(writer, errors.New("No estás participando en ninguna partida."))
+		return
+	} else if err != nil {
+		devolverErrorSQL(writer)
+	}
+
+	partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
+
+	err = partida.Estado.CambiarCartas(usuario.NombreUsuario, idCarta1, idCarta2, idCarta3)
+	if err != nil {
+		devolverError(writer, err)
+	} else {
+		// Se sobreescribe en el almacén
+		globales.CachePartidas.AlmacenarPartida(partida)
+
+		// Y se encola un trabajo de serialización de su estado
+		globales.CachePartidas.CanalSerializacion <- partida
+		escribirHeaderExito(writer)
+	}
+}
