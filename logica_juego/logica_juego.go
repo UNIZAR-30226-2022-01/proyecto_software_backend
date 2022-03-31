@@ -88,14 +88,24 @@ func (e *EstadoPartida) SiguienteJugador() {
 	// TODO cuando se puedan eliminar jugadores, habrá que tenerlo en cuenta a la hora de cambiar de turno
 	e.TurnoJugador = (e.TurnoJugador + 1) % len(e.EstadosJugadores)
 	if e.Fase != Inicio {
-		e.asignarTropasRefuerzo(e.Jugadores[e.TurnoJugador])
+		e.AsignarTropasRefuerzo(e.Jugadores[e.TurnoJugador])
 	} else {
 		// No se asignan nuevas tropas durante la fase de inicio
 		e.Acciones = append(e.Acciones, NewAccionInicioTurno(e.Jugadores[e.TurnoJugador], 0, 0, 0))
 	}
 }
 
-func (e *EstadoPartida) asignarTropasRefuerzo(jugador string) {
+// AsignarTropasRefuerzo otorga un número de ejércitos al jugador que comienza un turno, dependiendo del número de territorios
+// que ocupa. El número de ejércitos será la división entera del número de territorios ocupados entre 3.
+// Cabe destacar que como mínimo, se otorgarán 3 ejércitos al principio de cada turno, independientemente de los
+// territorios.
+// Además, si el jugador controla por completo un continente, recibirá ejércitos extra. El número de ejercitos dependerá
+// del continente:
+//		- 2 ejércitos para Oceanía y América del Sur
+//		- 3 ejércitos para África
+//		- 5 ejércitos para América del Norte y Europa
+//		- 7 ejércitos para Asia
+func (e *EstadoPartida) AsignarTropasRefuerzo(jugador string) {
 	regionesOcupadas := 0
 
 	// Comprobamos el número de regiones que ocupa

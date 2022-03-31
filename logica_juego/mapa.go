@@ -59,13 +59,18 @@ func (nr NumRegion) String() string {
 		"central_america", "peru", "western_australia", "alberta"}[nr]
 }
 
+// Continente define el tipo utilizado para representar cada continente. Se almacenará el valor de dicho continente,
+// que corresponde con el número de tropas de bonificación recibidas al ocuparlo, además de la lista de regiones que
+// lo compone
 type Continente struct {
 	Valor    int
 	Regiones []NumRegion
 }
 
+// Continentes que componen el mapa del juego
 var Continentes map[string]Continente
 
+// InicializarContinentes inicializa el mapa Continentes con cada uno de los continentes del mapa de juego
 func InicializarContinentes() {
 	Continentes = make(map[string]Continente)
 
