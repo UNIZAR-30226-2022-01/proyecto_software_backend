@@ -66,8 +66,10 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 
 	existe := bcrypt.CompareHashAndPassword([]byte(hashDB), []byte(password))
 
-	if err != nil || existe != nil {
+	if err != nil {
 		devolverError(writer, errors.New("Se ha producido un error al procesar los datos."))
+	} else if existe != nil {
+		devolverError(writer, errors.New("La contraseña o nombre de usuario introducidos son incorrectos"))
 	} else {
 		err, cookie := middleware.GenerarCookieUsuario(&writer, nombre)
 		if err != nil {

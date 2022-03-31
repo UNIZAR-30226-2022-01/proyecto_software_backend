@@ -4,6 +4,7 @@
 package middleware
 
 import (
+	"errors"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
@@ -38,7 +39,7 @@ func MiddlewareSesion() func(next http.Handler) http.Handler {
 					w.Write([]byte("Tu sesión ha caducado, por favor, inicie sesión de nuevo."))
 					// Se corta la cadena en este punto, porque la cookie es inválida
 					w.WriteHeader(http.StatusUnauthorized)
-					log.Println("Detectada cookie expirada o inválida")
+					log.Println("Detectada cookie expirada o inválida:", cookie.Raw)
 				} else {
 					// Deja pasar al siguiente handler
 					next.ServeHTTP(w, r)
@@ -66,6 +67,8 @@ func ObtenerUsuarioCookie(request *http.Request) (nombre string) {
 // CargarCookieUsuario devuelve la cookie de usuario almacenada en una cookie de usuario de la petición y la equivalente
 // almacenada. Devuelve error en caso de no encontrarse alguna de las dos.
 func CargarCookieUsuario(request *http.Request) (cookie http.Cookie, cookieRequest http.Cookie, err error) {
+	encontrada := false
+
 	for _, c := range request.Cookies() {
 		if c.Name == NOMBRE_COOKIE_USUARIO { // Es una cookie de usuario
 			// Obtener el usuario del valor de la cookie
@@ -77,8 +80,13 @@ func CargarCookieUsuario(request *http.Request) (cookie http.Cookie, cookieReque
 
 			cookieRequest = *c
 
+			encontrada = true
 			break
 		}
+	}
+	if !encontrada {
+		// No se ha encontrado la cookie en la BD
+		err = errors.New("No se ha encontrado la cookie en la BD")
 	}
 
 	return cookie, cookieRequest, err
@@ -94,6 +102,10 @@ func GenerarCookieUsuario(writer *http.ResponseWriter, nombreUsuario string) (er
 
 		cookie := http.Cookie{Name: NOMBRE_COOKIE_USUARIO, Value: valorCookie, Expires: expiracion}
 		http.SetCookie(*writer, &cookie)
+		// TODO: Por refinar una vez realizadas las pruebas de despliegue en un dominio real
+		//cookie.SameSite = 4 // None
+		//cookie.Domain = "localhost"
+		log.Println("dominio:", cookie.Domain)
 		usuarioVO := vo.Usuario{"", nombreUsuario, "", "", cookie, 0, 0, 0, 0, 0}
 
 		err = dao.InsertarCookie(globales.Db, &usuarioVO)
