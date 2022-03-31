@@ -13,6 +13,8 @@ import (
 // EnviarSolicitudAmistad envía una solicitud de amistad entre el usuario que genera
 // la solicitud y el indicado en el nombre. Responde con status 200 si ha habido éxito,
 // o status 500 si ha habido un error junto a su motivo en el cuerpo.
+//
+// Ruta: /api/enviarSolicitudAmistad/{nombre}
 func EnviarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuarioReceptor := chi.URLParam(request, "nombre")
 	nombreUsuarioEmisor := middleware.ObtenerUsuarioCookie(request)
@@ -31,6 +33,8 @@ func EnviarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) {
 // AceptarSolicitudAmistad acepta una solicitud de amistad entre el usuario que genera
 // la solicitud y el indicado en el nombre. Responde con status 200 si ha habido éxito,
 // o status 500 si ha habido un error junto a su motivo en el cuerpo.
+//
+// Ruta: /api/aceptarSolicitudAmistad/{nombre}
 func AceptarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuarioReceptor := chi.URLParam(request, "nombre")
 	nombreUsuarioEmisor := middleware.ObtenerUsuarioCookie(request)
@@ -49,6 +53,8 @@ func AceptarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) 
 // RechazarSolicitudAmistad rechaza una solicitud de amistad entre el usuario que genera
 // la solicitud y el indicado en el nombre. Responde con status 200 si ha habido éxito,
 // o status 500 si ha habido un error junto a su motivo en el cuerpo.
+//
+// Ruta: /api/rechazarSolicitudAmistad/{nombre}
 func RechazarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuarioReceptor := chi.URLParam(request, "nombre")
 	nombreUsuarioEmisor := middleware.ObtenerUsuarioCookie(request)
@@ -69,6 +75,8 @@ func RechazarSolicitudAmistad(writer http.ResponseWriter, request *http.Request)
 // En cualquier otro caso, enviará códgo 200
 // Dicha lista se devuelve en el siguiente formato JSON:
 //	[ string, string, ...]
+//
+// Ruta: /api/listarAmigos
 func ListarAmigos(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
 	usuario := vo.Usuario{NombreUsuario: nombreUsuario}
@@ -88,7 +96,15 @@ func ListarAmigos(writer http.ResponseWriter, request *http.Request) {
 	escribirHeaderExito(writer)
 }
 
-func ConsultarSolicitudesPendientes(writer http.ResponseWriter, request *http.Request) {
+// ObtenerSolicitudesPendientes devuelve una lista de nombres de usuario a los
+// que se les ha enviado una solicitud de amistad aún pendiente por aceptar o
+// rechazar, codificada en JSON.
+//
+// El formato de la respuesta JSON es el siguiente:
+// ["nombre1", "nombre2", ...]
+//
+// Ruta: /api/obtenerSolicitudesPendientes
+func ObtenerSolicitudesPendientes(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
 	usuario := vo.Usuario{NombreUsuario: nombreUsuario}
 	pendientes, err := dao.ConsultarSolicitudesPendientes(globales.Db, &usuario)
@@ -105,17 +121,20 @@ func ConsultarSolicitudesPendientes(writer http.ResponseWriter, request *http.Re
 // ObtenerPerfilUsuario devuelve la información del perfil de un usuario, definido como parte de la URL
 // Si ocurre algún error durante el procesamiento, enviará código de error 500
 // En cualquier otro caso, enviará códgo 200
+//
 // El formato de la respuesta JSON es el siguiente:
-// [
-//	"Email": string
-//	"Nombre": string
-//	"Biografia": string
-// 	"PartidasGanadas": int
-// 	"PartidasTotales": int
-// 	"Puntos": int
-// 	"ID_dado": int
-// 	"ID_ficha": int
-// ]
+//    [
+//	   "Email": string
+//	   "Nombre": string
+//	   "Biografia": string
+// 	   "PartidasGanadas": int
+// 	   "PartidasTotales": int
+// 	   "Puntos": int
+// 	   "ID_dado": int
+// 	   "ID_ficha": int
+//    ]
+//
+// Ruta: /api/obtenerPerfil/{nombre}
 func ObtenerPerfilUsuario(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuario := chi.URLParam(request, "nombre")
 	usuario, err := dao.ObtenerUsuario(globales.Db, nombreUsuario)
@@ -135,7 +154,9 @@ func ObtenerPerfilUsuario(writer http.ResponseWriter, request *http.Request) {
 // Si ocurre algún error durante el procesamiento, enviará código de error 500
 // En cualquier otro caso, enviará códgo 200
 // El formato de la respuesta JSON es el siguiente:
-// [string, string, ...]
+//    [string, string, ...]
+//
+// Ruta: /api/obtenerUsuariosSimilares/{patron}
 func ObtenerUsuariosSimilares(writer http.ResponseWriter, request *http.Request) {
 	patron := chi.URLParam(request, "patron")
 	usuarios, err := dao.ObtenerUsuariosSimilares(globales.Db, patron)
@@ -152,6 +173,10 @@ func ObtenerUsuariosSimilares(writer http.ResponseWriter, request *http.Request)
 
 // ObtenerNotificaciones devuelve un listado codificado en JSON de notificaciones
 // a mostrar, relativas al usuario que lo solicita.
+//
+// Ruta: /api/obtenerNotificaciones/
+//
+// TODO: No implementada
 func ObtenerNotificaciones(writer http.ResponseWriter, request *http.Request) {
 	// TODO
 }

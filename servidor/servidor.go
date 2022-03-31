@@ -177,7 +177,7 @@ func routerAPI() http.Handler {
 		r.Get("/obtenerPerfil/{nombre}", handlers.ObtenerPerfilUsuario)
 		r.Get("/obtenerUsuariosSimilares/{patron}", handlers.ObtenerUsuariosSimilares)
 		r.Get("/obtenerEstadoLobby/{id}", handlers.ObtenerEstadoLobby)
-		r.Get("/obtenerSolicitudesPendientes", handlers.ConsultarSolicitudesPendientes)
+		r.Get("/obtenerSolicitudesPendientes", handlers.ObtenerSolicitudesPendientes)
 	})
 
 	return r

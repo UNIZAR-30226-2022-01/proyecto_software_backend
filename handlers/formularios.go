@@ -13,6 +13,8 @@ import (
 // Registro atiende respuestas de un formulario de campos 'nombre', 'email' y 'password'
 // y registra un usuario acordemente. Responde con status 200 si ha habido éxito,
 // o status 500 si ha habido un error junto a su motivo en el cuerpo.
+//
+// Ruta: /registro
 func Registro(writer http.ResponseWriter, request *http.Request) {
 	nombre := request.FormValue("nombre")
 	email := request.FormValue("email")
@@ -51,6 +53,8 @@ func Registro(writer http.ResponseWriter, request *http.Request) {
 // Login atiende respuestas de un formulario de campos 'nombre' y 'password'
 // y loguea a un usuario acordemente. Responde con status 200 y una cookie de usuario
 // si ha habido éxito, o status 500 si ha habido un error junto a su motivo en el cuerpo.
+//
+// Ruta: /login
 func Login(writer http.ResponseWriter, request *http.Request) {
 	nombre := request.FormValue("nombre")
 	password := request.FormValue("password")

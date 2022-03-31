@@ -26,6 +26,8 @@ import (
 //
 // Si se produciera un error durante el procesado, se devolverá código 500
 // En cualquier otro caso, se devolverá código 200
+//
+// Ruta: /api/crearPartida
 func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 	password := request.FormValue("password")
 	maxJugadores, err := strconv.Atoi(request.FormValue("maxJugadores"))
@@ -78,6 +80,8 @@ func CrearPartida(writer http.ResponseWriter, request *http.Request) {
 // no esté completa la partida, sea pública, o tenga su contraseña si es privada.
 // Si se produciera algún error, devuelve código 500, en caso contrario 200
 // Los campos del formulario son "password" e "idPartida"
+//
+// Ruta: /api/unirseAPartida
 func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 	password := request.FormValue("password")
 	idPartida, err := strconv.Atoi(request.FormValue("idPartida"))
@@ -179,6 +183,8 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 //  "MaxJugadores":int
 //  "NombresJugadores": [string, string, ...]
 // ]
+//
+// Ruta: /api/obtenerEstadoLobby/{id}
 func ObtenerEstadoLobby(writer http.ResponseWriter, request *http.Request) {
 	partida, err := strconv.Atoi(chi.URLParam(request, "id"))
 	if err != nil {
@@ -197,6 +203,8 @@ func ObtenerEstadoLobby(writer http.ResponseWriter, request *http.Request) {
 
 // AbandonarLobby deja la partida en la que el usuario esté participando. Responde con status 200 si ha habido éxito,
 // o status 500 si ha habido un error junto a su motivo en el cuerpo.
+//
+// Ruta: /api/abandonarLobby
 func AbandonarLobby(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
 
@@ -272,6 +280,8 @@ func AbandonarLobby(writer http.ResponseWriter, request *http.Request) {
 //]
 //
 // Si ocurre algún error durante el procesamiento, se devolverá un status 500.
+//
+// Ruta: /api/obtenerPartidas
 func ObtenerPartidas(writer http.ResponseWriter, request *http.Request) {
 	usuario := vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)}
 
@@ -347,6 +357,8 @@ func ObtenerPartidas(writer http.ResponseWriter, request *http.Request) {
 //]
 //
 // La lista de acciones y su formato en JSON están disponibles en el módulo de logica_juego, en acciones.go
+//
+// Ruta: /api/obtenerEstadoPartida
 func ObtenerEstadoPartida(writer http.ResponseWriter, request *http.Request) {
 	usuario := vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)}
 
@@ -389,6 +401,8 @@ func ObtenerEstadoPartida(writer http.ResponseWriter, request *http.Request) {
 //
 // En caso de error (número de tropas incorrecto, el turno del jugador es incorrecto, etc.) se devolverá un código HTTP
 // 500 junto al mensaje de error en el cuerpo.
+//
+// Ruta: /reforzarTerritorio/{id}/{numTropas}
 func ReforzarTerritorio(writer http.ResponseWriter, request *http.Request) {
 	idTerritorio, err := strconv.Atoi(chi.URLParam(request, "id"))
 	if err != nil {

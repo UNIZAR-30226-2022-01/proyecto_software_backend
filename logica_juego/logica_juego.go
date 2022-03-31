@@ -1,3 +1,5 @@
+// Package logica_juego define estructuras y constantes para los diferentes elementos del juego,
+// así como la lista de acciones y regiones a ser interpretada por los clientes.
 package logica_juego
 
 import (

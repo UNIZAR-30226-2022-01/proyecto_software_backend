@@ -18,13 +18,13 @@ const (
 // un jugador dado durante el inicio de la partida.
 //
 // Ejemplo en JSON:
-// {
+//    {
 // 		"IDAccion": 0,
 // 		"Region": 1,
 // 		"TropasRestantes": 4,
 // 		"TerritoriosRestantes": 8,
 // 		"Jugador": "usuario1"
-// }
+//    }
 type AccionRecibirRegion struct {
 	IDAccion             int       // 0
 	Region               NumRegion // Región asignada
@@ -46,11 +46,11 @@ func NewAccionRecibirRegion(region NumRegion, tropasRestantes int, territoriosRe
 // AccionCambioFase corresponde a un cambio de fase dentro del turno del jugador dado.
 //
 // Ejemplo en JSON:
-// {
+//    {
 // 		"IDAccion": 1,
 //      "Fase": 2,
 //      "Jugador": "usuario1"
-// }
+//    }
 type AccionCambioFase struct {
 	IDAccion int    // 1
 	Fase     Fase   // {0: Inicio (no usada), 1: Refuerzo , 2: Ataque , 3: Fortificar}
@@ -68,13 +68,13 @@ func NewAccionCambioFase(fase Fase, jugador string) AccionCambioFase {
 // que no sean de solicitud de estado durante su turno.
 //
 // Ejemplo en JSON:
-// {
+//    {
 // 		"IDAccion": 2,
 // 		"Jugador": "usuario1",
 // 		"TropasObtenidas": 2,
 // 		"RazonNumeroTerritorios": 12,
 // 		"RazonContinentesOcupados": 1
-// }
+//    }
 type AccionInicioTurno struct {
 	IDAccion                 int    // 2
 	Jugador                  string // Jugador del nuevo turno
@@ -96,14 +96,14 @@ func NewAccionInicioTurno(jugador string, tropasObtenidas int, razonNumeroTerrit
 // que no sean de solicitud de estado durante su turno.
 //
 // Ejemplo en JSON:
-// {
+//    {
 // 		"IDAccion": 3,
 // 		"NumConjuntosCambiados": 1,
 // 		"NumTropasObtenidas": 2,
 // 		"BonificacionObtenida": true,
 // 		"RegionQueOtorgaBonificacion": 2,
 // 		"ObligadoAHacerCambios": false
-// }
+//    }
 type AccionCambioCartas struct {
 	IDAccion                    int       // 3
 	NumConjuntosCambiados       int       // Número de cartas cambiadas (múltiplos de 3)
@@ -126,12 +126,12 @@ func NewAccionCambioCartas(numConjuntosCambiados int, numTropasObtenidas int, bo
 // AccionReforzar corresponde a un refuerzo de una región por un jugador
 //
 // Ejemplo en JSON:
-// {
+//    {
 //		"IDAccion": 4,
 //		"Jugador": "usuario1",
 //		"TerritorioReforzado": 1,
 //		"TropasRefuerzo": 20
-// }
+//    }
 type AccionReforzar struct {
 	IDAccion            int       // 4
 	Jugador             string    // Jugador que ha reforzado el territorio
@@ -150,7 +150,7 @@ func NewAccionReforzar(jugador string, territorioReforzado NumRegion, tropasRefu
 // AccionAtaque corresponde al ataque de una región por parte de un usuario dado
 //
 // Ejemplo en JSON:
-// {
+//    {
 //  	"IDAccion": 5,
 //  	"Origen": 2,
 //  	"Destino": 3,
@@ -159,7 +159,7 @@ func NewAccionReforzar(jugador string, territorioReforzado NumRegion, tropasRefu
 //  	"NumDadosAtaque": 3,
 //  	"JugadorAtacante": "usuario1",
 //  	"JugadorDefensor": "usuario2"
-// }
+//    }
 type AccionAtaque struct {
 	IDAccion               int       // 5
 	Origen                 NumRegion // ID de región de la cual se origina el ataque (y usan sus tropas)
@@ -185,7 +185,7 @@ func NewAccionAtaque(origen NumRegion, destino NumRegion, tropasPerdidasAtacante
 // AccionOcupar corresponde a la ocupación de una región por un jugador tras un ataque con éxito.
 //
 // Ejemplo en JSON:
-// {
+//    {
 // 		"IDAccion": 6,
 // 		"Origen": 2,
 // 		"Destino": 3,
@@ -193,7 +193,7 @@ func NewAccionAtaque(origen NumRegion, destino NumRegion, tropasPerdidasAtacante
 // 		"TropasDestino": 5,
 // 		"JugadorOcupante": "usuario1",
 // 		"JugadorOcupado": "usuario2"
-// }
+//    }
 type AccionOcupar struct {
 	IDAccion        int       // 6
 	Origen          NumRegion // ID de región desde la cual se originó el ataque (y usaron sus tropas)
@@ -218,14 +218,14 @@ func NewAccionOcupar(origen NumRegion, destino NumRegion, tropasOrigen NumRegion
 // AccionFortificar corresponde a la fortificación de un territorio de un jugador
 //
 // Ejemplo en JSON:
-// {
+//    {
 // 		"IDAccion": 7,
 // 		"Origen": 7,
 // 		"Destino": 9,
 // 		"TropasOrigen": 10,
 // 		"TropasDestino": 8,
 // 		"Jugador": "usuario1"
-// }
+//    }
 type AccionFortificar struct {
 	IDAccion      int       // 7
 	Origen        NumRegion // ID de región desde la cual se han movido tropas
@@ -248,7 +248,7 @@ func NewAccionFortificar(origen, destino NumRegion, tropasOrigen, tropasDestino 
 // AccionObtenerCarta corresponde a la recepción de una carta por parte de un jugador
 //
 // Ejemplo en JSON:
-// {
+//    {
 // 		"IDAccion": 8,
 // 		"Carta": {
 //          		"Tipo": 0,					// {0: Infanteria, 1: Caballeria, 2: Artilleria}
@@ -256,7 +256,7 @@ func NewAccionFortificar(origen, destino NumRegion, tropasOrigen, tropasDestino 
 //          		"EsComodin": false			// Flag de si la carta es un comodín (tiene cualquier tipo de tropa y no tiene región)
 //          	 },
 //  	"Jugador": "usuario1"
-// }
+//    }
 type AccionObtenerCarta struct {
 	IDAccion int    // 8
 	Carta    Carta  // Carta recibida
