@@ -53,11 +53,13 @@ func IniciarServidor(test bool) {
 	// Inicio de lógica del juego
 	if os.Args[len(os.Args)-1] == "-api" || test {
 		logica_juego.InicializarGrafoMapa()
+		logica_juego.InicializarContinentes()
 		globales.CachePartidas = globales.IniciarAlmacenPartidas()
 
+		// Registra los tipos a decodificar por gob a partir de interface{}
+		logica_juego.RegistrarAcciones()
+
 		go func(cs chan vo.Partida, cp chan struct{}) {
-			// Registra los tipos a decodificar por gob a partir de interface{}
-			logica_juego.RegistrarAcciones()
 			for {
 				select {
 				case partida := <-cs:

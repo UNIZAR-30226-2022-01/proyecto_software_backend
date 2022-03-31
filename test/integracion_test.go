@@ -678,4 +678,6 @@ func TestBaraja(t *testing.T) {
 	}
 
 	t.Log("El último cambio de cartas fue:", accionCambio)
+
+	// TODO probar que se añaden y retiran cartas correctamente de baraja, descartes y mano del jugador
 }

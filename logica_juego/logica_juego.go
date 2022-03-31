@@ -85,11 +85,54 @@ func (e *EstadoPartida) SiguienteJugadorSinAccion() {
 
 // SiguienteJugador cambia el turno a otro jugador, emitiendo la acción correspondiente.
 func (e *EstadoPartida) SiguienteJugador() {
+	// TODO cuando se puedan eliminar jugadores, habrá que tenerlo en cuenta a la hora de cambiar de turno
 	e.TurnoJugador = (e.TurnoJugador + 1) % len(e.EstadosJugadores)
+	if e.Fase != Inicio {
+		e.asignarTropasRefuerzo(e.Jugadores[e.TurnoJugador])
+	} else {
+		// No se asignan nuevas tropas durante la fase de inicio
+		e.Acciones = append(e.Acciones, NewAccionInicioTurno(e.Jugadores[e.TurnoJugador], 0, 0, 0))
+	}
+}
 
-	// TODO: Encolar un AccionInicioTurno calculando el nº de tropas según las regiones y continentes ocupados
-	//e.Acciones = append(e.Acciones, AccionCambioTurno{IDAccion: 1, Jugador: e.Jugadores[e.TurnoJugador]})
-	e.Acciones = append(e.Acciones, struct{}{})
+func (e *EstadoPartida) asignarTropasRefuerzo(jugador string) {
+	regionesOcupadas := 0
+
+	// Comprobamos el número de regiones que ocupa
+	for _, region := range e.EstadoMapa {
+		if region.Ocupante == jugador {
+			regionesOcupadas++
+		}
+	}
+
+	tropasObtenidas := 0
+	if regionesOcupadas < 12 {
+		tropasObtenidas = 3
+	} else {
+		tropasObtenidas = regionesOcupadas / 3
+	}
+
+	// Comprobamos si controla algún continente por completo
+	continentesControlados := 0
+	for _, c := range Continentes {
+		puedeControlar := true
+		for _, region := range c.Regiones {
+			// Si alguna región del continente no es ocupada por el jugador, no lo puede controlar completamente
+			if e.EstadoMapa[region].Ocupante != jugador {
+				puedeControlar = false
+				break
+			}
+		}
+
+		// Si todas las regiones son ocupadas por el jugador, controla el continente
+		if puedeControlar {
+			continentesControlados++
+			tropasObtenidas += c.Valor
+		}
+	}
+
+	e.EstadosJugadores[jugador].Tropas += tropasObtenidas
+	e.Acciones = append(e.Acciones, NewAccionInicioTurno(jugador, tropasObtenidas, regionesOcupadas, continentesControlados))
 }
 
 // RellenarRegiones rellena las regiones del estado de la partida equitativa y aleatoriamente entre los usuarios, consumiendo
