@@ -15,6 +15,7 @@ import (
 // o status 500 si ha habido un error junto a su motivo en el cuerpo.
 //
 // Ruta: /registro
+// Tipo: POST
 func Registro(writer http.ResponseWriter, request *http.Request) {
 	nombre := request.FormValue("nombre")
 	email := request.FormValue("email")
@@ -55,6 +56,7 @@ func Registro(writer http.ResponseWriter, request *http.Request) {
 // si ha habido éxito, o status 500 si ha habido un error junto a su motivo en el cuerpo.
 //
 // Ruta: /login
+// Tipo: POST
 func Login(writer http.ResponseWriter, request *http.Request) {
 	nombre := request.FormValue("nombre")
 	password := request.FormValue("password")

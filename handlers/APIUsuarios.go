@@ -15,6 +15,7 @@ import (
 // o status 500 si ha habido un error junto a su motivo en el cuerpo.
 //
 // Ruta: /api/enviarSolicitudAmistad/{nombre}
+// Tipo: POST
 func EnviarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuarioReceptor := chi.URLParam(request, "nombre")
 	nombreUsuarioEmisor := middleware.ObtenerUsuarioCookie(request)
@@ -35,6 +36,7 @@ func EnviarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) {
 // o status 500 si ha habido un error junto a su motivo en el cuerpo.
 //
 // Ruta: /api/aceptarSolicitudAmistad/{nombre}
+// Tipo: POST
 func AceptarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuarioReceptor := chi.URLParam(request, "nombre")
 	nombreUsuarioEmisor := middleware.ObtenerUsuarioCookie(request)
@@ -55,6 +57,7 @@ func AceptarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) 
 // o status 500 si ha habido un error junto a su motivo en el cuerpo.
 //
 // Ruta: /api/rechazarSolicitudAmistad/{nombre}
+// Tipo: POST
 func RechazarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuarioReceptor := chi.URLParam(request, "nombre")
 	nombreUsuarioEmisor := middleware.ObtenerUsuarioCookie(request)
@@ -77,6 +80,7 @@ func RechazarSolicitudAmistad(writer http.ResponseWriter, request *http.Request)
 //	[ string, string, ...]
 //
 // Ruta: /api/listarAmigos
+// Tipo: GET
 func ListarAmigos(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
 	usuario := vo.Usuario{NombreUsuario: nombreUsuario}
@@ -104,6 +108,7 @@ func ListarAmigos(writer http.ResponseWriter, request *http.Request) {
 // ["nombre1", "nombre2", ...]
 //
 // Ruta: /api/obtenerSolicitudesPendientes
+// Tipo: GET
 func ObtenerSolicitudesPendientes(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
 	usuario := vo.Usuario{NombreUsuario: nombreUsuario}
@@ -135,6 +140,7 @@ func ObtenerSolicitudesPendientes(writer http.ResponseWriter, request *http.Requ
 //    ]
 //
 // Ruta: /api/obtenerPerfil/{nombre}
+// Tipo: GET
 func ObtenerPerfilUsuario(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuario := chi.URLParam(request, "nombre")
 	usuario, err := dao.ObtenerUsuario(globales.Db, nombreUsuario)
@@ -157,6 +163,7 @@ func ObtenerPerfilUsuario(writer http.ResponseWriter, request *http.Request) {
 //    [string, string, ...]
 //
 // Ruta: /api/obtenerUsuariosSimilares/{patron}
+// Tipo: GET
 func ObtenerUsuariosSimilares(writer http.ResponseWriter, request *http.Request) {
 	patron := chi.URLParam(request, "patron")
 	usuarios, err := dao.ObtenerUsuariosSimilares(globales.Db, patron)
@@ -175,7 +182,7 @@ func ObtenerUsuariosSimilares(writer http.ResponseWriter, request *http.Request)
 // a mostrar, relativas al usuario que lo solicita.
 //
 // Ruta: /api/obtenerNotificaciones/
-//
+// Tipo: GET
 // TODO: No implementada
 func ObtenerNotificaciones(writer http.ResponseWriter, request *http.Request) {
 	// TODO
