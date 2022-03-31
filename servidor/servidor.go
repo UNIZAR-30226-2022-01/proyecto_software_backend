@@ -58,6 +58,7 @@ func IniciarServidor(test bool) {
 		go func(cs chan vo.Partida, cp chan struct{}) {
 			// Registra los tipos a decodificar por gob a partir de interface{}
 			logica_juego.RegistrarAcciones()
+			logica_juego.RegistrarNotificaciones()
 			for {
 				select {
 				case partida := <-cs:
@@ -166,7 +167,7 @@ func routerAPI() http.Handler {
 		r.Post("/unirseAPartida", handlers.UnirseAPartida)
 		r.Post("/abandonarLobby", handlers.AbandonarLobby)
 		r.Get("/obtenerPartidas", handlers.ObtenerPartidas)
-		//r.Get("/obtenerEstadoLobby", handlers.ObtenerEstadoLobby)
+		r.Get("/obtenerEstadoLobby", handlers.ObtenerEstadoLobby)
 		r.Get("/obtenerEstadoPartida", handlers.ObtenerEstadoPartida)
 		r.Post("/reforzarTerritorio/{id}/{numTropas}", handlers.ReforzarTerritorio)
 
@@ -174,7 +175,7 @@ func routerAPI() http.Handler {
 		r.Post("/aceptarSolicitudAmistad/{nombre}", handlers.AceptarSolicitudAmistad)
 		r.Post("/rechazarSolicitudAmistad/{nombre}", handlers.RechazarSolicitudAmistad)
 		r.Post("/enviarSolicitudAmistad/{nombre}", handlers.EnviarSolicitudAmistad)
-		r.Get("/obtenerNotificaciones/", handlers.ObtenerNotificaciones)
+		r.Get("/obtenerNotificaciones", handlers.ObtenerNotificaciones)
 		r.Get("/listarAmigos", handlers.ListarAmigos)
 		r.Get("/obtenerPerfil/{nombre}", handlers.ObtenerPerfilUsuario)
 		r.Get("/obtenerUsuariosSimilares/{patron}", handlers.ObtenerUsuariosSimilares)

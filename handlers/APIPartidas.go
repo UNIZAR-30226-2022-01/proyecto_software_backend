@@ -25,7 +25,7 @@ import (
 //		si tipo== "Publica", será publica, en cualquier otro caso será privada
 //  "password" define la contraseña necesaria para el acceso a una partida privada
 //
-// Si se produciera un error durante el procesado, se devolverá código 500
+// Si se produjera un error durante el procesado, se devolverá código 500
 // En cualquier otro caso, se devolverá código 200
 //
 // Ruta: /api/crearPartida

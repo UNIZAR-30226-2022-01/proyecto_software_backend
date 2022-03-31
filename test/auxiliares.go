@@ -624,3 +624,31 @@ func cambiarCartas(t *testing.T, estadoJugador *logica_juego.EstadoJugador, err 
 
 	t.Log("Canje número:", numCanje, ";Se han recibido", estadoJugador.Tropas-tropasIniciales, "tropas a cambio de", numCartasInicial-len(estadoJugador.Cartas), "cartas")
 }
+
+func obtenerNotificaciones(t *testing.T, cookie *http.Cookie) (notificaciones []interface{}) {
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerNotificaciones", nil)
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // Para indicar que el formulario "va en la url", porque campos.Encode() hace eso
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		t.Fatal("Error en GET de obtener notificaciones:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al obtener notificaciones:", resp.StatusCode)
+	} else {
+		log.Println("Acciones recibidas:")
+		err = json.NewDecoder(resp.Body).Decode(&notificaciones)
+
+	}
+
+	return notificaciones
+}
