@@ -543,4 +543,21 @@ func TestBaraja(t *testing.T) {
 		t.Fatal("No se han recibido tropas adicionales")
 	}
 	t.Log("Inicialmente, la región tenía", tropasIniciales, "tropas, tras el canje hay un total de ", estadoRegion.NumTropas-tropasIniciales)
+
+	// Comprobar que se añade correctamente la acción de cambio de cartas
+	accion := estadoPartida.Acciones[len(estadoPartida.Acciones)-1]
+	accionCambio, ok := accion.(logica_juego.AccionCambioCartas)
+	if !ok {
+		t.Fatal("La última acción no es un cambio de cartas")
+	}
+
+	if !accionCambio.ObligadoAHacerCambios {
+		t.Fatal("El jugador debería estar obligado a cambiar, al tener más de 4 cartas")
+	}
+
+	if !accionCambio.BonificacionObtenida {
+		t.Fatal("No se ha obtenido bonificación por territorio al cambiar las cartas")
+	}
+
+	t.Log("El último cambio de cartas fue:", accionCambio)
 }

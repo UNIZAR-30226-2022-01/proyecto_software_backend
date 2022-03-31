@@ -191,15 +191,20 @@ func (e *EstadoPartida) RecibirCarta(jugador string) error {
 	return nil
 }
 
-// CambiarCartas permite al jugador cambiar un conjunto de 3 cartas por ejércitos
-// Para ello, las cartas deberán ser del mismo tipo o cada una de un tipo diferente
-// Además, se podrá realizar un cambio en caso de tener dos cartas del mismo tipo y un comodín
+// CambiarCartas permite al jugador cambiar un conjunto de 3 cartas por ejércitos.
+// Los cambios válidos son los siguientes:
+//		- 3 cartas del mismo tipo
+//		- 2 cartas del mismo tipo más un comodín
+//		- 3 cartas, una de cada tipo
 // Los cambios se realizarán durante la fase de refuerzo, o en fase de ataque, si el jugador tiene más
 // de 4 cartas tras derrotar a un rival.
-// Si alguno de los territorios de las cartas cambiadas están ocupados por el jugador, recibirá tropas extra
-// El número de ejércitos recibidos dependerá del número total de canjes.
-// Del primer al quinto cambio numTropas = 4 + (nº cambio - 1) * 2
-// A partir del sexto cambio numTropas = 15 + (nº cambio - 6) * 5
+// Si alguno de los territorios de las cartas cambiadas están ocupados por el jugador, recibirá tropas extra.
+// El número de tropas recibidas dependerá del número de cambios totales:
+// 		- En el primer cambio se recibirán 4 cartas
+//		- Por cada cambio, se recibirán 2 cartas más que en el anterior
+//		- En el sexto cambio se recibirán 15 cartas
+// 		- A partir del sexto cambio, se recibirán 5 cartas más que en el cambio anterior
+
 func (e *EstadoPartida) CambiarCartas(jugador string, ID_carta1, ID_carta2, ID_carta3 int) error {
 	// Comprobamos que el jugador está en la partida y es su turno
 	estado, existe := e.EstadosJugadores[jugador]
