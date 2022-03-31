@@ -63,7 +63,7 @@ func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
 		Acciones:         make([]interface{}, 0),
 		Jugadores:        crearSliceJugadores(jugadores),
 		EstadosJugadores: crearMapaEstadosJugadores(jugadores),
-		TurnoJugador:     LanzarDados(), // Primer jugador aleatorio TODO no tiene en cuenta el número de jugadores
+		TurnoJugador:     (LanzarDados()) % len(jugadores), // Primer jugador aleatorio
 		Fase:             Inicio,
 		NumeroTurno:      0,
 		EstadoMapa:       crearEstadoMapa(),
