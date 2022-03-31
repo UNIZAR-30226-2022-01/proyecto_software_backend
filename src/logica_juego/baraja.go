@@ -48,27 +48,28 @@ func crearBaraja() (cartas []Carta) {
 }
 
 // retirarPrimeraCarta devuelve la primera carta del conjunto "cartas", o un error en caso de que no haya ninguna
-func retirarPrimeraCarta(cartas []Carta) (carta Carta, err error) {
+func retirarPrimeraCarta(cartas []Carta) (carta Carta, cartasRes []Carta, err error) {
 	if len(cartas) > 0 {
 		carta = cartas[0]
-		cartas = cartas[1:]
-		return carta, nil
+		cartasRes = cartas[1:]
+
+		return carta, cartasRes, nil
 	}
 
-	return Carta{}, errors.New("El conjunto de cartas está vacío")
+	return Carta{}, []Carta{}, errors.New("El conjunto de cartas está vacío")
 }
 
-// retirarCartaPorID retira la carta identificada por "id" del conjunto "cartas" en caso de que exista
+// RetirarCartaPorID retira la carta identificada por "id" del conjunto "cartas" en caso de que exista
 // En cualquier otro caso devuelve un error
-func retirarCartaPorID(id int, cartas []Carta) (carta Carta, err error) {
+func RetirarCartaPorID(id int, cartas []Carta) (carta Carta, cartasRes []Carta, err error) {
 	for i, c := range cartas {
 		if c.IdCarta == id {
-			cartas = append(cartas[0:i], cartas[i+1:]...)
-			return c, nil
+			cartasRes = append(cartas[0:i], cartas[i+1:]...)
+			return c, cartasRes, nil
 		}
 	}
 
-	return Carta{}, errors.New("La carta con id " + strconv.Itoa(id) + " no existe en el conjunto")
+	return Carta{}, []Carta{}, errors.New("La carta con id " + strconv.Itoa(id) + " no existe en el conjunto")
 }
 
 // existeCarta devuelve true si existe la carta con identificador "id" en el conjunto "cartas", false si no

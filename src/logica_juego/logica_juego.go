@@ -61,7 +61,7 @@ func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
 		Acciones:         make([]interface{}, 0),
 		Jugadores:        crearSliceJugadores(jugadores),
 		EstadosJugadores: crearMapaEstadosJugadores(jugadores),
-		TurnoJugador:     LanzarDados(), // Primer jugador aleatorio
+		TurnoJugador:     LanzarDados(), // Primer jugador aleatorio TODO no tiene en cuenta el número de jugadores
 		Fase:             Inicio,
 		NumeroTurno:      0,
 		EstadoMapa:       crearEstadoMapa(),
@@ -169,15 +169,21 @@ func (e *EstadoPartida) RecibirCarta(jugador string) error {
 	}
 
 	e.HaRecibidoCarta = true
-	carta, err := retirarPrimeraCarta(e.Cartas)
+	carta, cartas, err := retirarPrimeraCarta(e.Cartas)
 	if err != nil {
 		// No quedan cartas en la baraja
 		// Devolvemos los descartes a la baraja y barajamos
-		copy(e.Cartas, e.Descartes)
+		e.Cartas = e.Descartes
 		e.Descartes = nil
 		barajarCartas(e.Cartas)
-		carta, _ = retirarPrimeraCarta(e.Cartas)
+		carta, cartas, err = retirarPrimeraCarta(e.Cartas)
+
+		// Si aun así no hay cartas, devuelve error
+		if err != nil {
+			return err
+		}
 	}
+	e.Cartas = cartas
 	estado.Cartas = append(estado.Cartas, carta)
 
 	// Añadimos la acción
@@ -216,9 +222,10 @@ func (e *EstadoPartida) CambiarCartas(jugador string, ID_carta1, ID_carta2, ID_c
 	numeroCartasInicial := len(estado.Cartas)
 
 	// Obtenemos las 3 cartas de la mano del jugador
-	carta1, _ := retirarCartaPorID(ID_carta1, estado.Cartas)
-	carta2, _ := retirarCartaPorID(ID_carta2, estado.Cartas)
-	carta3, _ := retirarCartaPorID(ID_carta3, estado.Cartas)
+	carta1, cartas, _ := RetirarCartaPorID(ID_carta1, estado.Cartas)
+	carta2, cartas, _ := RetirarCartaPorID(ID_carta2, cartas)
+	carta3, cartas, _ := RetirarCartaPorID(ID_carta3, cartas)
+	estado.Cartas = cartas
 
 	if !esCambioValido([]Carta{carta1, carta2, carta3}) {
 		// Devolvemos las 3 cartas a la mano del jugador
@@ -244,7 +251,7 @@ func (e *EstadoPartida) CambiarCartas(jugador string, ID_carta1, ID_carta2, ID_c
 	hayBonificacion := false
 	var regionBonificacion NumRegion
 
-	regiones := obtenerRegionesCartas(estado.Cartas)
+	regiones := obtenerRegionesCartas([]Carta{carta1, carta2, carta3})
 	for _, r := range regiones {
 		if e.EstadoMapa[r].Ocupante == jugador {
 			e.EstadoMapa[r].NumTropas += 2

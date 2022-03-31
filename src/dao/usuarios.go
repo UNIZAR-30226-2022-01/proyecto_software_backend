@@ -86,6 +86,7 @@ func ConsultarPasswordHash(db *sql.DB, usuario *vo.Usuario) (hash string, err er
 // CrearSolicitudAmistad registra una solicitud de amistad entre los usuarios emisor y receptor. En caso de fallo o no
 // encontrarse alguno de ellos, devuelve un error.
 func CrearSolicitudAmistad(db *sql.DB, emisor *vo.Usuario, receptor *vo.Usuario) error {
+	// TODO añadir restricción para que no se generen solicitudes duplicadas en las que solo cambia el orden de emisor y receptor
 	_, err := db.Exec(`INSERT INTO "backend"."EsAmigo"("nombreUsuario1", "nombreUsuario2", "pendiente") VALUES($1, $2, $3)`,
 		emisor.NombreUsuario, receptor.NombreUsuario, true)
 

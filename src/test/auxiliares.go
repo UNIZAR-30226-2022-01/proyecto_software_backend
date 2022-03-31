@@ -491,3 +491,40 @@ func obtenerPartidas(cookie *http.Cookie, t *testing.T) []vo.ElementoListaPartid
 
 	return nil
 }
+
+func robarBarajaCompleta(e *logica_juego.EstadoPartida, t *testing.T) {
+	e.HaConquistado = true
+	e.HaRecibidoCarta = false
+	err := e.RecibirCarta("Jugador1")
+	for err == nil {
+		e.HaConquistado = true
+		e.HaRecibidoCarta = false
+		err = e.RecibirCarta("Jugador1")
+	}
+	t.Log("Ya no quedan cartas, o error:", err)
+}
+
+func cambiarCartas(t *testing.T, estadoJugador *logica_juego.EstadoJugador, err error, estadoPartida *logica_juego.EstadoPartida, id1, id2, id3, numCanje int) {
+	tropasIniciales := estadoJugador.Tropas
+	numCartasInicial := len(estadoJugador.Cartas)
+	var tropasEsperadas int
+	if numCanje < 6 {
+		tropasEsperadas = 4 + (numCanje-1)*2
+	} else {
+		tropasEsperadas = 15 + (numCanje-6)*5
+	}
+	err = estadoPartida.CambiarCartas("Jugador1", id1, id2, id3)
+	if err != nil {
+		t.Fatal("Error al cambiar 3 cartas:", err)
+	}
+
+	if (estadoJugador.Tropas - tropasIniciales) != tropasEsperadas {
+		t.Fatal("El jugador debería recibir", tropasEsperadas, "tropas por el canje, pero recibe", estadoJugador.Tropas-tropasIniciales)
+	}
+
+	if (numCartasInicial - len(estadoJugador.Cartas)) != 3 {
+		t.Fatal("Se deberían haber cambiado 3 cartas, pero se han cambiado:", numCartasInicial-len(estadoJugador.Cartas))
+	}
+
+	t.Log("Canje número:", numCanje, ";Se han recibido", estadoJugador.Tropas-tropasIniciales, "tropas a cambio de", numCartasInicial-len(estadoJugador.Cartas), "cartas")
+}
