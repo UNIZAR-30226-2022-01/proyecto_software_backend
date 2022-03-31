@@ -1,3 +1,4 @@
+// Package handlers define las funciones de tratamiento de cada ruta a la API
 package handlers
 
 import (

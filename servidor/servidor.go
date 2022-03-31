@@ -1,3 +1,5 @@
+// Package servidor define y controla el servidor HTTP y las rutas a la API o al contenido web, según
+// los argumentos introducidos
 package servidor
 
 import (

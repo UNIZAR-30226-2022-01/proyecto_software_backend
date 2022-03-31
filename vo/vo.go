@@ -1,3 +1,5 @@
+// Package vo define estructuras de datos a utilizar para la comunicación con la base
+// de datos y los clientes
 package vo
 
 import (

@@ -1,3 +1,4 @@
+// Package dao define funciones de comunicación directa con la base de datos
 package dao
 
 import (
