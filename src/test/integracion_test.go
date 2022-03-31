@@ -426,6 +426,9 @@ func TestFuncionesSociales(t *testing.T) {
 }
 
 func TestBaraja(t *testing.T) {
+	t.Log("Purgando DB...")
+	purgarDB()
+
 	estadoPartida := logica_juego.CrearEstadoPartida([]string{"Jugador1", "Jugador2", "Jugador3"})
 	estadoPartida.TurnoJugador = 0
 	estadoPartida.Fase = logica_juego.Fortificar
