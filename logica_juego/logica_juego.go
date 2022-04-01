@@ -222,7 +222,6 @@ func (e *EstadoPartida) RecibirCarta(jugador string) error {
 //		- Por cada cambio, se recibirán 2 cartas más que en el anterior
 //		- En el sexto cambio se recibirán 15 cartas
 // 		- A partir del sexto cambio, se recibirán 5 cartas más que en el cambio anterior
-
 func (e *EstadoPartida) CambiarCartas(jugador string, ID_carta1, ID_carta2, ID_carta3 int) error {
 	// Comprobamos que el jugador está en la partida y es su turno
 	estado, existe := e.EstadosJugadores[jugador]
