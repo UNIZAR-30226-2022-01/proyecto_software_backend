@@ -20,12 +20,11 @@ import (
 // CrearPartida crea una nueva partida, para la que se definirá el número máximo de jugadores,
 // si es pública o privada, y la contraseña en caso de que fuera necesario
 // Parámetros del formulario recibido:
-//	"maxJugadores" indica el número máximo de jugadores
-//	"tipo"	indica si la partida es pública o privada
-//		si tipo== "Publica", será publica, en cualquier otro caso será privada
-//  "password" define la contraseña necesaria para el acceso a una partida privada
+//	El campo "maxJugadores" indica el número máximo de jugadores, "tipo"	indica si la partida es pública o privada.
+//	Si la cadena "tipo" equivale a "Publica", la partida será pública, en cualquier otro caso será privada.
+//  El campo "password" define la contraseña necesaria para el acceso a una partida privada.
 //
-// Si se produciera un error durante el procesado, se devolverá código 500
+// Si se produjera un error durante el procesado, se devolverá código 500
 // En cualquier otro caso, se devolverá código 200
 //
 // Ruta: /api/crearPartida
@@ -179,13 +178,13 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 // los jugadores que se encuentran en el lobby
 // Devuelve código de error 500 en caso de error, código 200 en cualquier otro caso
 // El JSON devuelto tiene el siguiente formato
-// [
-//  "EnCurso":bool
-// 	"EsPublico":bool
-//  "Jugadores":int
-//  "MaxJugadores":int
+// {
+//  "EnCurso":bool,
+// 	"EsPublico":bool,
+//  "Jugadores":int,
+//  "MaxJugadores":int,
 //  "NombresJugadores": [string, string, ...]
-// ]
+// }
 //
 // Ruta: /api/obtenerEstadoLobby/{id}
 // Tipo: GET
@@ -478,6 +477,7 @@ func CambiarCartas(writer http.ResponseWriter, request *http.Request) {
 		return
 	} else if err != nil {
 		devolverErrorSQL(writer)
+		return
 	}
 
 	partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
@@ -493,4 +493,48 @@ func CambiarCartas(writer http.ResponseWriter, request *http.Request) {
 		globales.CachePartidas.CanalSerializacion <- partida
 		escribirHeaderExito(writer)
 	}
+}
+
+// ConsultarCartas permite al usuario consultar las cartas que tiene en la mano mientras juega una partida
+// Un usuario podrá consultar únicamente sus propias cartas.
+// El JSON enviado como respuesta tendrá el siguiente formato:
+// [{carta}, {carta}, ...]
+//
+// Por ejemplo:
+// [
+//      	{
+//        		"IdCarta": 1,
+//        		"Tipo": 0,
+//        		"Region": 29,
+//        		"EsComodin": false
+//        	},
+//        	{
+//        		"IdCarta": 20,
+//        		"Tipo": 1,
+//        		"Region": 22,
+//        		"EsComodin": false
+//        	}
+// ]
+// Ruta: /api/consultarCartas
+// Tipo: GET
+func ConsultarCartas(writer http.ResponseWriter, request *http.Request) {
+	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
+	usuario := vo.Usuario{NombreUsuario: nombreUsuario}
+
+	idPartida, err := dao.PartidaUsuario(globales.Db, &usuario)
+	if err == sql.ErrNoRows {
+		devolverError(writer, errors.New("No estás participando en ninguna partida."))
+		return
+	} else if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
+	cartas := partida.Estado.ConsultarCartas(nombreUsuario)
+
+	// Enviamos como respuesta un JSON que contenga las cartas
+	writer.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(writer).Encode(cartas)
+	escribirHeaderExito(writer)
 }

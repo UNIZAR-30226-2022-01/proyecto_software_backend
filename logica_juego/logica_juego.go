@@ -63,7 +63,7 @@ func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
 		Acciones:         make([]interface{}, 0),
 		Jugadores:        crearSliceJugadores(jugadores),
 		EstadosJugadores: crearMapaEstadosJugadores(jugadores),
-		TurnoJugador:     LanzarDados(), // Primer jugador aleatorio TODO no tiene en cuenta el número de jugadores
+		TurnoJugador:     (LanzarDados()) % len(jugadores), // Primer jugador aleatorio
 		Fase:             Inicio,
 		NumeroTurno:      0,
 		EstadoMapa:       crearEstadoMapa(),
@@ -287,6 +287,11 @@ func (e *EstadoPartida) CambiarCartas(jugador string, ID_carta1, ID_carta2, ID_c
 
 	e.Acciones = append(e.Acciones, NewAccionCambioCartas(1, numTropas, hayBonificacion, regionBonificacion, numeroCartasInicial >= 5))
 	return nil
+}
+
+// ConsultarCartas devuelve un slice que contiene las cartas que posee el usuario "jugador"
+func (e *EstadoPartida) ConsultarCartas(jugador string) []Carta {
+	return e.EstadosJugadores[jugador].Cartas
 }
 
 func (e *EstadoPartida) esTurnoJugador(jugador string) bool {

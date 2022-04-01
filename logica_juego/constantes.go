@@ -20,3 +20,8 @@ const (
 const (
 	NUM_REGIONES = 42
 )
+
+const (
+	NOTIFICACION_AMISTAD = iota
+	NOTIFICACION_TURNO
+)

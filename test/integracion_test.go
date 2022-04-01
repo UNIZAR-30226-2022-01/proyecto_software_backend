@@ -1,8 +1,10 @@
 package integracion
 
 import (
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/servidor"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -621,8 +623,17 @@ func TestBaraja(t *testing.T) {
 	t.Log("Cambiando 3 cartas, una de cada tipo")
 	cambiarCartas(t, estadoJugador, err, &estadoPartida, 3, 21, 39, 4)
 
+	// Cambiar con dos comodines
+	t.Log("Intentamos cambiar cartas con dos comodines, se espera error")
+	err = estadoPartida.CambiarCartas("Jugador1", 4, 42, 43)
+	if err == nil {
+		t.Fatal("Se esperaba obtener error al cambiar con 2 comodines")
+	}
+
+	t.Log("OK: No se ha podido cambiar cartas con dos comodines, error:", err)
+
 	// Cambiamos 2 cartas de un tipo + un comodín
-	t.Log("Cambiando 3 cartas, una de cada tipo")
+	t.Log("Cambiando 3 cartas, 2 de infantería y un comodín")
 	cambiarCartas(t, estadoJugador, err, &estadoPartida, 4, 5, 42, 5)
 
 	// Prueba de errores en el canje
@@ -678,4 +689,86 @@ func TestBaraja(t *testing.T) {
 	}
 
 	t.Log("El último cambio de cartas fue:", accionCambio)
+
+	// Consultar cartas de un jugador
+
+	t.Log("Creando usuarios...")
+	cookie := crearUsuario("usuario1", t)
+	cookie2 := crearUsuario("usuario2", t)
+	cookie3 := crearUsuario("usuario3", t)
+	cookie4 := crearUsuario("usuario4", t)
+	cookie5 := crearUsuario("usuario5", t)
+	cookie6 := crearUsuario("usuario6", t)
+
+	t.Log("Creando partida...")
+	crearPartida(cookie, t, true)
+
+	t.Log("Uniéndose a partida...")
+	unirseAPartida(cookie2, t, 1)
+	unirseAPartida(cookie3, t, 1)
+	unirseAPartida(cookie4, t, 1)
+	unirseAPartida(cookie5, t, 1)
+	unirseAPartida(cookie6, t, 1)
+	partidaCache := comprobarPartidaEnCurso(t, 1)
+	cartasJugador := partidaCache.Estado.Cartas[0:3]
+	partidaCache.Estado.EstadosJugadores["usuario1"].Cartas = cartasJugador
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+
+	cartasObtenidas := consultarCartas(cookie, t)
+	log.Println("Se deberían recibir las siguientes cartas:", cartasJugador)
+	log.Println("Se han recibido estas cartas:", cartasObtenidas)
+	if len(cartasObtenidas) != len(cartasJugador) {
+		t.Fatal("No se ha recibido el mismo número de cartas")
+	}
+
+	for i, carta := range cartasJugador {
+		if carta != cartasJugador[i] {
+			t.Fatal("No se han recibido las mismas cartas")
+		}
+	}
+}
+
+func TestNotificaciones(t *testing.T) {
+	t.Log("Purgando DB...")
+	purgarDB()
+
+	// Creación e inicio de la partida
+
+	t.Log("Creando usuarios...")
+	cookie := crearUsuario("usuario1", t)
+	cookie2 := crearUsuario("usuario2", t)
+	cookie3 := crearUsuario("usuario3", t)
+	cookie4 := crearUsuario("usuario4", t)
+	cookie5 := crearUsuario("usuario5", t)
+	cookie6 := crearUsuario("usuario6", t)
+
+	t.Log("Creando partida...")
+	crearPartida(cookie, t, true)
+
+	t.Log("Uniéndose a partida...")
+	unirseAPartida(cookie2, t, 1)
+	unirseAPartida(cookie3, t, 1)
+	unirseAPartida(cookie4, t, 1)
+	unirseAPartida(cookie5, t, 1)
+	unirseAPartida(cookie6, t, 1)
+
+	partidaCache := comprobarPartidaEnCurso(t, 1)
+
+	saltarTurnos(t, partidaCache, "usuario1")
+	notificaciones := obtenerNotificaciones(t, cookie)
+
+	if len(notificaciones) != 1 {
+		t.Fatal("Se esperaba una notificación de turno, obtenido:", notificaciones)
+	} else {
+		t.Log("Notificaciones tras tener turno pendiente:", notificaciones)
+	}
+
+	solicitarAmistad(cookie2, t, "usuario1")
+	notificaciones = obtenerNotificaciones(t, cookie)
+
+	if len(notificaciones) != 2 {
+		t.Fatal("Se esperaba una notificación de turno y otra de amistad, obtenido:", notificaciones)
+	} else {
+		t.Log("Notificaciones tras tener turno pendiente y amistad pendiente:", notificaciones)
+	}
 }

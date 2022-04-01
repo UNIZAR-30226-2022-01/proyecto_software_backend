@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"github.com/go-chi/chi/v5"
@@ -128,7 +129,7 @@ func ObtenerSolicitudesPendientes(writer http.ResponseWriter, request *http.Requ
 // En cualquier otro caso, enviará códgo 200
 //
 // El formato de la respuesta JSON es el siguiente:
-//    [
+//    {
 //	   "Email": string
 //	   "Nombre": string
 //	   "Biografia": string
@@ -137,7 +138,7 @@ func ObtenerSolicitudesPendientes(writer http.ResponseWriter, request *http.Requ
 // 	   "Puntos": int
 // 	   "ID_dado": int
 // 	   "ID_ficha": int
-//    ]
+//    }
 //
 // Ruta: /api/obtenerPerfil/{nombre}
 // Tipo: GET
@@ -158,7 +159,7 @@ func ObtenerPerfilUsuario(writer http.ResponseWriter, request *http.Request) {
 // especificado en al parámetro "patron" de la URL, ordenados alfabéticamente
 // Los nombres de usuario coincidirán con dicho patrón o empezarán por él
 // Si ocurre algún error durante el procesamiento, enviará código de error 500
-// En cualquier otro caso, enviará códgo 200
+// En cualquier otro caso, enviará código 200
 // El formato de la respuesta JSON es el siguiente:
 //    [string, string, ...]
 //
@@ -180,10 +181,55 @@ func ObtenerUsuariosSimilares(writer http.ResponseWriter, request *http.Request)
 
 // ObtenerNotificaciones devuelve un listado codificado en JSON de notificaciones
 // a mostrar, relativas al usuario que lo solicita.
+// Si ocurre algún error durante el procesamiento, enviará código de error 500
+// En cualquier otro caso, enviará código 200 y la lista de notificaciones.
+//
+// El formato de la respuesta JSON es el siguiente:
+//    [notificacion1..., notificacion2...]
+//
+// Ejemplo:
+//    [{"IDNotificacion":0,"Jugador":"usuario2"}, {"IDNotificacion":1,"JugadorPrevio":"usuario6"}]
+//
+// La lista de notificaciones y su formato en JSON están disponibles en el módulo de logica_juego, en notificaciones.go
 //
 // Ruta: /api/obtenerNotificaciones/
 // Tipo: GET
-// TODO: No implementada
 func ObtenerNotificaciones(writer http.ResponseWriter, request *http.Request) {
-	// TODO
+	var notificaciones []interface{}
+
+	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
+
+	usuariosPendientes, err := dao.ConsultarSolicitudesPendientes(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario})
+
+	for _, usuario := range usuariosPendientes {
+		notificaciones = append(notificaciones, logica_juego.NewNotificacionAmistad(usuario))
+	}
+
+	enPartida, err := dao.UsuarioEnPartida(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario})
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	if enPartida {
+		idPartida, err := dao.PartidaUsuario(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario})
+		if err != nil {
+			devolverErrorSQL(writer)
+			return
+		}
+
+		partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
+		if partida.Estado.Jugadores[partida.Estado.TurnoJugador] == nombreUsuario {
+			turnoPrevio := partida.Estado.TurnoJugador - 1
+			if turnoPrevio == -1 {
+				turnoPrevio = len(partida.Estado.Jugadores) - 1
+			}
+
+			notificaciones = append(notificaciones, logica_juego.NewNotificacionTurno(partida.Estado.Jugadores[turnoPrevio]))
+		}
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(writer).Encode(notificaciones)
+	escribirHeaderExito(writer)
 }

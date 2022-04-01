@@ -105,7 +105,6 @@ func GenerarCookieUsuario(writer *http.ResponseWriter, nombreUsuario string) (er
 		// TODO: Por refinar una vez realizadas las pruebas de despliegue en un dominio real
 		//cookie.SameSite = 4 // None
 		//cookie.Domain = "localhost"
-		log.Println("dominio:", cookie.Domain)
 		usuarioVO := vo.Usuario{"", nombreUsuario, "", "", cookie, 0, 0, 0, 0, 0}
 
 		err = dao.InsertarCookie(globales.Db, &usuarioVO)
