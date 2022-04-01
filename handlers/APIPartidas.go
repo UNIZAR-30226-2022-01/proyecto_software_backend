@@ -478,11 +478,48 @@ func CambiarCartas(writer http.ResponseWriter, request *http.Request) {
 		return
 	} else if err != nil {
 		devolverErrorSQL(writer)
+		return
 	}
 
 	partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
 
 	err = partida.Estado.CambiarCartas(usuario.NombreUsuario, idCarta1, idCarta2, idCarta3)
+	if err != nil {
+		devolverError(writer, err)
+	} else {
+		// Se sobreescribe en el almacén
+		globales.CachePartidas.AlmacenarPartida(partida)
+
+		// Y se encola un trabajo de serialización de su estado
+		globales.CachePartidas.CanalSerializacion <- partida
+		escribirHeaderExito(writer)
+	}
+}
+
+// PasarDeFase permite al jugador actual cambiar de fase dentro de su propio turno, siendo estas fases Refuerzo,
+// ataque y fortificación. Cada fase tendrá unas condiciones especiales para el cambio de turno:
+// En el refuerzo, no podrá cambiar de fase si tiene más de 4 cartas o si le quedan tropas por asignar
+// En el ataque, no podrá cambiar de fase si tiene más de 4 cartas o si tiene que ocupar un territorio y aún no lo ha hecho.
+// En la fortificación podrá cambiar de fase (dándole el turno a otro jugador) libremente
+//
+// Si no es el turno del jugador, no está en una partida o no se cumplen las condiciones para el cambio de fase, devolverá
+// un status 500, en otro caso devolverá status 200.
+//
+// Ruta: /api/pasarDeFase
+// Tipo: GET
+func PasarDeFase(writer http.ResponseWriter, request *http.Request) {
+	usuario := vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)}
+	idPartida, err := dao.PartidaUsuario(globales.Db, &usuario)
+	if err == sql.ErrNoRows {
+		devolverError(writer, errors.New("No estás participando en ninguna partida."))
+		return
+	} else if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
+	err = partida.Estado.FinDeFase(usuario.NombreUsuario)
 	if err != nil {
 		devolverError(writer, err)
 	} else {

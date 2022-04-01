@@ -54,6 +54,7 @@ type EstadoPartida struct {
 	// Recibir carta
 	HaConquistado   bool // True si ha conquistado algún territorio en el turno
 	HaRecibidoCarta bool // True si ya ha robado carta, para evitar más de un robo
+	HaFortificado   bool // True si ya ha fortificado en el turno
 
 	// ...
 }
@@ -72,6 +73,7 @@ func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
 		NumCambios:       0,
 		HaConquistado:    false,
 		HaRecibidoCarta:  false,
+		HaFortificado:    false,
 	}
 
 	return e
@@ -87,6 +89,8 @@ func (e *EstadoPartida) SiguienteJugadorSinAccion() {
 func (e *EstadoPartida) SiguienteJugador() {
 	// TODO cuando se puedan eliminar jugadores, habrá que tenerlo en cuenta a la hora de cambiar de turno
 	e.TurnoJugador = (e.TurnoJugador + 1) % len(e.EstadosJugadores)
+	e.HaRecibidoCarta = false
+	e.HaConquistado = false
 	if e.Fase != Inicio {
 		e.AsignarTropasRefuerzo(e.Jugadores[e.TurnoJugador])
 	} else {
@@ -340,6 +344,53 @@ func (e *EstadoPartida) CambiarCartas(jugador string, ID_carta1, ID_carta2, ID_c
 	// TODO cambiar accion de cambio de cartas -> se cambian conjuntos de uno en uno, numConjuntos no necesario
 
 	e.Acciones = append(e.Acciones, NewAccionCambioCartas(1, numTropas, hayBonificacion, regionBonificacion, numeroCartasInicial >= 5))
+	return nil
+}
+
+// FinDeFase permite al jugador terminar la fase actual de su turno y pasar a la siguiente.
+// Para ello, el jugador que quiera cambiar de fase deberá ser aquel que tenga el turno actual.
+// Cada fase tendrá unas condiciones especiales para el cambio de turno.
+// En el refuerzo, no podrá cambiar de fase si tiene más de 4 cartas o si le quedan tropas por asignar
+// En el ataque, no podrá cambiar de fase si tiene más de 4 cartas o si tiene que ocupar un territorio y aún no lo ha hecho.
+// En la fortificación podrá cambiar de fase (dándole el turno a otro jugador) libremente
+func (e *EstadoPartida) FinDeFase(jugador string) error {
+	if !e.esTurnoJugador(jugador) {
+		return errors.New("Solo puedes cambiar de fase durante tu turno")
+	}
+
+	estadoJugador := e.EstadosJugadores[jugador]
+	switch e.Fase {
+	case Refuerzo:
+		if len(estadoJugador.Cartas) > 4 {
+			return errors.New("Estás obligado a cambiar cartas hasta tener menos de 5")
+		}
+		if estadoJugador.Tropas > 0 {
+			return errors.New("Estás obligado a asignar todas tus tropas para cambiar de fase")
+		}
+
+		// Pasamos a fase de ataque
+		e.Fase = Ataque
+	case Ataque:
+		if len(estadoJugador.Cartas) > 4 {
+			return errors.New("Estás obligado a cambiar cartas hasta tener menos de 5")
+		}
+		// TODO comprobar que no deja ningún territorio desocupado
+
+		// Pasamos a la fase de fortificación
+		e.Fase = Fortificar
+	case Fortificar:
+		// El jugador roba una carta si ha conquistado algún territorio y no ha robado ya
+		if e.HaConquistado && !e.HaRecibidoCarta {
+			err := e.RecibirCarta(jugador)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Pasamos el turno al siguiente jugador
+		e.SiguienteJugador()
+	}
+
 	return nil
 }
 
