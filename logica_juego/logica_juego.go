@@ -290,6 +290,11 @@ func (e *EstadoPartida) CambiarCartas(jugador string, ID_carta1, ID_carta2, ID_c
 	return nil
 }
 
+// ConsultarCartas devuelve un slice que contiene las cartas que posee el usuario "jugador"
+func (e *EstadoPartida) ConsultarCartas(jugador string) []Carta {
+	return e.EstadosJugadores[jugador].Cartas
+}
+
 func (e *EstadoPartida) esTurnoJugador(jugador string) bool {
 	return e.Jugadores[e.TurnoJugador] == jugador
 }

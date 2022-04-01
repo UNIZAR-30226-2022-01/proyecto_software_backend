@@ -478,6 +478,7 @@ func CambiarCartas(writer http.ResponseWriter, request *http.Request) {
 		return
 	} else if err != nil {
 		devolverErrorSQL(writer)
+		return
 	}
 
 	partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
@@ -493,4 +494,32 @@ func CambiarCartas(writer http.ResponseWriter, request *http.Request) {
 		globales.CachePartidas.CanalSerializacion <- partida
 		escribirHeaderExito(writer)
 	}
+}
+
+// ConsultarCartas permite al usuario consultar las cartas que tiene en la mano mientras juega una partida
+// Un usuario podrá consultar únicamente sus propias cartas.
+// El JSON enviado como respuesta tendrá el siguiente formato:
+// TODO formato JSON
+// Ruta: /api/consultarCartas
+// Tipo: GET
+func ConsultarCartas(writer http.ResponseWriter, request *http.Request) {
+	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
+	usuario := vo.Usuario{NombreUsuario: nombreUsuario}
+
+	idPartida, err := dao.PartidaUsuario(globales.Db, &usuario)
+	if err == sql.ErrNoRows {
+		devolverError(writer, errors.New("No estás participando en ninguna partida."))
+		return
+	} else if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
+	cartas := partida.Estado.ConsultarCartas(nombreUsuario)
+
+	// Enviamos como respuesta un JSON que contenga las cartas
+	writer.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(writer).Encode(cartas)
+	escribirHeaderExito(writer)
 }
