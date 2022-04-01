@@ -4,6 +4,7 @@ package logica_juego
 
 import (
 	"errors"
+	"log"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -86,12 +87,21 @@ func (e *EstadoPartida) SiguienteJugadorSinAccion() {
 }
 
 // SiguienteJugador cambia el turno a otro jugador, emitiendo la acción correspondiente.
+// TODO no debería ser pública, lo es por necesidad dentro del test
 func (e *EstadoPartida) SiguienteJugador() {
 	// TODO cuando se puedan eliminar jugadores, habrá que tenerlo en cuenta a la hora de cambiar de turno
 	e.TurnoJugador = (e.TurnoJugador + 1) % len(e.EstadosJugadores)
+
+	// En el nuevo turno no se habrá recibido carta, conquistado ni fortificado
 	e.HaRecibidoCarta = false
 	e.HaConquistado = false
+	e.HaFortificado = false
+
+	// Pasamos a la fase de refuerzo
+	e.Fase = Refuerzo
+
 	if e.Fase != Inicio {
+		e.Acciones = append(e.Acciones, NewAccionCambioFase(Refuerzo, e.Jugadores[e.TurnoJugador]))
 		e.AsignarTropasRefuerzo(e.Jugadores[e.TurnoJugador])
 	} else {
 		// No se asignan nuevas tropas durante la fase de inicio
@@ -206,7 +216,9 @@ func (e *EstadoPartida) ReforzarTerritorio(idTerritorio int, numTropas int, juga
 		return errors.New("Se ha solicitado una acción fuera de turno, el jugador en este turno es " + e.ObtenerJugadorTurno())
 	}
 
-	// TODO limitar refuerzos a la fase de refuerzo
+	if e.Fase != Refuerzo {
+		return errors.New("Solo se puede reforzar durante la fase de refuerzo")
+	}
 
 	if estado.Tropas-numTropas < 0 {
 		return errors.New("No tienes tropas suficientes para reforzar un territorio, tropas restantes: " + strconv.Itoa(estado.Tropas))
@@ -361,6 +373,7 @@ func (e *EstadoPartida) FinDeFase(jugador string) error {
 	estadoJugador := e.EstadosJugadores[jugador]
 	switch e.Fase {
 	case Refuerzo:
+		log.Println("NUM CARTAS", len(estadoJugador.Cartas))
 		if len(estadoJugador.Cartas) > 4 {
 			return errors.New("Estás obligado a cambiar cartas hasta tener menos de 5")
 		}
@@ -370,14 +383,21 @@ func (e *EstadoPartida) FinDeFase(jugador string) error {
 
 		// Pasamos a fase de ataque
 		e.Fase = Ataque
+		e.Acciones = append(e.Acciones, NewAccionCambioFase(Ataque, jugador))
 	case Ataque:
 		if len(estadoJugador.Cartas) > 4 {
 			return errors.New("Estás obligado a cambiar cartas hasta tener menos de 5")
 		}
-		// TODO comprobar que no deja ningún territorio desocupado
+
+		for _, region := range e.EstadoMapa {
+			if region.Ocupante == "" {
+				return errors.New("No puedes finalizar la fase de ataque dejando territorios desocupados")
+			}
+		}
 
 		// Pasamos a la fase de fortificación
 		e.Fase = Fortificar
+		e.Acciones = append(e.Acciones, NewAccionCambioFase(Fortificar, jugador))
 	case Fortificar:
 		// El jugador roba una carta si ha conquistado algún territorio y no ha robado ya
 		if e.HaConquistado && !e.HaRecibidoCarta {

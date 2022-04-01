@@ -1,6 +1,7 @@
 package integracion
 
 import (
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/servidor"
 	"net/http"
@@ -249,7 +250,7 @@ func TestInicioPartida(t *testing.T) {
 	}
 	partidaCache = comprobarPartidaEnCurso(t, 1)
 
-	if len(partidaCache.Estado.Acciones) != (int(logica_juego.NUM_REGIONES) + 1) { // 42 regiones y acción de cambio de turno
+	if len(partidaCache.Estado.Acciones) != (int(logica_juego.NUM_REGIONES) + 2) { // 42 regiones y acción de cambio de turno y cambio de fase
 		t.Fatal("No se han asignado todas las regiones. Regiones asignadas:", len(partidaCache.Estado.Acciones))
 	}
 
@@ -324,7 +325,7 @@ func TestFaseRefuerzoInicial(t *testing.T) {
 	}
 	partidaCache = comprobarPartidaEnCurso(t, 1)
 
-	if len(partidaCache.Estado.Acciones) != (int(logica_juego.NUM_REGIONES) + 1) { // 42 regiones y acción de cambio de turno
+	if len(partidaCache.Estado.Acciones) != (int(logica_juego.NUM_REGIONES) + 2) { // 42 regiones y acción de cambio de turno, cambio de fase
 		t.Fatal("No se han asignado todas las regiones. Regiones asignadas:", len(partidaCache.Estado.Acciones))
 	}
 
@@ -337,15 +338,28 @@ func TestFaseRefuerzoInicial(t *testing.T) {
 		}
 	}
 
+	saltarTurnos(t, partidaCache, "usuario1")
+	// Intentamos cambiar de fase con más de cuatro cartas, se espera error
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+
 	numTropasRegionPrevio := partidaCache.Estado.EstadoMapa[logica_juego.NumRegion(numRegion)].NumTropas
 	numTropasPrevio := partidaCache.Estado.EstadosJugadores["usuario1"].Tropas
 
-	saltarTurnos(t, partidaCache, "usuario1")
+	// Intentamos cambiar de fase con tropas no colocadas, se espera error
+	t.Log("Intentamos cambiar de fase con tropas no colocadas, se espera error")
+	err := saltarFase(cookie, t)
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	t.Log(partidaCache.Estado.EstadosJugadores["usuario1"].Tropas, partidaCache.Estado.Fase)
+	if err == nil {
+		t.Fatal("Se esperaba error al intentar saltar la fase")
+	}
+	t.Log("OK: No se ha podido saltar la fase, error:", err)
 
 	// Reforzar con todas las tropas disponibles
 	reforzarTerritorio(t, cookie, numRegion, partidaCache.Estado.EstadosJugadores["usuario1"].Tropas)
 
-	partidaCache = comprobarPartidaEnCurso(t, 1)
+	t.Log("Intentamos cambiar de fase con 6 cartas, se espera error")
+	partidaCache, err = cambioDeFaseConDemasiadasCartas(t, partidaCache, err, cookie)
 
 	numTropasPost := partidaCache.Estado.EstadosJugadores["usuario1"].Tropas
 	numTropasRegionPost := partidaCache.Estado.EstadoMapa[logica_juego.NumRegion(numRegion)].NumTropas
@@ -358,10 +372,53 @@ func TestFaseRefuerzoInicial(t *testing.T) {
 		t.Log("Tropas asignadas correctamente. Tropas post:", numTropasPost)
 	}
 
-	saltarTurnos(t, partidaCache, "usuario1")
+	// saltarTurnos(t, partidaCache, "usuario1")
 	// Forzar fallo por no tener tropas
 	reforzarTerritorioConFallo(t, cookie, numRegion, partidaCache.Estado.EstadosJugadores["usuario1"].Tropas+1)
-	saltarTurnos(t, partidaCache, "usuario2")
+
+	// Cambio de fase correcto
+	t.Log("Intentamos cambiar de fase con todas las tropas colocadas")
+	err = saltarFase(cookie, t)
+	if err != nil {
+		t.Fatal("Error al saltar de fase:", err)
+	}
+	t.Log("Se ha saltado la fase correctamente")
+
+	t.Log("Intentamos finalizar el ataque con territorios vacíos, se espera error")
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.EstadoMapa[logica_juego.Egypt].Ocupante = ""
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+	err = saltarFase(cookie, t)
+	if err == nil {
+		t.Fatal("Se esperaba error al saltar el ataque con territorios vacíos")
+	}
+	t.Log("OK no se ha podido saltar el ataque con territorios vacíos, error:", err)
+
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.EstadoMapa[logica_juego.Egypt].Ocupante = "Jugador1"
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+
+	// Intentamos cambiar de fase con más de cuatro cartas, se espera error
+	t.Log("Intentamos cambiar de ataque a fortificación con más de 4 cartas, se espera error")
+	partidaCache, err = cambioDeFaseConDemasiadasCartas(t, partidaCache, err, cookie)
+
+	// Cambio de fase correcto
+	t.Log("Intentamos cambiar de fase, de ataque a fortificación")
+	err = saltarFase(cookie, t)
+	if err != nil {
+		t.Fatal("Error al saltar de fase:", err)
+	}
+	t.Log("Se ha saltado la fase correctamente")
+
+	// Cambio de fase correcto
+	t.Log("Intentamos cambiar de fase, de fortificación a refuerzo, cediendo el turno")
+	err = saltarFase(cookie, t)
+	if err != nil {
+		t.Fatal("Error al saltar de fase:", err)
+	}
+	t.Log("Se ha saltado la fase correctamente")
+
+	//saltarTurnos(t, partidaCache, "usuario2")
 	// Forzar fallo por estar fuera de turno
 	reforzarTerritorioConFallo(t, cookie, numRegion, partidaCache.Estado.EstadosJugadores["usuario1"].Tropas)
 
