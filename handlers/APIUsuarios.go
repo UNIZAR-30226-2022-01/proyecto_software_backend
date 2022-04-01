@@ -129,7 +129,7 @@ func ObtenerSolicitudesPendientes(writer http.ResponseWriter, request *http.Requ
 // En cualquier otro caso, enviará códgo 200
 //
 // El formato de la respuesta JSON es el siguiente:
-//    [
+//    {
 //	   "Email": string
 //	   "Nombre": string
 //	   "Biografia": string
@@ -138,7 +138,7 @@ func ObtenerSolicitudesPendientes(writer http.ResponseWriter, request *http.Requ
 // 	   "Puntos": int
 // 	   "ID_dado": int
 // 	   "ID_ficha": int
-//    ]
+//    }
 //
 // Ruta: /api/obtenerPerfil/{nombre}
 // Tipo: GET

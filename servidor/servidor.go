@@ -55,10 +55,11 @@ func IniciarServidor(test bool) {
 		logica_juego.InicializarGrafoMapa()
 		globales.CachePartidas = globales.IniciarAlmacenPartidas()
 
+		// Registra los tipos a decodificar por gob a partir de interface{}
+		logica_juego.RegistrarAcciones()
+		logica_juego.RegistrarNotificaciones()
+
 		go func(cs chan vo.Partida, cp chan struct{}) {
-			// Registra los tipos a decodificar por gob a partir de interface{}
-			logica_juego.RegistrarAcciones()
-			logica_juego.RegistrarNotificaciones()
 			for {
 				select {
 				case partida := <-cs:
