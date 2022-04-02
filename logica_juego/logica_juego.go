@@ -4,6 +4,7 @@ package logica_juego
 
 import (
 	"errors"
+	"log"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -54,6 +55,7 @@ type EstadoPartida struct {
 	// Recibir carta
 	HaConquistado   bool // True si ha conquistado algún territorio en el turno
 	HaRecibidoCarta bool // True si ya ha robado carta, para evitar más de un robo
+	HaFortificado   bool // True si ya ha fortificado en el turno
 
 	// ...
 }
@@ -72,6 +74,7 @@ func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
 		NumCambios:       0,
 		HaConquistado:    false,
 		HaRecibidoCarta:  false,
+		HaFortificado:    false,
 	}
 
 	return e
@@ -84,12 +87,76 @@ func (e *EstadoPartida) SiguienteJugadorSinAccion() {
 }
 
 // SiguienteJugador cambia el turno a otro jugador, emitiendo la acción correspondiente.
+// TODO no debería ser pública, lo es por necesidad dentro del test
 func (e *EstadoPartida) SiguienteJugador() {
+	// TODO cuando se puedan eliminar jugadores, habrá que tenerlo en cuenta a la hora de cambiar de turno
 	e.TurnoJugador = (e.TurnoJugador + 1) % len(e.EstadosJugadores)
 
-	// TODO: Encolar un AccionInicioTurno calculando el nº de tropas según las regiones y continentes ocupados
-	//e.Acciones = append(e.Acciones, AccionCambioTurno{IDAccion: 1, Jugador: e.Jugadores[e.TurnoJugador]})
-	e.Acciones = append(e.Acciones, struct{}{})
+	// En el nuevo turno no se habrá recibido carta, conquistado ni fortificado
+	e.HaRecibidoCarta = false
+	e.HaConquistado = false
+	e.HaFortificado = false
+
+	// Pasamos a la fase de refuerzo
+	e.Fase = Refuerzo
+
+	if e.Fase != Inicio {
+		e.Acciones = append(e.Acciones, NewAccionCambioFase(Refuerzo, e.Jugadores[e.TurnoJugador]))
+		e.AsignarTropasRefuerzo(e.Jugadores[e.TurnoJugador])
+	} else {
+		// No se asignan nuevas tropas durante la fase de inicio
+		e.Acciones = append(e.Acciones, NewAccionInicioTurno(e.Jugadores[e.TurnoJugador], 0, 0, 0))
+	}
+}
+
+// AsignarTropasRefuerzo otorga un número de ejércitos al jugador que comienza un turno, dependiendo del número de territorios
+// que ocupa. El número de ejércitos será la división entera del número de territorios ocupados entre 3.
+// Cabe destacar que como mínimo, se otorgarán 3 ejércitos al principio de cada turno, independientemente de los
+// territorios.
+// Además, si el jugador controla por completo un continente, recibirá ejércitos extra. El número de ejercitos dependerá
+// del continente:
+//		- 2 ejércitos para Oceanía y América del Sur
+//		- 3 ejércitos para África
+//		- 5 ejércitos para América del Norte y Europa
+//		- 7 ejércitos para Asia
+func (e *EstadoPartida) AsignarTropasRefuerzo(jugador string) {
+	regionesOcupadas := 0
+
+	// Comprobamos el número de regiones que ocupa
+	for _, region := range e.EstadoMapa {
+		if region.Ocupante == jugador {
+			regionesOcupadas++
+		}
+	}
+
+	tropasObtenidas := 0
+	if regionesOcupadas < 12 {
+		tropasObtenidas = 3
+	} else {
+		tropasObtenidas = regionesOcupadas / 3
+	}
+
+	// Comprobamos si controla algún continente por completo
+	continentesControlados := 0
+	for _, c := range Continentes {
+		puedeControlar := true
+		for _, region := range c.Regiones {
+			// Si alguna región del continente no es ocupada por el jugador, no lo puede controlar completamente
+			if e.EstadoMapa[region].Ocupante != jugador {
+				puedeControlar = false
+				break
+			}
+		}
+
+		// Si todas las regiones son ocupadas por el jugador, controla el continente
+		if puedeControlar {
+			continentesControlados++
+			tropasObtenidas += c.Valor
+		}
+	}
+
+	e.EstadosJugadores[jugador].Tropas += tropasObtenidas
+	e.Acciones = append(e.Acciones, NewAccionInicioTurno(jugador, tropasObtenidas, regionesOcupadas, continentesControlados))
 }
 
 // RellenarRegiones rellena las regiones del estado de la partida equitativa y aleatoriamente entre los usuarios, consumiendo
@@ -149,7 +216,9 @@ func (e *EstadoPartida) ReforzarTerritorio(idTerritorio int, numTropas int, juga
 		return errors.New("Se ha solicitado una acción fuera de turno, el jugador en este turno es " + e.ObtenerJugadorTurno())
 	}
 
-	// TODO limitar refuerzos a la fase de refuerzo
+	if e.Fase != Refuerzo {
+		return errors.New("Solo se puede reforzar durante la fase de refuerzo")
+	}
 
 	if estado.Tropas-numTropas < 0 {
 		return errors.New("No tienes tropas suficientes para reforzar un territorio, tropas restantes: " + strconv.Itoa(estado.Tropas))
@@ -287,6 +356,61 @@ func (e *EstadoPartida) CambiarCartas(jugador string, ID_carta1, ID_carta2, ID_c
 	// TODO cambiar accion de cambio de cartas -> se cambian conjuntos de uno en uno, numConjuntos no necesario
 
 	e.Acciones = append(e.Acciones, NewAccionCambioCartas(1, numTropas, hayBonificacion, regionBonificacion, numeroCartasInicial >= 5))
+	return nil
+}
+
+// FinDeFase permite al jugador terminar la fase actual de su turno y pasar a la siguiente.
+// Para ello, el jugador que quiera cambiar de fase deberá ser aquel que tenga el turno actual.
+// Cada fase tendrá unas condiciones especiales para el cambio de turno.
+// En el refuerzo, no podrá cambiar de fase si tiene más de 4 cartas o si le quedan tropas por asignar
+// En el ataque, no podrá cambiar de fase si tiene más de 4 cartas o si tiene que ocupar un territorio y aún no lo ha hecho.
+// En la fortificación podrá cambiar de fase (dándole el turno a otro jugador) libremente
+func (e *EstadoPartida) FinDeFase(jugador string) error {
+	if !e.esTurnoJugador(jugador) {
+		return errors.New("Solo puedes cambiar de fase durante tu turno")
+	}
+
+	estadoJugador := e.EstadosJugadores[jugador]
+	switch e.Fase {
+	case Refuerzo:
+		log.Println("NUM CARTAS", len(estadoJugador.Cartas))
+		if len(estadoJugador.Cartas) > 4 {
+			return errors.New("Estás obligado a cambiar cartas hasta tener menos de 5")
+		}
+		if estadoJugador.Tropas > 0 {
+			return errors.New("Estás obligado a asignar todas tus tropas para cambiar de fase")
+		}
+
+		// Pasamos a fase de ataque
+		e.Fase = Ataque
+		e.Acciones = append(e.Acciones, NewAccionCambioFase(Ataque, jugador))
+	case Ataque:
+		if len(estadoJugador.Cartas) > 4 {
+			return errors.New("Estás obligado a cambiar cartas hasta tener menos de 5")
+		}
+
+		for _, region := range e.EstadoMapa {
+			if region.Ocupante == "" {
+				return errors.New("No puedes finalizar la fase de ataque dejando territorios desocupados")
+			}
+		}
+
+		// Pasamos a la fase de fortificación
+		e.Fase = Fortificar
+		e.Acciones = append(e.Acciones, NewAccionCambioFase(Fortificar, jugador))
+	case Fortificar:
+		// El jugador roba una carta si ha conquistado algún territorio y no ha robado ya
+		if e.HaConquistado && !e.HaRecibidoCarta {
+			err := e.RecibirCarta(jugador)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Pasamos el turno al siguiente jugador
+		e.SiguienteJugador()
+	}
+
 	return nil
 }
 

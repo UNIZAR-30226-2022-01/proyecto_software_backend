@@ -2,6 +2,7 @@ package integracion
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
@@ -114,7 +115,7 @@ func reforzarTerritorio(t *testing.T, cookie *http.Cookie, numRegion int, numTro
 func comprobarAcciones(t *testing.T, cookie *http.Cookie) {
 	estado := preguntarEstado(t, cookie)
 
-	if len(estado.Acciones) != (logica_juego.NUM_REGIONES + 1) {
+	if len(estado.Acciones) != (logica_juego.NUM_REGIONES + 2) { // + 2 para que tenga en cuenta cambio de fase
 		t.Fatal("Se esperaban", logica_juego.NUM_REGIONES, "acciones en el log, y hay", len(estado.Acciones))
 	} else {
 		t.Log("Contenidos de acciones:", estado.Acciones)
@@ -600,7 +601,7 @@ func robarBarajaCompleta(e *logica_juego.EstadoPartida, t *testing.T) {
 	t.Log("Ya no quedan cartas, o error:", err)
 }
 
-func cambiarCartas(t *testing.T, estadoJugador *logica_juego.EstadoJugador, err error, estadoPartida *logica_juego.EstadoPartida, id1, id2, id3, numCanje int) {
+func cambiarCartas(t *testing.T, estadoJugador *logica_juego.EstadoJugador, estadoPartida *logica_juego.EstadoPartida, id1, id2, id3, numCanje int) {
 	tropasIniciales := estadoJugador.Tropas
 	numCartasInicial := len(estadoJugador.Cartas)
 	var tropasEsperadas int
@@ -609,7 +610,7 @@ func cambiarCartas(t *testing.T, estadoJugador *logica_juego.EstadoJugador, err 
 	} else {
 		tropasEsperadas = 15 + (numCanje-6)*5
 	}
-	err = estadoPartida.CambiarCartas("Jugador1", id1, id2, id3)
+	err := estadoPartida.CambiarCartas("Jugador1", id1, id2, id3)
 	if err != nil {
 		t.Fatal("Error al cambiar 3 cartas:", err)
 	}
@@ -678,4 +679,66 @@ func obtenerNotificaciones(t *testing.T, cookie *http.Cookie) (notificaciones []
 	}
 
 	return notificaciones
+}
+
+// invarianteNumeroDeCartas comprueba que la suma de cartas de la baraja, descartes y mano del jugador es 44
+func invarianteNumeroDeCartas(eP logica_juego.EstadoPartida, eJ logica_juego.EstadoJugador, t *testing.T) {
+	t.Log("Cartas en la mano del jugador:", len(eJ.Cartas), ",cartas en la baraja:", len(eP.Cartas),
+		",cartas descartadas:", len(eP.Descartes))
+	cartas := len(eJ.Cartas) + len(eP.Cartas) + len(eP.Descartes)
+	if cartas != 44 {
+		t.Fatal("Hay un total de", cartas, "cartas, no se cumple el invariante")
+	}
+}
+
+func saltarFase(cookie *http.Cookie, t *testing.T) error {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/pasarDeFase", nil)
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		t.Fatal("Error en GET de obtener partidas:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Log("No se ha podido saltar la fase")
+		body, _ := ioutil.ReadAll(resp.Body)
+		bodyString := string(body)
+		return errors.New(bodyString)
+	}
+
+	return nil
+}
+
+func cambioDeFaseConDemasiadasCartas(t *testing.T, partidaCache vo.Partida, err error, cookie *http.Cookie) (vo.Partida, error) {
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	baraja := partidaCache.Estado.Cartas
+
+	// Le damos al jugador las 6 primeras cartas (todas de infantería)
+	for numCartas := 0; numCartas <= 5; numCartas++ {
+		for _, carta := range baraja {
+			if carta.IdCarta == numCartas {
+				partidaCache.Estado.EstadosJugadores["usuario1"].Cartas = append(partidaCache.Estado.EstadosJugadores["usuario1"].Cartas, carta)
+				break
+			}
+		}
+	}
+
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+	err = saltarFase(cookie, t)
+	if err == nil {
+		t.Fatal("Se esperaba error al intentar saltar la fase")
+	}
+	t.Log("OK: No se ha podido saltar la fase, error:", err)
+
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.EstadosJugadores["usuario1"].Cartas = nil
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+	return partidaCache, err
 }

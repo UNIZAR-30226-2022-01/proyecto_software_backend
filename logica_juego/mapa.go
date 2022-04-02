@@ -58,3 +58,46 @@ func (nr NumRegion) String() string {
 		"eastern_united_states", "western_united_states", "quebec",
 		"central_america", "peru", "western_australia", "alberta"}[nr]
 }
+
+// Continente define el tipo utilizado para representar cada continente. Se almacenará el valor de dicho continente,
+// que corresponde con el número de tropas de bonificación recibidas al ocuparlo, además de la lista de regiones que
+// lo compone
+type Continente struct {
+	Valor    int
+	Regiones []NumRegion
+}
+
+// Continentes que componen el mapa del juego
+var Continentes map[string]Continente
+
+// InicializarContinentes inicializa el mapa Continentes con cada uno de los continentes del mapa de juego
+func InicializarContinentes() {
+	Continentes = make(map[string]Continente)
+
+	Continentes["América del Norte"] = Continente{
+		Valor: 5,
+		Regiones: []NumRegion{Alaska, Northwest_territory, Greenland, Alberta, Ontario,
+			Quebec, Western_united_states, Eastern_united_states, Central_america}}
+
+	Continentes["Europa"] = Continente{
+		Valor: 5,
+		Regiones: []NumRegion{Iceland, Scandinavia, Great_britain, Northern_europe,
+			Ukraine, Western_europe, Southern_europe}}
+
+	Continentes["Asia"] = Continente{
+		Valor: 7,
+		Regiones: []NumRegion{Yakursk, Ural, Siberia, Irkutsk, Kamchatka, Afghanistan,
+			China, Mongolia, Japan, Middle_east, India, Siam}}
+
+	Continentes["América del Sur"] = Continente{
+		Valor:    2,
+		Regiones: []NumRegion{Venezuela, Brazil, Peru, Argentina}}
+
+	Continentes["África"] = Continente{
+		Valor:    3,
+		Regiones: []NumRegion{North_africa, Egypt, Congo, East_africa, South_africa, Madagascar}}
+
+	Continentes["Oceanía"] = Continente{
+		Valor:    2,
+		Regiones: []NumRegion{Indonesia, New_guinea, Western_australia, Eastern_australia}}
+}

@@ -251,7 +251,7 @@ func TestInicioPartida(t *testing.T) {
 	}
 	partidaCache = comprobarPartidaEnCurso(t, 1)
 
-	if len(partidaCache.Estado.Acciones) != (int(logica_juego.NUM_REGIONES) + 1) { // 42 regiones y acción de cambio de turno
+	if len(partidaCache.Estado.Acciones) != (int(logica_juego.NUM_REGIONES) + 2) { // 42 regiones y acción de cambio de turno y cambio de fase
 		t.Fatal("No se han asignado todas las regiones. Regiones asignadas:", len(partidaCache.Estado.Acciones))
 	}
 
@@ -326,7 +326,7 @@ func TestFaseRefuerzoInicial(t *testing.T) {
 	}
 	partidaCache = comprobarPartidaEnCurso(t, 1)
 
-	if len(partidaCache.Estado.Acciones) != (int(logica_juego.NUM_REGIONES) + 1) { // 42 regiones y acción de cambio de turno
+	if len(partidaCache.Estado.Acciones) != (int(logica_juego.NUM_REGIONES) + 2) { // 42 regiones y acción de cambio de turno, cambio de fase
 		t.Fatal("No se han asignado todas las regiones. Regiones asignadas:", len(partidaCache.Estado.Acciones))
 	}
 
@@ -339,15 +339,28 @@ func TestFaseRefuerzoInicial(t *testing.T) {
 		}
 	}
 
+	saltarTurnos(t, partidaCache, "usuario1")
+	// Intentamos cambiar de fase con más de cuatro cartas, se espera error
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+
 	numTropasRegionPrevio := partidaCache.Estado.EstadoMapa[logica_juego.NumRegion(numRegion)].NumTropas
 	numTropasPrevio := partidaCache.Estado.EstadosJugadores["usuario1"].Tropas
 
-	saltarTurnos(t, partidaCache, "usuario1")
+	// Intentamos cambiar de fase con tropas no colocadas, se espera error
+	t.Log("Intentamos cambiar de fase con tropas no colocadas, se espera error")
+	err := saltarFase(cookie, t)
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	t.Log(partidaCache.Estado.EstadosJugadores["usuario1"].Tropas, partidaCache.Estado.Fase)
+	if err == nil {
+		t.Fatal("Se esperaba error al intentar saltar la fase")
+	}
+	t.Log("OK: No se ha podido saltar la fase, error:", err)
 
 	// Reforzar con todas las tropas disponibles
 	reforzarTerritorio(t, cookie, numRegion, partidaCache.Estado.EstadosJugadores["usuario1"].Tropas)
 
-	partidaCache = comprobarPartidaEnCurso(t, 1)
+	t.Log("Intentamos cambiar de fase con 6 cartas, se espera error")
+	partidaCache, err = cambioDeFaseConDemasiadasCartas(t, partidaCache, err, cookie)
 
 	numTropasPost := partidaCache.Estado.EstadosJugadores["usuario1"].Tropas
 	numTropasRegionPost := partidaCache.Estado.EstadoMapa[logica_juego.NumRegion(numRegion)].NumTropas
@@ -360,10 +373,53 @@ func TestFaseRefuerzoInicial(t *testing.T) {
 		t.Log("Tropas asignadas correctamente. Tropas post:", numTropasPost)
 	}
 
-	saltarTurnos(t, partidaCache, "usuario1")
+	// saltarTurnos(t, partidaCache, "usuario1")
 	// Forzar fallo por no tener tropas
 	reforzarTerritorioConFallo(t, cookie, numRegion, partidaCache.Estado.EstadosJugadores["usuario1"].Tropas+1)
-	saltarTurnos(t, partidaCache, "usuario2")
+
+	// Cambio de fase correcto
+	t.Log("Intentamos cambiar de fase con todas las tropas colocadas")
+	err = saltarFase(cookie, t)
+	if err != nil {
+		t.Fatal("Error al saltar de fase:", err)
+	}
+	t.Log("Se ha saltado la fase correctamente")
+
+	t.Log("Intentamos finalizar el ataque con territorios vacíos, se espera error")
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.EstadoMapa[logica_juego.Egypt].Ocupante = ""
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+	err = saltarFase(cookie, t)
+	if err == nil {
+		t.Fatal("Se esperaba error al saltar el ataque con territorios vacíos")
+	}
+	t.Log("OK no se ha podido saltar el ataque con territorios vacíos, error:", err)
+
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.EstadoMapa[logica_juego.Egypt].Ocupante = "Jugador1"
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+
+	// Intentamos cambiar de fase con más de cuatro cartas, se espera error
+	t.Log("Intentamos cambiar de ataque a fortificación con más de 4 cartas, se espera error")
+	partidaCache, err = cambioDeFaseConDemasiadasCartas(t, partidaCache, err, cookie)
+
+	// Cambio de fase correcto
+	t.Log("Intentamos cambiar de fase, de ataque a fortificación")
+	err = saltarFase(cookie, t)
+	if err != nil {
+		t.Fatal("Error al saltar de fase:", err)
+	}
+	t.Log("Se ha saltado la fase correctamente")
+
+	// Cambio de fase correcto
+	t.Log("Intentamos cambiar de fase, de fortificación a refuerzo, cediendo el turno")
+	err = saltarFase(cookie, t)
+	if err != nil {
+		t.Fatal("Error al saltar de fase:", err)
+	}
+	t.Log("Se ha saltado la fase correctamente")
+
+	//saltarTurnos(t, partidaCache, "usuario2")
 	// Forzar fallo por estar fuera de turno
 	reforzarTerritorioConFallo(t, cookie, numRegion, partidaCache.Estado.EstadosJugadores["usuario1"].Tropas)
 
@@ -609,19 +665,23 @@ func TestBaraja(t *testing.T) {
 	// Cambiamos 3 cartas de infantería
 	estadoPartida.Fase = logica_juego.Refuerzo
 	t.Log("Cambiando 3 cartas de infanteria")
-	cambiarCartas(t, estadoJugador, err, &estadoPartida, 0, 1, 2, 1)
+	cambiarCartas(t, estadoJugador, &estadoPartida, 0, 1, 2, 1)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
 
 	// Cambiamos 3 cartas de caballeria
 	t.Log("Cambiando 3 cartas de caballeria")
-	cambiarCartas(t, estadoJugador, err, &estadoPartida, 18, 19, 20, 2)
+	cambiarCartas(t, estadoJugador, &estadoPartida, 18, 19, 20, 2)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
 
 	// Cambiamos 3 cartas de artilleria
 	t.Log("Cambiando 3 cartas de artilleria")
-	cambiarCartas(t, estadoJugador, err, &estadoPartida, 36, 37, 38, 3)
+	cambiarCartas(t, estadoJugador, &estadoPartida, 36, 37, 38, 3)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
 
 	// Cambiamos una de cada
 	t.Log("Cambiando 3 cartas, una de cada tipo")
-	cambiarCartas(t, estadoJugador, err, &estadoPartida, 3, 21, 39, 4)
+	cambiarCartas(t, estadoJugador, &estadoPartida, 3, 21, 39, 4)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
 
 	// Cambiar con dos comodines
 	t.Log("Intentamos cambiar cartas con dos comodines, se espera error")
@@ -634,7 +694,8 @@ func TestBaraja(t *testing.T) {
 
 	// Cambiamos 2 cartas de un tipo + un comodín
 	t.Log("Cambiando 3 cartas, 2 de infantería y un comodín")
-	cambiarCartas(t, estadoJugador, err, &estadoPartida, 4, 5, 42, 5)
+	cambiarCartas(t, estadoJugador, &estadoPartida, 4, 5, 42, 5)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
 
 	// Prueba de errores en el canje
 	// Cambiar cartas que no tenemos
@@ -667,7 +728,8 @@ func TestBaraja(t *testing.T) {
 	estadoRegion.Ocupante = "Jugador1"
 	tropasIniciales := estadoRegion.NumTropas
 	t.Log("Cambiando 3 cartas, una de ellas con bonificación por territorio")
-	cambiarCartas(t, estadoJugador, err, &estadoPartida, 10, 11, 12, 6)
+	cambiarCartas(t, estadoJugador, &estadoPartida, 10, 11, 12, 6)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
 	if estadoRegion.NumTropas-tropasIniciales != 2 {
 		t.Fatal("No se han recibido tropas adicionales")
 	}
@@ -689,6 +751,15 @@ func TestBaraja(t *testing.T) {
 	}
 
 	t.Log("El último cambio de cartas fue:", accionCambio)
+
+	// Probar cambios de cartas de número > 6
+	t.Log("Cambiando 3 cartas, 7º cambio")
+	cambiarCartas(t, estadoJugador, &estadoPartida, 30, 31, 32, 7)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
+
+	t.Log("Cambiando 3 cartas, 8º cambio")
+	cambiarCartas(t, estadoJugador, &estadoPartida, 33, 34, 35, 8)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
 
 	// Consultar cartas de un jugador
 
@@ -727,6 +798,7 @@ func TestBaraja(t *testing.T) {
 		}
 	}
 }
+
 
 func TestNotificaciones(t *testing.T) {
 	t.Log("Purgando DB...")
@@ -771,4 +843,65 @@ func TestNotificaciones(t *testing.T) {
 	} else {
 		t.Log("Notificaciones tras tener turno pendiente y amistad pendiente:", notificaciones)
 	}
+}
+
+func TestAsignacionTropas(t *testing.T) {
+	// TODO modificar prueba para usar cambio de turno y evitar que AsignarTropasRefuerzo sea pública
+	// Casos a probar
+	// Territorios < 12
+	// Territorios >= 12
+	// Ocupa algún continente
+
+	t.Log("Purgando DB...")
+	purgarDB()
+
+	estadoPartida := logica_juego.CrearEstadoPartida([]string{"Jugador1", "Jugador2", "Jugador3", "Jugador4", "Jugador5", "Jugador6"})
+	estadoPartida.TurnoJugador = 5
+	estadoPartida.Fase = logica_juego.Fortificar
+	estadoJugador := estadoPartida.EstadosJugadores["Jugador1"]
+
+	// Desocupamos el mapa
+	for region, _ := range estadoPartida.EstadoMapa {
+		estadoPartida.EstadoMapa[region].Ocupante = ""
+	}
+
+	estadoJugador.Tropas = 0
+
+	// Comprobamos que se asignan 3 ejércitos en caso de tener menos de 12 territorios
+	t.Log("El jugador no ocupa ningún territorio")
+	estadoPartida.AsignarTropasRefuerzo("Jugador1")
+	if estadoJugador.Tropas != 3 {
+		t.Fatal("El jugador debería tener 3 tropas pero tiene", estadoJugador.Tropas)
+	}
+	t.Log("El jugador ha recibido", estadoJugador.Tropas, "tropas al principio del turno")
+
+	// El jugador ocupa Asia
+	// Deberá recibir 11 ejércitos
+	t.Log("El jugador ocupa Asia (7), con 12 territorios (4)")
+	for _, region := range logica_juego.Continentes["Asia"].Regiones {
+		estadoPartida.EstadoMapa[region].Ocupante = "Jugador1"
+	}
+
+	estadoJugador.Tropas = 0
+	estadoPartida.AsignarTropasRefuerzo("Jugador1")
+	if estadoJugador.Tropas != 11 {
+		t.Fatal("El jugador debería tener 11 tropas pero tiene", estadoJugador.Tropas)
+	}
+	t.Log("El jugador ha recibido", estadoJugador.Tropas, "tropas al principio del turno")
+
+	// El jugador ocupa Asia y Europa
+	// Un total de 19 regiones
+	// Deberá recibir 5 ejércitos por Europa, 7 por Asia y 6 por territorios ocupados
+	// Total ejércitos = 18
+	t.Log("El jugador ocupa Asia (7) y Europa (5), con 19 territorios (6)")
+	for _, region := range logica_juego.Continentes["Europa"].Regiones {
+		estadoPartida.EstadoMapa[region].Ocupante = "Jugador1"
+	}
+
+	estadoJugador.Tropas = 0
+	estadoPartida.AsignarTropasRefuerzo("Jugador1")
+	if estadoJugador.Tropas != 18 {
+		t.Fatal("El jugador debería tener 18 tropas pero tiene", estadoJugador.Tropas)
+	}
+	t.Log("El jugador ha recibido", estadoJugador.Tropas, "tropas al principio del turno")
 }

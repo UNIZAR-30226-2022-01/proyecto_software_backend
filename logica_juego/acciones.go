@@ -281,5 +281,6 @@ func RegistrarAcciones() {
 	gob.Register(AccionOcupar{})
 	gob.Register(AccionFortificar{})
 	gob.Register(AccionObtenerCarta{})
+	gob.Register(AccionRecibirRegion{})
 	gob.Register(struct{}{}) // Placeholder de acciones no implementadas
 }

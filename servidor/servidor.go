@@ -53,6 +53,7 @@ func IniciarServidor(test bool) {
 	// Inicio de lógica del juego
 	if os.Args[len(os.Args)-1] == "-api" || test {
 		logica_juego.InicializarGrafoMapa()
+		logica_juego.InicializarContinentes()
 		globales.CachePartidas = globales.IniciarAlmacenPartidas()
 
 		// Registra los tipos a decodificar por gob a partir de interface{}
@@ -168,7 +169,7 @@ func routerAPI() http.Handler {
 		r.Post("/unirseAPartida", handlers.UnirseAPartida)
 		r.Post("/abandonarLobby", handlers.AbandonarLobby)
 		r.Get("/obtenerPartidas", handlers.ObtenerPartidas)
-		r.Get("/obtenerEstadoLobby", handlers.ObtenerEstadoLobby)
+		//r.Get("/obtenerEstadoLobby", handlers.ObtenerEstadoLobby)
 		r.Get("/obtenerEstadoPartida", handlers.ObtenerEstadoPartida)
 		r.Post("/reforzarTerritorio/{id}/{numTropas}", handlers.ReforzarTerritorio)
 
@@ -184,6 +185,7 @@ func routerAPI() http.Handler {
 		r.Get("/obtenerSolicitudesPendientes", handlers.ObtenerSolicitudesPendientes)
 		r.Get("/cambiarCartas/{carta1}/{carta2}/{carta3}", handlers.CambiarCartas)
 		r.Get("/consultarCartas", handlers.ConsultarCartas)
+		r.Get("/pasarDeFase", handlers.PasarDeFase)
 	})
 
 	return r
