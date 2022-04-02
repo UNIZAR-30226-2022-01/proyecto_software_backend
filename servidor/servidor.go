@@ -143,7 +143,7 @@ func routerAPI() http.Handler {
 
 	// Para debugging
 	r.Use(middleware.Logger)
-	// TODO: Por refinar
+	// TODO: Por refinar opciones CORS
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"https://*", "http://*"},
 		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
@@ -169,9 +169,12 @@ func routerAPI() http.Handler {
 		r.Post("/unirseAPartida", handlers.UnirseAPartida)
 		r.Post("/abandonarLobby", handlers.AbandonarLobby)
 		r.Get("/obtenerPartidas", handlers.ObtenerPartidas)
-		//r.Get("/obtenerEstadoLobby", handlers.ObtenerEstadoLobby)
 		r.Get("/obtenerEstadoPartida", handlers.ObtenerEstadoPartida)
 		r.Post("/reforzarTerritorio/{id}/{numTropas}", handlers.ReforzarTerritorio)
+		r.Get("/obtenerEstadoLobby/{id}", handlers.ObtenerEstadoLobby)
+		r.Get("/cambiarCartas/{carta1}/{carta2}/{carta3}", handlers.CambiarCartas)
+		r.Get("/consultarCartas", handlers.ConsultarCartas)
+		r.Get("/pasarDeFase", handlers.PasarDeFase)
 
 		// Usuarios
 		r.Post("/aceptarSolicitudAmistad/{nombre}", handlers.AceptarSolicitudAmistad)
@@ -181,11 +184,7 @@ func routerAPI() http.Handler {
 		r.Get("/listarAmigos", handlers.ListarAmigos)
 		r.Get("/obtenerPerfil/{nombre}", handlers.ObtenerPerfilUsuario)
 		r.Get("/obtenerUsuariosSimilares/{patron}", handlers.ObtenerUsuariosSimilares)
-		r.Get("/obtenerEstadoLobby/{id}", handlers.ObtenerEstadoLobby)
 		r.Get("/obtenerSolicitudesPendientes", handlers.ObtenerSolicitudesPendientes)
-		r.Get("/cambiarCartas/{carta1}/{carta2}/{carta3}", handlers.CambiarCartas)
-		r.Get("/consultarCartas", handlers.ConsultarCartas)
-		r.Get("/pasarDeFase", handlers.PasarDeFase)
 	})
 
 	return r

@@ -35,7 +35,7 @@ type Partida struct {
 }
 
 type Mensaje struct {
-	// TODO
+	// TODO: representar tipo mensaje
 }
 
 // CrearPartida devuelve una partida sin estado ni ID asignado.

@@ -1,5 +1,5 @@
 Se deben instalar los siguientes paquetes mediante la herramienta NPM para construir el proyecto de React.
-Debido a que se pueden instalar tanto como usuario como para todo el sistema, se deja a elección del usuario.
+Debido a que se pueden instalar tanto como usuario como para el sistema, se deja a elección del usuario.
 
 Paquetes:
 react-scripts

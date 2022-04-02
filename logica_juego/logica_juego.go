@@ -87,7 +87,7 @@ func (e *EstadoPartida) SiguienteJugadorSinAccion() {
 }
 
 // SiguienteJugador cambia el turno a otro jugador, emitiendo la acción correspondiente.
-// TODO no debería ser pública, lo es por necesidad dentro del test
+// TODO SiguienteJugador no debería ser pública, lo es por necesidad dentro del test
 func (e *EstadoPartida) SiguienteJugador() {
 	// TODO cuando se puedan eliminar jugadores, habrá que tenerlo en cuenta a la hora de cambiar de turno
 	e.TurnoJugador = (e.TurnoJugador + 1) % len(e.EstadosJugadores)
@@ -164,7 +164,7 @@ func (e *EstadoPartida) AsignarTropasRefuerzo(jugador string) {
 // asignado, no se emiten acciones de cambio de turno durante el proceso.
 //
 // Una vez terminado el proceso, se emite una acción de cambio de turno a un nuevo jugador.
-// TODO: Más elaborado (pseudo-random teniendo en cuenta adyacencias, recorridos por el grafo, etc.)
+// TODO: RellenarRegiones más elaborado (pseudo-random teniendo en cuenta adyacencias, recorridos por el grafo, etc.)
 func (e *EstadoPartida) RellenarRegiones() {
 	regionesAsignadas := 0
 	for i := Eastern_australia; i <= Alberta; i++ {
@@ -352,9 +352,7 @@ func (e *EstadoPartida) CambiarCartas(jugador string, ID_carta1, ID_carta2, ID_c
 		}
 	}
 
-	// TODO cambiar accion de cambio de cartas -> se cambian conjuntos de uno en uno, numConjuntos no necesario
-
-	e.Acciones = append(e.Acciones, NewAccionCambioCartas(1, numTropas, hayBonificacion, regionBonificacion, numeroCartasInicial >= 5))
+	e.Acciones = append(e.Acciones, NewAccionCambioCartas(numTropas, hayBonificacion, regionBonificacion, numeroCartasInicial >= 5))
 	return nil
 }
 
