@@ -8,6 +8,7 @@ import (
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -331,6 +332,31 @@ func solicitarAmistad(cookie *http.Cookie, t *testing.T, nombre string) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("Obtenido código de error no 200 al solicitar amistad:", resp.StatusCode)
 	}
+}
+
+func solicitarAmistadConError(cookie *http.Cookie, t *testing.T, nombre string) {
+	t.Log("Solicitando amistad de a", nombre)
+
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/enviarSolicitudAmistad/"+nombre, nil)
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		t.Fatal("Error en POST de solicitar amistad:", err)
+	}
+
+	if resp.StatusCode == http.StatusOK {
+		t.Fatal("Se esperaba obtener un error:", resp.StatusCode)
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	t.Log("OK se ha obtenido un error al realizar la solicitud de amistad:", string(body))
 }
 
 func aceptarSolicitudDeAmistad(cookie *http.Cookie, t *testing.T, nombre string) {

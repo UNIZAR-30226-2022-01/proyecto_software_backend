@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/gob"
+	"errors"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"net/http"
 )
@@ -86,8 +87,20 @@ func ConsultarPasswordHash(db *sql.DB, usuario *vo.Usuario) (hash string, err er
 // CrearSolicitudAmistad registra una solicitud de amistad entre los usuarios emisor y receptor. En caso de fallo o no
 // encontrarse alguno de ellos, devuelve un error.
 func CrearSolicitudAmistad(db *sql.DB, emisor *vo.Usuario, receptor *vo.Usuario) error {
-	// TODO añadir restricción para que no se generen solicitudes duplicadas en las que solo cambia el orden de emisor y receptor
-	_, err := db.Exec(`INSERT INTO "backend"."EsAmigo"("nombreUsuario1", "nombreUsuario2", "pendiente") VALUES($1, $2, $3)`,
+	var existe bool
+	err := db.QueryRow(`SELECT EXISTS(SELECT * FROM backend."EsAmigo" WHERE "nombreUsuario1" = $1 AND "nombreUsuario2" = $2)`,
+		receptor.NombreUsuario, emisor.NombreUsuario).Scan(&existe)
+
+	if err != nil {
+		return err
+	}
+
+	if existe {
+		return errors.New("No puedes enviar una solicitud de amistad a un amigo," +
+			" o a alguien que te ha enviado una solicitud pendiente")
+	}
+
+	_, err = db.Exec(`INSERT INTO "backend"."EsAmigo"("nombreUsuario1", "nombreUsuario2", "pendiente") VALUES($1, $2, $3)`,
 		emisor.NombreUsuario, receptor.NombreUsuario, true)
 
 	return err

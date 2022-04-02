@@ -446,6 +446,10 @@ func TestFuncionesSociales(t *testing.T) {
 		solicitarAmistad(c, t, "usuario")
 	}
 
+	// Comprobamos que no se pueden enviar solicitudes de amistad a un usuario, en caso de que él nos haya enviado una
+	t.Log("Enviamos una solicitud de amistad a un usuario que ya nos la había solicitado, se espera error")
+	solicitarAmistadConError(cookie, t, "Amigo1")
+
 	solicitudesPendientes := consultarSolicitudesPendientes(cookie, t)
 	if len(solicitudesPendientes) != len(amigos) {
 		t.Fatal("No se han recuperado todas las solicitudes pendientes")
@@ -798,7 +802,6 @@ func TestBaraja(t *testing.T) {
 		}
 	}
 }
-
 
 func TestNotificaciones(t *testing.T) {
 	t.Log("Purgando DB...")

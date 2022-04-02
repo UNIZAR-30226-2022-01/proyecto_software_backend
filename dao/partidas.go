@@ -134,11 +134,15 @@ func ObtenerEstadoLobby(db *sql.DB, idPartida int) (estado vo.EstadoLobby, err e
 // El parámetro de salida "esPublica" indicará si la partida es pública o no
 // El parámetro hash corresponderá al hash de la contraseña para el acceso a la partida
 func ConsultarAcceso(db *sql.DB, partida *vo.Partida) (esPublica bool, hash string, err error) {
-	// TODO cambiar por una sola consulta
-	err = db.QueryRow(`SELECT "backend"."Partida"."passwordHash" FROM "backend"."Partida"
-		WHERE "backend"."Partida"."id" = $1`, partida.IdPartida).Scan(&hash)
-	err = db.QueryRow(`SELECT "backend"."Partida"."esPublica" FROM "backend"."Partida"
-		WHERE "backend"."Partida"."id" = $1`, partida.IdPartida).Scan(&esPublica)
+	var hashONulo sql.NullString
+	err = db.QueryRow(`SELECT "backend"."Partida"."passwordHash", "backend"."Partida"."esPublica" FROM "backend"."Partida"
+		WHERE "backend"."Partida"."id" = $1`, partida.IdPartida).Scan(&hashONulo, &esPublica)
+
+	if hashONulo.Valid {
+		hash = hashONulo.String
+	} else {
+		hash = ""
+	}
 
 	return esPublica, hash, err
 }
