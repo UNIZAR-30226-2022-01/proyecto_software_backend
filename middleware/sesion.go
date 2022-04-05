@@ -30,15 +30,14 @@ func MiddlewareSesion() func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			cookie, cookieRequest, err := CargarCookieUsuario(r)
 
-			if err != nil {
-				w.Write([]byte("Ha ocurrido un error al cargar la cookie de usuario, por favor, inicie sesión de nuevo."))
+			if err != nil { // Se corta la cadena en este punto, porque la cookie es errónea
 				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte("Ha ocurrido un error al cargar la cookie de usuario, por favor, inicie sesión de nuevo."))
 				log.Println("Error al cargar cookie de usuario:", err)
 			} else {
-				if cookie.Expires.Before(time.Now()) && (cookieRequest.Raw == cookie.Raw) {
-					w.Write([]byte("Tu sesión ha caducado, por favor, inicie sesión de nuevo."))
-					// Se corta la cadena en este punto, porque la cookie es inválida
+				if cookie.Expires.Before(time.Now()) && (cookieRequest.Raw == cookie.Raw) { // Se corta la cadena en este punto, porque la cookie es inválida
 					w.WriteHeader(http.StatusUnauthorized)
+					w.Write([]byte("Tu sesión ha caducado, por favor, inicie sesión de nuevo."))
 					log.Println("Detectada cookie expirada o inválida:", cookie.Raw)
 				} else {
 					// Deja pasar al siguiente handler
