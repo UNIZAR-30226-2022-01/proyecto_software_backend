@@ -1,0 +1,208 @@
+package integracion
+
+import (
+	"encoding/json"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
+	"net/http"
+	"net/url"
+	"os"
+	"strconv"
+	"strings"
+	"testing"
+)
+
+func saltarTurnos(t *testing.T, partidaCache vo.Partida, usuario string) {
+	t.Log("Turno actual:", partidaCache.Estado.ObtenerJugadorTurno())
+	t.Log("Saltando turnos hasta " + usuario + "...")
+	for partidaCache.Estado.ObtenerJugadorTurno() != usuario {
+		partidaCache = comprobarPartidaEnCurso(t, 1)
+		t.Log("Turno saltado:", partidaCache.Estado.ObtenerJugadorTurno())
+		partidaCache.Estado.SiguienteJugador()
+		globales.CachePartidas.AlmacenarPartida(partidaCache)
+	}
+	t.Log("Turno nuevo:", partidaCache.Estado.ObtenerJugadorTurno())
+}
+
+func comprobarPartidaNoEnCurso(t *testing.T, idp int) vo.Partida {
+	partidaCache, existe := globales.CachePartidas.ObtenerPartida(idp)
+	if !existe {
+		t.Fatal("No hay partidas en la Cache, aunque debería haber.")
+	} else if partidaCache.EnCurso {
+		t.Fatal("La partida está en curso, aunque no debería.")
+	}
+
+	return partidaCache
+}
+
+func comprobarPartidaEnCurso(t *testing.T, idp int) vo.Partida {
+	partidaCache, existe := globales.CachePartidas.ObtenerPartida(idp)
+	if !existe {
+		t.Fatal("No hay partidas en la Cache, aunque debería haber.")
+	} else if !partidaCache.EnCurso {
+		t.Fatal("La partida no está en curso, aunque debería.")
+	}
+
+	return partidaCache
+}
+
+func crearPartida(cookie *http.Cookie, t *testing.T, publica bool) {
+	// O usar cookie jar de https://stackoverflow.com/questions/12756782/go-http-post-and-use-cookies
+
+	client := &http.Client{}
+
+	var campos url.Values
+	if publica {
+		campos = url.Values{
+			"password":     {""},
+			"maxJugadores": {"6"},
+			"tipo":         {"Publica"}, // o "Privada"
+		}
+	} else {
+		campos = url.Values{
+			"password":     {"password"},
+			"maxJugadores": {"6"},
+			"tipo":         {"Privada"}, // o "Privada"
+		}
+	}
+
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/crearPartida", strings.NewReader(campos.Encode()))
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // Para indicar que el formulario "va en la url", porque campos.Encode() hace eso
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		t.Fatal("Error en POST de crear partida:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al crear una partida:", resp.StatusCode)
+	}
+}
+
+func consultarEstadoLobby(cookie *http.Cookie, idPartida int, t *testing.T) (estado vo.EstadoLobby) {
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerEstadoLobby/"+strconv.Itoa(idPartida), nil)
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // Para indicar que el formulario "va en la url", porque campos.Encode() hace eso
+
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal("Error en GET de consultar lobby:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al consultar lobby:", resp.StatusCode)
+	} else {
+		err = json.NewDecoder(resp.Body).Decode(&estado)
+		if err != nil {
+			t.Fatal("Error al leer JSON de respuesta al consultar el lobby:", err)
+		}
+
+		t.Log("Respuesta de consultar lobby:", estado)
+		return estado
+	}
+
+	return estado
+}
+
+func abandonarLobby(cookie *http.Cookie, t *testing.T) {
+	// O usar cookie jar de https://stackoverflow.com/questions/12756782/go-http-post-and-use-cookies
+	client := &http.Client{}
+
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/abandonarLobby", nil)
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // Para indicar que el formulario "va en la url", porque campos.Encode() hace eso
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		t.Fatal("Error en POST de abandonar partida:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al abandonar una partida:", resp.StatusCode)
+	}
+}
+
+func unirseAPartida(cookie *http.Cookie, t *testing.T, id int) {
+	client := &http.Client{}
+
+	campos := url.Values{
+		"idPartida": {strconv.Itoa(id)},
+		"password":  {"password"},
+	}
+
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/unirseAPartida", strings.NewReader(campos.Encode()))
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // Para indicar que el formulario "va en la url", porque campos.Encode() hace eso
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		t.Fatal("Error en POST de unirse a partida:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al unirse a una partida:", resp.StatusCode)
+	}
+}
+
+func obtenerPartidas(cookie *http.Cookie, t *testing.T) []vo.ElementoListaPartidas {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerPartidas", nil)
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		t.Fatal("Error en GET de obtener partidas:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al obtener partidas:", resp.StatusCode)
+	} else {
+		var partidas []vo.ElementoListaPartidas
+		err = json.NewDecoder(resp.Body).Decode(&partidas)
+		if err != nil {
+			t.Fatal("Error al leer JSON de respuesta al obtener partidas:", err)
+		}
+
+		t.Log("Respuesta de obtenerPartidas:", partidas)
+		return partidas
+	}
+
+	return nil
+}
+
+func obtenerPartidaDB(t *testing.T, idP int) vo.Partida {
+	partidaDB, err := dao.ObtenerPartida(globales.Db, idP)
+
+	if err != nil {
+		t.Fatal("Error al obtener partida de DB:", idP)
+	}
+	return partidaDB
+}
