@@ -105,20 +105,20 @@ func NewAccionInicioTurno(jugador string, tropasObtenidas int, razonNumeroTerrit
 // 		"ObligadoAHacerCambios": false
 //    }
 type AccionCambioCartas struct {
-	IDAccion                    int       // 3
-	NumTropasObtenidas          int       // Tropas obtenidas por el cambio
-	BonificacionObtenida        bool      // Flag de si se ha recibido una bonificación de territorio de una de las cartas usadas
-	RegionQueOtorgaBonificacion NumRegion // ID de región que ha otorgado la bonificación, si se ha obtenido
-	ObligadoAHacerCambios       bool      // Flag de si el usuario ha sido obligado a hacer el cambio, por tener más de 5 cartas
+	IDAccion                       int         // 3
+	NumTropasObtenidas             int         // Tropas obtenidas por el cambio
+	BonificacionObtenida           bool        // Flag de si se ha recibido una bonificación de territorio de una de las cartas usadas
+	RegionesQueOtorganBonificacion []NumRegion // ID de región que ha otorgado la bonificación, si se ha obtenido
+	ObligadoAHacerCambios          bool        // Flag de si el usuario ha sido obligado a hacer el cambio, por tener más de 5 cartas
 }
 
-func NewAccionCambioCartas(numTropasObtenidas int, bonificacionObtenida bool, regionQueOtorgaBonificacion NumRegion, obligadoAHacerCambios bool) AccionCambioCartas {
+func NewAccionCambioCartas(numTropasObtenidas int, bonificacionObtenida bool, regionesQueOtorganBonificacion []NumRegion, obligadoAHacerCambios bool) AccionCambioCartas {
 	return AccionCambioCartas{
-		IDAccion:                    int(IDAccionCambioCartas),
-		NumTropasObtenidas:          numTropasObtenidas,
-		BonificacionObtenida:        bonificacionObtenida,
-		RegionQueOtorgaBonificacion: regionQueOtorgaBonificacion,
-		ObligadoAHacerCambios:       obligadoAHacerCambios}
+		IDAccion:                       int(IDAccionCambioCartas),
+		NumTropasObtenidas:             numTropasObtenidas,
+		BonificacionObtenida:           bonificacionObtenida,
+		RegionesQueOtorganBonificacion: regionesQueOtorganBonificacion,
+		ObligadoAHacerCambios:          obligadoAHacerCambios}
 }
 
 // AccionReforzar corresponde a un refuerzo de una región por un jugador

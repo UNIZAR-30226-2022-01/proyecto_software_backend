@@ -123,7 +123,6 @@ func TestBaraja(t *testing.T) {
 	t.Log("OK: No se ha podido cambiar con cartas de diferentes tipos, error:", err)
 
 	// Probamos bonificación por territorio
-	// TODO probar caso en el que más de una carta recibe bonificación por territorio
 	carta, estadoJugador.Cartas, err = logica_juego.RetirarCartaPorID(10, estadoJugador.Cartas)
 	if err != nil {
 		t.Fatal("Error al tomar la carta de la mano del jugador")
@@ -140,6 +139,47 @@ func TestBaraja(t *testing.T) {
 		t.Fatal("No se han recibido tropas adicionales")
 	}
 	t.Log("Inicialmente, la región tenía", tropasIniciales, "tropas, tras el canje hay un total de ", estadoRegion.NumTropas-tropasIniciales)
+
+	// Probamos bonificación en 3 territorios a la vez
+	var cartas []logica_juego.Carta
+	carta, estadoJugador.Cartas, err = logica_juego.RetirarCartaPorID(14, estadoJugador.Cartas)
+	if err != nil {
+		t.Fatal("Error al tomar la carta de la mano del jugador")
+	}
+	cartas = append(cartas, carta)
+
+	carta, estadoJugador.Cartas, err = logica_juego.RetirarCartaPorID(15, estadoJugador.Cartas)
+	if err != nil {
+		t.Fatal("Error al tomar la carta de la mano del jugador")
+	}
+	cartas = append(cartas, carta)
+
+	carta, estadoJugador.Cartas, err = logica_juego.RetirarCartaPorID(16, estadoJugador.Cartas)
+	if err != nil {
+		t.Fatal("Error al tomar la carta de la mano del jugador")
+	}
+	cartas = append(cartas, carta)
+
+	estadoJugador.Cartas = append(estadoJugador.Cartas, cartas...)
+
+	var tropasInicialesPorRegion []int
+	for _, c := range cartas {
+		tropasInicialesPorRegion = append(tropasInicialesPorRegion, estadoPartida.EstadoMapa[c.Region].NumTropas)
+		estadoPartida.EstadoMapa[c.Region].Ocupante = "Jugador1"
+	}
+
+	t.Log("Cambiando 3 cartas, todas con bonificación por territorio")
+	cambiarCartas(t, estadoJugador, &estadoPartida, 14, 15, 16, 7)
+	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
+
+	for i, c := range cartas {
+		if estadoPartida.EstadoMapa[c.Region].NumTropas-tropasInicialesPorRegion[i] != 2 {
+			t.Fatal("No se ha recibido bonificación por territorio")
+		}
+		t.Log("El territorio", c.Region, "tenía", tropasInicialesPorRegion[i], "tropas inicialmente,",
+			estadoPartida.EstadoMapa[c.Region].NumTropas, "tras el cambio")
+	}
+	t.Log("Los 3 territorios han recibido las tropas de bonificación correctamente")
 
 	// Comprobar que se añade correctamente la acción de cambio de cartas
 	accion := estadoPartida.Acciones[len(estadoPartida.Acciones)-1]
@@ -159,12 +199,12 @@ func TestBaraja(t *testing.T) {
 	t.Log("El último cambio de cartas fue:", accionCambio)
 
 	// Probar cambios de cartas de número > 6
-	t.Log("Cambiando 3 cartas, 7º cambio")
-	cambiarCartas(t, estadoJugador, &estadoPartida, 30, 31, 32, 7)
+	t.Log("Cambiando 3 cartas, 8º cambio")
+	cambiarCartas(t, estadoJugador, &estadoPartida, 30, 31, 32, 8)
 	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
 
-	t.Log("Cambiando 3 cartas, 8º cambio")
-	cambiarCartas(t, estadoJugador, &estadoPartida, 33, 34, 35, 8)
+	t.Log("Cambiando 3 cartas, 9º cambio")
+	cambiarCartas(t, estadoJugador, &estadoPartida, 33, 34, 35, 9)
 	invarianteNumeroDeCartas(estadoPartida, *estadoJugador, t)
 
 	// Consultar cartas de un jugador

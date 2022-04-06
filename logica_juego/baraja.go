@@ -152,21 +152,19 @@ func (e *EstadoPartida) CambiarCartas(jugador string, ID_carta1, ID_carta2, ID_c
 	}
 	estado.Tropas += numTropas
 
-	// TODO en caso de que haya varias regiones que coincidan, el jugador debería poder elegir a que región asignar los dos ejércitos extra
 	hayBonificacion := false
-	var regionBonificacion NumRegion
+	var regionesConBonus []NumRegion
 
 	regiones := obtenerRegionesCartas([]Carta{carta1, carta2, carta3})
 	for _, r := range regiones {
 		if e.EstadoMapa[r].Ocupante == jugador {
 			e.EstadoMapa[r].NumTropas += 2
 			hayBonificacion = true
-			regionBonificacion = r
-			break
+			regionesConBonus = append(regionesConBonus, r)
 		}
 	}
 
-	e.Acciones = append(e.Acciones, NewAccionCambioCartas(numTropas, hayBonificacion, regionBonificacion, numeroCartasInicial >= 5))
+	e.Acciones = append(e.Acciones, NewAccionCambioCartas(numTropas, hayBonificacion, regionesConBonus, numeroCartasInicial >= 5))
 	return nil
 }
 
