@@ -161,7 +161,7 @@ func ConsultarCartas(writer http.ResponseWriter, request *http.Request) {
 // En la fortificación podrá cambiar de fase (dándole el turno a otro jugador) libremente
 //
 // Si no es el turno del jugador, no está en una partida o no se cumplen las condiciones para el cambio de fase, devolverá
-// un status 500, en otro caso devolverá status 200.
+// un status 500 junto a un mensaje de error en el cuerpo, en otro caso devolverá status 200.
 //
 // Ruta: /api/pasarDeFase
 // Tipo: GET
@@ -201,7 +201,8 @@ func PasarDeFase(writer http.ResponseWriter, request *http.Request) {
 //		forma que no se puede dejar el territorio origen sin tropas
 //
 // Si no es el turno del jugador, no está en una partida o no se cumplen las condiciones para la fortificación,
-// se devolverá un status 500, en otro caso devolverá status 200 y generará una acción de fortificación.
+// se devolverá un status 500 junto a un mensaje de error en el cuerpo, en otro caso devolverá status 200
+// y generará una acción de fortificación.
 //
 // Ruta: /api/fortificarTerritorio/{id_territorio_origen}/{id_territorio_destino}/{num_tropas}
 // Tipo: POST
