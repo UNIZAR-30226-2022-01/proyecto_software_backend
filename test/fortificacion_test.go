@@ -3,6 +3,7 @@ package integracion
 import (
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
+	"log"
 	"testing"
 )
 
@@ -72,24 +73,42 @@ func TestFortificacion(t *testing.T) {
 	}
 	globales.CachePartidas.AlmacenarPartida(partidaCache)
 
-	// Refuerzo válido
-	t.Log("Reforzando territorio", logica_juego.Eastern_united_states, "desde", logica_juego.Alaska)
+	numTropasOrigenAntes := partidaCache.Estado.EstadoMapa[logica_juego.Alaska].NumTropas
+	numTropasDestinoAntes := partidaCache.Estado.EstadoMapa[logica_juego.Eastern_united_states].NumTropas
+	// Fortificación válida
+	t.Log("Fortificando territorio", logica_juego.Eastern_united_states, "desde", logica_juego.Alaska)
 	fortificarTerritorio(t, cookie, 15, int(logica_juego.Alaska), int(logica_juego.Eastern_united_states))
+	numTropasOrigenDespues := partidaCache.Estado.EstadoMapa[logica_juego.Alaska].NumTropas
+	numTropasDestinoDespues := partidaCache.Estado.EstadoMapa[logica_juego.Eastern_united_states].NumTropas
 
-	// Refuerzo inválido por regiones desconectadas
-	t.Log("Reforzando territorio", logica_juego.Venezuela, "desde", logica_juego.Alaska)
+	t.Log("Tropas en", logica_juego.Alaska, "antes:", numTropasOrigenAntes)
+	t.Log("Tropas en", logica_juego.Alaska, "después:", numTropasOrigenDespues)
+	t.Log("Tropas en", logica_juego.Eastern_united_states, "antes:", numTropasDestinoAntes)
+	t.Log("Tropas en", logica_juego.Eastern_united_states, "después:", numTropasDestinoDespues)
+
+	if ((numTropasOrigenAntes + numTropasDestinoAntes) != (numTropasOrigenDespues + numTropasDestinoDespues)) ||
+		numTropasOrigenAntes == numTropasOrigenDespues || numTropasDestinoAntes == numTropasDestinoDespues {
+		log.Fatal("Error en el número de tropas de cada región antes y después de la fortificación")
+	}
+
+	estado := preguntarEstado(t, cookie)
+	accionFortificar := estado.Acciones[len(estado.Acciones)-1]
+	t.Log("Acción de fortificar:", accionFortificar)
+
+	// Fortificación inválida por regiones desconectadas
+	t.Log("Fortificando territorio", logica_juego.Venezuela, "desde", logica_juego.Alaska)
 	fortificarTerritorioConError(t, cookie, 2, int(logica_juego.Alaska), int(logica_juego.Venezuela))
 
-	// Refuerzo inválido por números inválidos de tropas
-	t.Log("Reforzando territorio", logica_juego.Eastern_united_states, "desde", logica_juego.Alaska)
+	// Fortificación inválida por números inválidos de tropas
+	t.Log("Fortificando territorio", logica_juego.Eastern_united_states, "desde", logica_juego.Alaska)
 	fortificarTerritorioConError(t, cookie, 20, int(logica_juego.Alaska), int(logica_juego.Eastern_united_states))
 
-	// Refuerzo inválido por ser territorios controlados por otro
-	t.Log("Reforzando territorio", logica_juego.Egypt, "desde", logica_juego.Eastern_united_states)
+	// Fortificación inválida por ser territorios controlados por otro
+	t.Log("Fortificando territorio", logica_juego.Egypt, "desde", logica_juego.Eastern_united_states)
 	fortificarTerritorioConError(t, cookie, 1, int(logica_juego.Eastern_united_states), int(logica_juego.Egypt))
 
-	// Refuerzo inválido por ser 0 tropas
-	t.Log("Reforzando territorio", logica_juego.Eastern_united_states, "desde", logica_juego.Alaska)
+	// Fortificación inválida por ser 0 tropas
+	t.Log("Fortificando territorio", logica_juego.Eastern_united_states, "desde", logica_juego.Alaska)
 	fortificarTerritorioConError(t, cookie, 0, int(logica_juego.Alaska), int(logica_juego.Eastern_united_states))
 
 	// Terminar la fase

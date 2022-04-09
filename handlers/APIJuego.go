@@ -232,6 +232,11 @@ func Fortificar(writer http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		devolverError(writer, err)
 	} else {
+		// Se sobreescribe en el almacén
+		globales.CachePartidas.AlmacenarPartida(partida)
+
+		// Y se encola un trabajo de serialización de su estado
+		globales.CachePartidas.CanalSerializacion <- partida
 		escribirHeaderExito(writer)
 	}
 }
