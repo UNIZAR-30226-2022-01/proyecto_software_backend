@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/servidor"
 	"io/ioutil"
 	"log"
@@ -94,4 +95,14 @@ func saltarFase(cookie *http.Cookie, t *testing.T) error {
 	}
 
 	return nil
+}
+
+func buscarEnLista(regiones []logica_juego.NumRegion, region logica_juego.NumRegion) bool {
+	for _, regionCola := range regiones {
+		if region == regionCola {
+			return true
+		}
+	}
+
+	return false
 }

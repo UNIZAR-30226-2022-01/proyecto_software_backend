@@ -38,6 +38,7 @@ func crearMapaEstadosJugadores(jugadores []string) (mapa map[string]*EstadoJugad
 		mapa[j].Cartas = []Carta{}
 		mapa[j].UltimoIndiceLeido = -1
 		mapa[j].Tropas = numTropas
+		//mapa[j].GrafoRegiones = simple.NewUndirectedGraph()
 	}
 
 	return mapa

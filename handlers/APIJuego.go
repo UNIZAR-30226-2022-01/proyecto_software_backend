@@ -189,3 +189,48 @@ func PasarDeFase(writer http.ResponseWriter, request *http.Request) {
 		escribirHeaderExito(writer)
 	}
 }
+
+// Fortificar permite al jugador mover un número determinado de tropas de un territorio dado a otro.
+//
+// Las condiciones para poder fortificar son las siguientes:
+// 		Ambos territorios pertenecen al jugador y son diferentes
+//		Ambos territorios se encuentran conectados por algún camino en el mapa que cruce únicamente
+//		territorios controlados por dicho jugador
+//		El número de tropas del territorio origen debe ser mayor que 1
+//		El número de tropas a mover es un número comprendido entre [1, num_tropas_territorio_1 - 1], de tal
+//		forma que no se puede dejar el territorio origen sin tropas
+//
+// Si no es el turno del jugador, no está en una partida o no se cumplen las condiciones para la fortificación,
+// se devolverá un status 500, en otro caso devolverá status 200 y generará una acción de fortificación.
+//
+// Ruta: /api/fortificarTerritorio/{id_territorio_origen}/{id_territorio_destino}/{num_tropas}
+// Tipo: POST
+func Fortificar(writer http.ResponseWriter, request *http.Request) {
+	idTerritorioOrigen, err1 := strconv.Atoi(chi.URLParam(request, "id_territorio_origen"))
+	idTerritorioDestino, err2 := strconv.Atoi(chi.URLParam(request, "id_territorio_destino"))
+	numTropas, err3 := strconv.Atoi(chi.URLParam(request, "num_tropas"))
+
+	if err1 != nil || err2 != nil || err3 != nil || numTropas == 0 {
+		devolverError(writer, errors.New("Los identificadores de región y el número de tropas deben ser números naturales"))
+		return
+	}
+	usuario := vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)}
+
+	idPartida, err := dao.PartidaUsuario(globales.Db, &usuario)
+	if err == sql.ErrNoRows {
+		devolverError(writer, errors.New("No estás participando en ninguna partida."))
+		return
+	} else if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
+
+	err = partida.Estado.FortificarTerritorio(idTerritorioOrigen, idTerritorioDestino, numTropas, usuario.NombreUsuario)
+	if err != nil {
+		devolverError(writer, err)
+	} else {
+		escribirHeaderExito(writer)
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"net/http"
 	"net/url"
@@ -16,12 +17,16 @@ import (
 func saltarTurnos(t *testing.T, partidaCache vo.Partida, usuario string) {
 	t.Log("Turno actual:", partidaCache.Estado.ObtenerJugadorTurno())
 	t.Log("Saltando turnos hasta " + usuario + "...")
+
 	for partidaCache.Estado.ObtenerJugadorTurno() != usuario {
+
 		partidaCache = comprobarPartidaEnCurso(t, 1)
 		t.Log("Turno saltado:", partidaCache.Estado.ObtenerJugadorTurno())
+
 		partidaCache.Estado.SiguienteJugador()
 		globales.CachePartidas.AlmacenarPartida(partidaCache)
 	}
+
 	t.Log("Turno nuevo:", partidaCache.Estado.ObtenerJugadorTurno())
 }
 
@@ -205,4 +210,23 @@ func obtenerPartidaDB(t *testing.T, idP int) vo.Partida {
 		t.Fatal("Error al obtener partida de DB:", idP)
 	}
 	return partidaDB
+}
+
+// Fuerza la conquista de un territorio por un jugador dados en una partida de cache,
+// almacenando el estado en el cache de vuelta
+func conquistar(t *testing.T, partidaCache vo.Partida, territorio int, usuario string) vo.Partida {
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.EstadoMapa[logica_juego.NumRegion(territorio)].Ocupante = usuario
+
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+	return partidaCache
+}
+
+// Fuerza la asignación de tropas a un territorio por un jugador dados en una partida de cache,
+// almacenando el estado en el cache de vuelta
+func darTropas(t *testing.T, partidaCache vo.Partida, numTropas int, usuario string) vo.Partida {
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.EstadosJugadores[usuario].Tropas += numTropas
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+	return partidaCache
 }

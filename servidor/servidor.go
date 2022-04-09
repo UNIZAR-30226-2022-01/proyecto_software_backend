@@ -175,6 +175,8 @@ func routerAPI() http.Handler {
 		r.Get("/cambiarCartas/{carta1}/{carta2}/{carta3}", handlers.CambiarCartas)
 		r.Get("/consultarCartas", handlers.ConsultarCartas)
 		r.Get("/pasarDeFase", handlers.PasarDeFase)
+		r.Post("/fortificarTerritorio/{id_territorio_origen}/{id_territorio_destino}/{num_tropas}", handlers.Fortificar)
+		//r.Post("/fin_fase_fortificar", handlers.FinFaseFortificar)
 
 		// Usuarios
 		r.Post("/aceptarSolicitudAmistad/{nombre}", handlers.AceptarSolicitudAmistad)

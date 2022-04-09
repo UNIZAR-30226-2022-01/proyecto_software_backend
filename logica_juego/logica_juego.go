@@ -4,6 +4,7 @@ package logica_juego
 
 import (
 	"errors"
+	"gonum.org/v1/gonum/graph/simple"
 	"log"
 	"math/rand"
 	"strconv"
@@ -29,6 +30,7 @@ type EstadoJugador struct {
 	Cartas            []Carta
 	UltimoIndiceLeido int
 	Tropas            int
+	//GrafoRegiones     *simple.UndirectedGraph // Sub-grafo de GrafoMapa, con únicamente las regiones controladas por el jugador
 }
 
 type EstadoRegion struct {
@@ -179,6 +181,9 @@ func (e *EstadoPartida) RellenarRegiones() {
 			// Añadir una nueva acción
 			e.Acciones = append(e.Acciones, NewAccionRecibirRegion(i, e.EstadosJugadores[e.Jugadores[e.TurnoJugador]].Tropas, NUM_REGIONES-regionesAsignadas, e.Jugadores[e.TurnoJugador]))
 
+			// La añade al subgrafo del jugador
+			//e.EstadosJugadores[e.Jugadores[e.TurnoJugador]].AñadirASubGrafo(i)
+
 			e.SiguienteJugadorSinAccion()
 		} else {
 			// Repite la iteración para el siguiente jugador
@@ -213,7 +218,7 @@ func (e *EstadoPartida) ReforzarTerritorio(idTerritorio int, numTropas int, juga
 	if !existe {
 		return errors.New("El jugador indicado," + jugador + ", no está en la partida")
 	} else if !e.esTurnoJugador(jugador) {
-		return errors.New("Se ha solicitado una acción fuera de turno, el jugador en este turno es " + e.ObtenerJugadorTurno())
+		return errors.New("Solo puedes reforzar durante tu turno, el jugador en este turno es " + e.ObtenerJugadorTurno())
 	}
 
 	if e.Fase != Refuerzo {
@@ -241,7 +246,7 @@ func (e *EstadoPartida) ReforzarTerritorio(idTerritorio int, numTropas int, juga
 // En la fortificación podrá cambiar de fase (dándole el turno a otro jugador) libremente
 func (e *EstadoPartida) FinDeFase(jugador string) error {
 	if !e.esTurnoJugador(jugador) {
-		return errors.New("Solo puedes cambiar de fase durante tu turno")
+		return errors.New("Solo puedes cambiar de fase durante tu turno, el jugador en este turno es " + e.ObtenerJugadorTurno())
 	}
 
 	estadoJugador := e.EstadosJugadores[jugador]
@@ -294,4 +299,148 @@ func (e *EstadoPartida) esTurnoJugador(jugador string) bool {
 
 func (e *EstadoPartida) ObtenerJugadorTurno() string {
 	return e.Jugadores[e.TurnoJugador]
+}
+
+func (e *EstadoPartida) FortificarTerritorio(origen int, destino int, tropas int, jugador string) error {
+	if !e.esTurnoJugador(jugador) {
+		return errors.New("Solo puedes fortificar durante tu turno, el jugador en este turno es " + e.ObtenerJugadorTurno())
+	} else if e.Fase != Fortificar {
+		return errors.New("Solo se puede fortificar durante la fase de fortificación")
+	}
+
+	// Comprobar pertenencia de territorio de origen y número de tropas válido en el territorio
+	regionOrigen, existe := e.EstadoMapa[NumRegion(origen)]
+	if !existe {
+		return errors.New("El territorio de origen indicado no existe")
+	} else if regionOrigen.Ocupante != jugador {
+		return errors.New("No eres el ocupante del territorio de origen, el ocupante es " + regionOrigen.Ocupante)
+	} else if regionOrigen.NumTropas == 1 {
+		return errors.New("El número de tropas en el territorio de origen debe ser mayor que 1")
+	} else if regionOrigen.NumTropas <= tropas {
+		return errors.New("El número de tropas en el territorio de origen debe ser mayor que el número de tropas de fortificación")
+	}
+
+	// Comprobar pertenencia de territorio destino
+	regionDestino, existe := e.EstadoMapa[NumRegion(destino)]
+	if !existe {
+		return errors.New("El territorio de destino indicado no existe")
+	} else if regionDestino.Ocupante != jugador {
+		return errors.New("No eres el ocupante del territorio de destino, el ocupante es " + regionDestino.Ocupante)
+	} else if regionDestino == regionOrigen {
+		return errors.New("Las regiones origen y destino deben ser diferentes")
+	}
+
+	// Comprobar existencia de un camino entre ambas regiones, que cruce exclusivamente por territorios controlados
+	existe = e.existeCaminoEntreRegiones(NumRegion(origen), NumRegion(destino), jugador)
+
+	if !existe {
+		return errors.New("No existe un camino con territorios controlados entre ambas regiones")
+	} else {
+		// Realizar la fortificación
+		e.EstadoMapa[NumRegion(origen)].NumTropas -= tropas
+		e.EstadoMapa[NumRegion(destino)].NumTropas += tropas
+
+		// Añadir una nueva acción
+		e.Acciones = append(e.Acciones,
+			NewAccionFortificar(
+				NumRegion(origen),
+				NumRegion(destino),
+				e.EstadoMapa[NumRegion(origen)].NumTropas,
+				e.EstadoMapa[NumRegion(destino)].NumTropas,
+				jugador))
+	}
+
+	return nil
+}
+
+// Implementación del algoritmo BFS para buscar e indicar si existe un camino
+// entre dos regiones de un sub-grafo de un jugador, dados sus identificadores
+func (e *EstadoPartida) existeCaminoEntreRegiones(origen NumRegion, destino NumRegion, jugador string) bool {
+	//region := e.EstadoMapa[NumRegion(origen)]
+
+	// No se puede usar un canal, por ejemplo, porque tienen un límite fijo de espacio
+	var frontera []NumRegion
+	frontera = append(frontera, origen)
+
+	var explorados []NumRegion
+
+	for {
+		if len(frontera) == 0 {
+			return false
+		}
+
+		// "pop"
+		idRegion := frontera[0]
+		frontera = frontera[1:]
+
+		explorados = append(explorados, idRegion)
+
+		nodo := simple.Node(idRegion)
+		nodos := e.ObtenerSubgrafoRegiones(jugador).From(nodo.ID())
+
+		// https://pkg.go.dev/gonum.org/v1/gonum/graph@v0.11.0#Iterator
+		for nodos.Next() == true { // La siguiente llamada no devolverá un nil
+			hijo := nodos.Node()
+
+			if !regionEnCola(explorados, NumRegion(hijo.ID())) && !regionEnCola(frontera, NumRegion(hijo.ID())) {
+				if NumRegion(hijo.ID()) == destino {
+					return true
+				}
+				frontera = append(frontera, NumRegion(hijo.ID()))
+			}
+		}
+	}
+}
+
+func regionEnCola(cola []NumRegion, region NumRegion) bool {
+	for _, regionCola := range cola {
+		if region == regionCola {
+			return true
+		}
+	}
+
+	return false
+}
+
+// Devuelve un subgrafo de GrafoMapa con únicamente las regiones/nodos controladas por el jugador
+// TODO: La librería de grafos no exporta sus campos y no se puede serializar junto al resto del estado,
+// TODO: por lo que se tienen que recrear o almacenar cacheados en otra estructura que no se serialice
+// TODO: Valorar el coste de almacenamiento vs. recreación en cada llamada a fortificar (el coste es de
+// TODO: NumRegiones*factor_ramificacion_maximo (máximo número de aristas en un nodo) iteraciones, exactamente)
+func (e *EstadoPartida) ObtenerSubgrafoRegiones(jugador string) *simple.UndirectedGraph {
+	subgrafo := simple.NewUndirectedGraph()
+
+	for i := Eastern_australia; i <= Alberta; i++ {
+		if e.EstadoMapa[i].Ocupante == jugador {
+			AñadirASubGrafo(i, subgrafo)
+		}
+	}
+
+	return subgrafo
+}
+
+// Añade una región dada al subgrafo del jugador, conectándola con el resto
+// de regiones del subgrafo que se encontraran conectadas con ella en el grafo
+// del mapa completo
+func AñadirASubGrafo(region NumRegion, subgrafo *simple.UndirectedGraph) {
+	// Añade la región al grafo
+	regionNueva := simple.Node(region)
+	subgrafo.AddNode(regionNueva) // TODO: no tiene tratamiento de errores, hace panic, encerrar en búsqueda
+
+	// Para cada región alcanzable desde regionNueva
+	regionesAlcanzables := GrafoMapa.From(regionNueva.ID())
+	for regionesAlcanzables.Next() == true { // La siguiente llamada no devolverá un nil
+		regionAlcanzable := regionesAlcanzables.Node()
+
+		if subgrafo.Node(regionAlcanzable.ID()) != nil { // Si la región alcanzable está en el subgrafo, se conectan
+			subgrafo.SetEdge(GrafoMapa.NewEdge(regionNueva, regionAlcanzable))
+		}
+	}
+}
+
+// Elimina una región dada del subgrafo del jugador, desconectándola también del
+// resto de regiones del subgrafo que se encontraran conectadas con ella en el
+// grafo del mapa completo
+func (e *EstadoJugador) eliminarDeSubgrafo(region NumRegion, subgrafo *simple.UndirectedGraph) {
+	subgrafo.RemoveNode(int64(region)) // TODO: no tiene tratamiento de errores, es una no-op si no existe, encerrar en búsqueda
 }
