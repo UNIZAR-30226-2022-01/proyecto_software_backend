@@ -73,8 +73,9 @@ type ElementoListaPartidas struct {
 	NumAmigosPresentes int
 }
 
-type ElementoListaNombresUsuario struct {
-	Nombres []string
+type ElementoListaUsuariosSimilares struct {
+	Nombre  string
+	EsAmigo bool
 }
 
 type ElementoListaUsuarios struct {
@@ -86,6 +87,7 @@ type ElementoListaUsuarios struct {
 	Puntos          int
 	ID_dado         int
 	ID_ficha        int
+	EsAmigo         bool
 }
 
 type EstadoLobby struct {

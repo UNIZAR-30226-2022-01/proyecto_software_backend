@@ -1,6 +1,7 @@
 package integracion
 
 import (
+	"log"
 	"net/http"
 	"testing"
 )
@@ -84,14 +85,48 @@ func TestFuncionesSociales(t *testing.T) {
 
 	// Buscamos usuarios cuyo nombre empiece por "Amigo"
 	resultadoBusqueda := buscarUsuariosSimilares(cookie, "Amigo", t)
+	log.Println("amigos:", resultadoBusqueda)
 	if len(amigos) != len(resultadoBusqueda) {
 		t.Fatal("No se han recuperado todos los usuarios con nombre empezado por Amigo")
 	}
 
 	for i := range amigos {
-		if amigos[i] != resultadoBusqueda[i] {
+		if amigos[i] != resultadoBusqueda[i].Nombre {
 			t.Fatal("No se han recuperado todos los usuarios con nombre empezado por Amigo")
+		} else if !resultadoBusqueda[i].EsAmigo {
+			t.Fatal("Uno de los amigos se ha devuelto como no amigo:", resultadoBusqueda[i])
 		}
 	}
 
+	// Crea varios usuarios no amigos y se comprueba que no aparecen como amigos
+	noAmigos := []string{"NoAmigo1", "NoAmigo2", "NoAmigo3"}
+	cookiesNoAmigos := make([]*http.Cookie, 5)
+	for i, a := range noAmigos {
+		cookiesNoAmigos[i] = crearUsuario(a, t)
+	}
+
+	resultadoBusquedaNoAmigos := buscarUsuariosSimilares(cookie, "NoAmi", t)
+	log.Println("noAmigos:", resultadoBusquedaNoAmigos)
+	if len(noAmigos) != len(resultadoBusquedaNoAmigos) {
+		t.Fatal("No se han recuperado todos los usuarios con nombre empezado por NoAmi")
+	}
+
+	for i := range noAmigos {
+		if noAmigos[i] != resultadoBusquedaNoAmigos[i].Nombre {
+			t.Fatal("No se han recuperado todos los usuarios con nombre empezado por NoAmi")
+		} else if resultadoBusquedaNoAmigos[i].EsAmigo {
+			t.Fatal("Uno de los (no) amigos se ha devuelto como amigo:", resultadoBusquedaNoAmigos[i])
+		}
+	}
+
+	// Prueba de bandera de amigo al consultar usuarios individuales
+	amigo := obtenerPerfilUsuario(cookie, "Amigo1", t)
+	if !amigo.EsAmigo {
+		t.Fatal("Amigo1 se ha devuelto como no amigo al consultarlo:", amigo)
+	}
+
+	noAmigo := obtenerPerfilUsuario(cookie, "NoAmigo1", t)
+	if noAmigo.EsAmigo {
+		t.Fatal("NoAmigo1 se ha devuelto como amigo al consultarlo:", noAmigo)
+	}
 }

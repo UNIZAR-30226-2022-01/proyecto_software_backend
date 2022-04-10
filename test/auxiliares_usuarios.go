@@ -6,7 +6,6 @@ import (
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -154,14 +153,14 @@ func listarAmigos(cookie *http.Cookie, t *testing.T) []string {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("Obtenido código de error no 200 al listar amigos:", resp.StatusCode)
 	} else {
-		var amigos vo.ElementoListaNombresUsuario
+		var amigos []string
 		err = json.NewDecoder(resp.Body).Decode(&amigos)
 		if err != nil {
 			t.Fatal("Error al leer JSON de respuesta al listar amigos:", err)
 		}
 
 		t.Log("Respuesta de listarAmigos:", amigos)
-		return amigos.Nombres
+		return amigos
 	}
 
 	return nil
@@ -183,14 +182,14 @@ func consultarSolicitudesPendientes(cookie *http.Cookie, t *testing.T) []string 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("Obtenido código de error no 200 al consultar pendientes:", resp.StatusCode)
 	} else {
-		var pendientes vo.ElementoListaNombresUsuario
+		var pendientes []string
 		err = json.NewDecoder(resp.Body).Decode(&pendientes)
 		if err != nil {
 			t.Fatal("Error al leer JSON de respuesta al listar pendientes:", err)
 		}
 
-		t.Log("Respuesta de consultarPendientes:", pendientes.Nombres)
-		return pendientes.Nombres
+		t.Log("Respuesta de consultarPendientes:", pendientes)
+		return pendientes
 	}
 
 	return []string{}
@@ -224,7 +223,7 @@ func obtenerPerfilUsuario(cookie *http.Cookie, nombre string, t *testing.T) vo.E
 	return vo.ElementoListaUsuarios{}
 }
 
-func buscarUsuariosSimilares(cookie *http.Cookie, patron string, t *testing.T) []string {
+func buscarUsuariosSimilares(cookie *http.Cookie, patron string, t *testing.T) []vo.ElementoListaUsuariosSimilares {
 	cliente := &http.Client{}
 	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerUsuariosSimilares/"+patron, nil)
 	if err != nil {
@@ -240,13 +239,14 @@ func buscarUsuariosSimilares(cookie *http.Cookie, patron string, t *testing.T) [
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("Obtenido código de error no 200 al buscar usuarios:", resp.StatusCode)
 	} else {
-		var usuarios vo.ElementoListaNombresUsuario
+		var usuarios []vo.ElementoListaUsuariosSimilares
+
 		err = json.NewDecoder(resp.Body).Decode(&usuarios)
 		if err != nil {
 			t.Fatal("Error al leer JSON de respuesta al buscar usuarios:", err)
 		}
-		log.Println("Usuarios recuperados:", usuarios.Nombres)
-		return usuarios.Nombres
+
+		return usuarios
 	}
 
 	return nil

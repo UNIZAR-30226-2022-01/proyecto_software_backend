@@ -90,14 +90,13 @@ func ListarAmigos(writer http.ResponseWriter, request *http.Request) {
 		devolverErrorSQL(writer)
 	}
 
-	var amigosString []string
+	var listaAmigos []string
 	for _, a := range amigos {
-		amigosString = append(amigosString, a.NombreUsuario)
+		listaAmigos = append(listaAmigos, a.NombreUsuario)
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
-	envioAmigos := vo.ElementoListaNombresUsuario{Nombres: amigosString}
-	err = json.NewEncoder(writer).Encode(envioAmigos)
+	err = json.NewEncoder(writer).Encode(listaAmigos)
 	escribirHeaderExito(writer)
 }
 
@@ -119,8 +118,7 @@ func ObtenerSolicitudesPendientes(writer http.ResponseWriter, request *http.Requ
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
-	envioPendientes := vo.ElementoListaNombresUsuario{Nombres: pendientes}
-	err = json.NewEncoder(writer).Encode(envioPendientes)
+	err = json.NewEncoder(writer).Encode(pendientes)
 	escribirHeaderExito(writer)
 }
 
@@ -138,6 +136,7 @@ func ObtenerSolicitudesPendientes(writer http.ResponseWriter, request *http.Requ
 // 	   "Puntos": int
 // 	   "ID_dado": int
 // 	   "ID_ficha": int
+//	   "EsAmigo": bool
 //    }
 //
 // Ruta: /api/obtenerPerfil/{nombre}
@@ -150,29 +149,65 @@ func ObtenerPerfilUsuario(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	envioUsuario := transformaAElementoListaUsuarios(usuario)
+
+	// Se comprueba si es amigo del usuario solicitante o no
+	amigos, err := dao.ObtenerAmigos(globales.Db, &vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)})
+	for _, amigo := range amigos {
+		if amigo.NombreUsuario == nombreUsuario {
+			envioUsuario.EsAmigo = true
+			break
+		}
+	}
+
 	writer.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(writer).Encode(envioUsuario)
 	escribirHeaderExito(writer)
 }
 
 // ObtenerUsuariosSimilares devuelve una lista de nombres de usuario que coincidan con un patrón,
-// especificado en al parámetro "patron" de la URL, ordenados alfabéticamente
+// especificado en al parámetro "patron" de la URL, ordenados alfabéticamente e indicando si son
+// amigos del usuario que lo solicita o no
 // Los nombres de usuario coincidirán con dicho patrón o empezarán por él
 // Si ocurre algún error durante el procesamiento, enviará código de error 500
 // En cualquier otro caso, enviará código 200
 // El formato de la respuesta JSON es el siguiente:
-//    [string, string, ...]
+//    [
+//        {
+//            "Nombre": string,
+//            "EsAmigo": bool
+//        },
+//        {
+//            "Nombre": string,
+//            "EsAmigo": bool
+//        },
+//		  ...
+//    ]
 //
 // Ruta: /api/obtenerUsuariosSimilares/{patron}
 // Tipo: GET
 func ObtenerUsuariosSimilares(writer http.ResponseWriter, request *http.Request) {
+	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
+
 	patron := chi.URLParam(request, "patron")
 	usuarios, err := dao.ObtenerUsuariosSimilares(globales.Db, patron)
 	if err != nil {
 		devolverErrorSQL(writer)
 	}
 
-	envioUsuarios := vo.ElementoListaNombresUsuario{Nombres: usuarios}
+	var envioUsuarios []vo.ElementoListaUsuariosSimilares
+
+	// TODO: Comprobar eficiencia con tests de carga, es O(n^2), llevar a DB si no
+	amigos, err := dao.ObtenerAmigos(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario})
+	for _, usuario := range usuarios {
+		esAmigo := false
+		for i, amigo := range amigos {
+			if usuario == amigo.NombreUsuario {
+				esAmigo = true
+				amigos = append(amigos[:i], amigos[i+1:]...) // Lo elimina de la lista, no hay que comprobarlo de nuevo
+			}
+		}
+		envioUsuarios = append(envioUsuarios, vo.ElementoListaUsuariosSimilares{Nombre: usuario, EsAmigo: esAmigo})
+	}
 
 	writer.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(writer).Encode(envioUsuarios)
