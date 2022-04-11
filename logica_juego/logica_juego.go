@@ -44,6 +44,11 @@ type EstadoPartida struct {
 	EstadosJugadores map[string]*EstadoJugador // Mapa de nombres de los jugadores en la partida y sus estados
 	TurnoJugador     int                       // Índice de la lista que corresponde a qué jugador le toca
 
+	// Vector de booleanos con una entrada por cada jugador
+	// Si el jugador sigue en la partida, su entrada valdrá true
+	// Si ha sido derrotado, será false
+	JugadoresActivos []bool
+
 	Fase        Fase
 	NumeroTurno int
 
@@ -69,6 +74,10 @@ type EstadoPartida struct {
 }
 
 func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
+	jugadoresActivos := make([]bool, len(jugadores))
+	for i := range jugadoresActivos {
+		jugadoresActivos[i] = true
+	}
 	e = EstadoPartida{
 		Acciones:                   make([]interface{}, 0),
 		Jugadores:                  crearSliceJugadores(jugadores),
@@ -86,6 +95,7 @@ func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
 		DadosUltimoAtaque:          0,
 		TropasPerdidasUltimoAtaque: 0,
 		HayTerritorioDesocupado:    false,
+		JugadoresActivos:           jugadoresActivos,
 	}
 
 	return e
@@ -100,8 +110,12 @@ func (e *EstadoPartida) SiguienteJugadorSinAccion() {
 // SiguienteJugador cambia el turno a otro jugador, emitiendo la acción correspondiente.
 // TODO SiguienteJugador no debería ser pública, lo es por necesidad dentro del test
 func (e *EstadoPartida) SiguienteJugador() {
-	// TODO cuando se puedan eliminar jugadores, habrá que tenerlo en cuenta a la hora de cambiar de turno
 	e.TurnoJugador = (e.TurnoJugador + 1) % len(e.EstadosJugadores)
+
+	for !e.JugadoresActivos[e.TurnoJugador] {
+		// Saltamos al jugador en caso de que haya sido derrotado
+		e.TurnoJugador = (e.TurnoJugador + 1) % len(e.EstadosJugadores)
+	}
 
 	// En el nuevo turno no se habrá recibido carta, conquistado ni fortificado
 	e.HaRecibidoCarta = false
@@ -313,6 +327,18 @@ func (e *EstadoPartida) esTurnoJugador(jugador string) bool {
 
 func (e *EstadoPartida) ObtenerJugadorTurno() string {
 	return e.Jugadores[e.TurnoJugador]
+}
+
+// obtenerTurnoJugador devuelve un entero indicando el turno correspondiente al jugador determinado
+// Es decir, devuelve su posición dentro del vector de jugadores
+func (e *EstadoPartida) obtenerTurnoJugador(jugador string) int {
+	for i, j := range e.Jugadores {
+		if j == jugador {
+			return i
+		}
+	}
+
+	return -1
 }
 
 func (e *EstadoPartida) FortificarTerritorio(origen int, destino int, tropas int, jugador string) error {

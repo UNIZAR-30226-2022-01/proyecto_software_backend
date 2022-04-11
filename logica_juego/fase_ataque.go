@@ -67,7 +67,17 @@ func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador 
 			if regionDestino.NumTropas == 0 {
 				// Región conquistada
 				e.HayTerritorioDesocupado = true
-				// TODO comprobar si el defensor se queda sin territorios y en tal caso darle sus cartas al jugador y eliminarlo de la partida
+				regionDestino.Ocupante = ""
+
+				if e.contarTerritoriosOcupados(defensor) == 0 {
+					// Le damos todas las cartas del defensor al atacante
+					e.EstadosJugadores[atacante].Cartas = append(e.EstadosJugadores[atacante].Cartas,
+						e.EstadosJugadores[defensor].Cartas...)
+					e.EstadosJugadores[defensor].Cartas = nil
+
+					// Indicamos que el jugador ha sido derrotado
+					e.JugadoresActivos[e.obtenerTurnoJugador(defensor)] = false
+				}
 				break
 			}
 		} else {

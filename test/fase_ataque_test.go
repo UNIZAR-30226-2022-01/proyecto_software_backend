@@ -132,6 +132,12 @@ func TestAtaqueUnitario(t *testing.T) {
 	// Comprobamos el fin del ataque en caso de que el defensor se quede sin tropas
 	partida.EstadoMapa[logica_juego.Venezuela].NumTropas = 10
 	partida.EstadoMapa[logica_juego.Brazil].NumTropas = 1
+	for i := logica_juego.Eastern_australia; i <= logica_juego.Alberta; i++ {
+		partida.EstadoMapa[i].Ocupante = "Jugador3"
+	}
+	partida.EstadoMapa[logica_juego.Venezuela].Ocupante = "Jugador1"
+	partida.EstadoMapa[logica_juego.Brazil].Ocupante = "Jugador2"
+	partida.EstadosJugadores["Jugador2"].Cartas = []logica_juego.Carta{{IdCarta: 1}, {IdCarta: 2}}
 	tropasDefensor := 1
 
 	t.Log("Atacamos hasta que el defensor se quede sin tropas")
@@ -148,9 +154,37 @@ func TestAtaqueUnitario(t *testing.T) {
 
 		tropasDefensor -= ultimoAtaque.TropasPerdidasDefensor
 	}
+
 	// Comprobamos que se haya marcado correctamente que hay un territorio desocupado
 	if !partida.HayTerritorioDesocupado || partida.EstadoMapa[logica_juego.Brazil].NumTropas > 0 {
 		t.Fatal("El territorio defensor no ha sido conquistado")
 	}
 	t.Log("OK, el territorio defensor ha perdido todas sus tropas")
+
+	// El defensor se queda sin territorios, comprobamos que el atacante recibe sus cartas
+	if len(partida.EstadosJugadores["Jugador2"].Cartas) > 0 {
+		t.Fatal("No se le han quitado las cartas al defensor")
+	}
+	if len(partida.EstadosJugadores["Jugador1"].Cartas) != 2 {
+		t.Fatal("El atacante no ha recibido las cartas del defensor")
+	}
+	t.Log("OK, el atacante ha recibido las cartas del defensor")
+
+	// Comprobamos que el jugador ha sido derrotado
+	t.Log(partida.JugadoresActivos)
+	if partida.JugadoresActivos[1] {
+		t.Fatal("El jugador no ha sido eliminado de la partida correctamente")
+	}
+	t.Log("El defensor ha sido eliminado de la partida correctamente")
+
+	// Comprobamos que al pasar de turno no se tiene en cuenta al jugador eliminado
+
+	partida.SiguienteJugador()
+	// Normalmente no podremos saltar de turno así, habrá que hacerlo pasando de fase
+	// Ahora no se podría pasar de fase porque hay territorios sin ocupar
+
+	if partida.TurnoJugador == 1 {
+		t.Fatal("No se ha saltado al jugador eliminado")
+	}
+	t.Log("Se ha saltado correctamente al jugador eliminado")
 }

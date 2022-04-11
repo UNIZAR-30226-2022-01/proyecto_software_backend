@@ -101,3 +101,14 @@ func InicializarContinentes() {
 		Valor:    2,
 		Regiones: []NumRegion{Indonesia, New_guinea, Western_australia, Eastern_australia}}
 }
+
+// contarTerritoriosOcupados cuenta el número de territorios que ocupa un jugador determinado
+func (e *EstadoPartida) contarTerritoriosOcupados(jugador string) int {
+	n := 0
+	for i := Eastern_australia; i <= Alberta; i++ {
+		if e.EstadoMapa[i].Ocupante == jugador {
+			n++
+		}
+	}
+	return n
+}
