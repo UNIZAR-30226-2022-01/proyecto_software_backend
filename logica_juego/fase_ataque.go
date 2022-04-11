@@ -39,7 +39,7 @@ func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador 
 	if numDados > 4 || numDados < 1 {
 		return errors.New("Solo puedes lanzar 1, 2 o 3 dados")
 	}
-	if numDados <= regionOrigen.NumTropas {
+	if numDados >= regionOrigen.NumTropas {
 		return errors.New("Necesitas al menos un ejército más que el número de dados a lanzar")
 	}
 
@@ -55,12 +55,12 @@ func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador 
 	sort.Sort(sort.IntSlice(dadosAtacante))
 	sort.Sort(sort.IntSlice(dadosDefensor))
 
-	i := numDados
-	j := numDadosRival
+	i := numDados - 1
+	j := numDadosRival - 1
 	tropasPerdidasAtacante := 0
 	tropasPerdidasDefensor := 0
 
-	for i > 0 && j > 0 {
+	for i >= 0 && j >= 0 {
 		if dadosAtacante[i] > dadosDefensor[j] {
 			regionDestino.NumTropas--
 			tropasPerdidasDefensor++
@@ -78,6 +78,8 @@ func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador 
 				break
 			}
 		}
+		i--
+		j--
 	}
 
 	// Actualizamos el estado del último ataque
