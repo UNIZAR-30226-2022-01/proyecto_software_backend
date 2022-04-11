@@ -2,6 +2,7 @@ package logica_juego
 
 import (
 	"errors"
+	"log"
 	"math/rand"
 	"sort"
 	"time"
@@ -77,6 +78,7 @@ func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador 
 
 					// Indicamos que el jugador ha sido derrotado
 					e.JugadoresActivos[e.obtenerTurnoJugador(defensor)] = false
+					// TODO ¿crear accion para indicar la eliminación del jugador?
 				}
 				break
 			}
@@ -96,10 +98,61 @@ func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador 
 	e.DadosUltimoAtaque = numDados
 	e.TropasPerdidasUltimoAtaque = tropasPerdidasAtacante
 	e.RegionUltimoAtaque = origen
+	e.UltimoDefensor = defensor
 
 	// Añadimos la acción correspondiente al ataque
 	e.Acciones = append(e.Acciones, NewAccionAtaque(origen, destino, tropasPerdidasAtacante, tropasPerdidasDefensor,
 		numDados, atacante, defensor))
+	return nil
+}
+
+// Ocupar permite a un jugador conquistar un territorio desocupado
+// TODO completar documentación de la función Ocupar
+func (e *EstadoPartida) Ocupar(territorio NumRegion, numEjercitos int, jugador string) error {
+	// Comprobación de errores
+	if e.ObtenerJugadorTurno() != jugador {
+		return errors.New("No puedes ocupar un territorio fuera de tu turno")
+	}
+	if e.Fase != Ataque {
+		return errors.New("No puedes ocupar fuera de la fase de ataque")
+	}
+	if len(e.EstadosJugadores[jugador].Cartas) > 4 {
+		return errors.New("No puedes ocupar un territorio si tienes más de 4 cartas")
+	}
+	if !e.HayTerritorioDesocupado {
+		return errors.New("No se puede ocupar si no hay territorios desocupados")
+	}
+	if e.EstadoMapa[territorio].NumTropas > 0 {
+		return errors.New("No se puede ocupar un territorio con tropas")
+	}
+	if !Conectadas(e.RegionUltimoAtaque, territorio) {
+		return errors.New("No puedes ocupar un territorio desde una región no adyacente")
+	}
+	if numEjercitos < e.DadosUltimoAtaque-e.TropasPerdidasUltimoAtaque {
+		return errors.New("Debes ocupar el territorio con al menos el número de dados usados en el último ataque," +
+			"menos el número de tropas pérdidas en dicho ataque")
+	}
+	if numEjercitos >= e.EstadoMapa[e.RegionUltimoAtaque].NumTropas {
+		return errors.New("No puedes dejar al territorio desde el que ocupas sin tropas")
+	}
+
+	// Ocupamos el territorio
+	e.HayTerritorioDesocupado = false
+	e.EstadoMapa[territorio].Ocupante = jugador
+	e.EstadoMapa[territorio].NumTropas = numEjercitos
+	e.EstadoMapa[e.RegionUltimoAtaque].NumTropas -= numEjercitos
+
+	// Comprobamos si ha ganado la partida
+	if e.contarTerritoriosOcupados(jugador) == NUM_REGIONES {
+		// TODO implementar el final de la partida
+		log.Println("El jugador", jugador, "ha ganado la partida")
+	}
+
+	// Añadimos la acción de ocupación
+	e.Acciones = append(e.Acciones, NewAccionOcupar(e.RegionUltimoAtaque, territorio,
+		e.EstadoMapa[e.RegionUltimoAtaque].NumTropas, e.EstadoMapa[territorio].NumTropas,
+		jugador, e.UltimoDefensor))
+
 	return nil
 }
 

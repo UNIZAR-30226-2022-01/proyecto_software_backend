@@ -69,6 +69,7 @@ type EstadoPartida struct {
 	DadosUltimoAtaque          int       // Número de dados que lanzo el atacante en el último ataque
 	TropasPerdidasUltimoAtaque int       // Número de tropas que perdió el atacante en el último ataque
 	HayTerritorioDesocupado    bool      // True si hay algún territorio sin ocupar
+	UltimoDefensor             string    // Nombre del jugador defensor en el último ataque
 
 	// ...
 }

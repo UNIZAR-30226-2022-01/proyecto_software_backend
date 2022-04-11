@@ -130,7 +130,7 @@ func TestAtaqueUnitario(t *testing.T) {
 	t.Log("El defensor", ultimoAtaque.JugadorDefensor, "ha perdido", ultimoAtaque.TropasPerdidasDefensor, "tropas")
 
 	// Comprobamos el fin del ataque en caso de que el defensor se quede sin tropas
-	partida.EstadoMapa[logica_juego.Venezuela].NumTropas = 10
+	partida.EstadoMapa[logica_juego.Venezuela].NumTropas = 100
 	partida.EstadoMapa[logica_juego.Brazil].NumTropas = 1
 	for i := logica_juego.Eastern_australia; i <= logica_juego.Alberta; i++ {
 		partida.EstadoMapa[i].Ocupante = "Jugador3"
@@ -187,4 +187,173 @@ func TestAtaqueUnitario(t *testing.T) {
 		t.Fatal("No se ha saltado al jugador eliminado")
 	}
 	t.Log("Se ha saltado correctamente al jugador eliminado")
+}
+
+func TestOcupacionUnitario(t *testing.T) {
+	var err error
+	partida := logica_juego.CrearEstadoPartida([]string{"Jugador1", "Jugador2", "Jugador3", "Jugador4", "Jugador5", "Jugador6"})
+	partida.RellenarRegiones()
+
+	regionOrigen := partida.EstadoMapa[logica_juego.Venezuela]
+	regionDestino := partida.EstadoMapa[logica_juego.Brazil]
+	regionOrigen.Ocupante = "Jugador1"
+	regionOrigen.NumTropas = 100
+	regionDestino.Ocupante = "Jugador2"
+	regionDestino.NumTropas = 1
+
+	// Atacamos hasta que el defensor se quede sin tropas
+	partida.TurnoJugador = 0
+	partida.Fase = logica_juego.Ataque
+	t.Log("Atacamos hasta que el defensor se quede sin tropas")
+	tropasDefensor := 1
+	for tropasDefensor > 0 {
+		err = partida.Ataque(logica_juego.Venezuela, logica_juego.Brazil, 3, "Jugador1")
+		if err != nil {
+			t.Fatal("Se ha obtenido el siguiente error al atacar:", err)
+		}
+
+		ultimoAtaque, ok := partida.Acciones[len(partida.Acciones)-1].(logica_juego.AccionAtaque)
+		if !ok {
+			t.Fatal("La última acción no es de ataque")
+		}
+
+		tropasDefensor -= ultimoAtaque.TropasPerdidasDefensor
+	}
+
+	// Comprobamos que se haya marcado correctamente que hay un territorio desocupado
+	if !partida.HayTerritorioDesocupado || partida.EstadoMapa[logica_juego.Brazil].NumTropas > 0 {
+		t.Fatal("El territorio defensor no ha sido conquistado")
+	}
+	t.Log("OK, el territorio defensor ha perdido todas sus tropas")
+
+	// Comprobamos que el último ataque sea correcto
+	ultimoAtaque, ok := partida.Acciones[len(partida.Acciones)-1].(logica_juego.AccionAtaque)
+	if !ok {
+		t.Fatal("La última acción no es de ataque")
+	}
+
+	if ultimoAtaque.JugadorDefensor != "Jugador2" {
+		t.Fatal("El jugador defensor del último ataque no es correcto")
+	}
+	if partida.RegionUltimoAtaque != logica_juego.Venezuela {
+		t.Fatal("La región del último ataque no es correcta")
+	}
+	t.Log("OK, el último ataque ha sido correcto")
+
+	// Intentamos ocupar fuera de turno
+	partida.TurnoJugador = 5
+	partida.Fase = logica_juego.Ataque
+	t.Log("Intentamos ocupar fuera de turno, se espera error")
+	err = partida.Ocupar(logica_juego.Brazil, 20, "Jugador1")
+	if err == nil {
+		t.Fatal("Se esperaba error al ocupar fuera de turno")
+	}
+	t.Log("OK, se ha obtenido el error:", err)
+
+	// Intentamos ocupar fuera de fase
+	partida.TurnoJugador = 0
+	partida.Fase = logica_juego.Refuerzo
+	t.Log("Intentamos ocupar en una fase incorrecta, se espera error")
+	err = partida.Ocupar(logica_juego.Brazil, 20, "Jugador1")
+	if err == nil {
+		t.Fatal("Se esperaba error al ocupar fuera de la fase de ataque")
+	}
+	t.Log("OK, se ha obtenido el error:", err)
+
+	// Intentamos ocupar con más de 4 cartas
+	partida.Fase = logica_juego.Ataque
+	partida.EstadosJugadores["Jugador1"].Cartas = []logica_juego.Carta{{IdCarta: 1}, {IdCarta: 1}, {IdCarta: 1},
+		{IdCarta: 1}, {IdCarta: 1}, {IdCarta: 1}}
+	t.Log("Intentamos ocupar con más de 5 cartas, se espera error")
+	err = partida.Ocupar(logica_juego.Brazil, 20, "Jugador1")
+	if err == nil {
+		t.Fatal("Se esperaba error al ocupar con más de 5 cartas")
+	}
+	t.Log("OK, se ha obtenido el error:", err)
+
+	partida.EstadosJugadores["Jugador1"].Cartas = nil
+
+	// Intentamos ocupar con el estado indicando que no hay territorios desocupados
+	partida.HayTerritorioDesocupado = false
+	t.Log("Intentamos ocupar sin territorios desocupados, se espera error")
+	err = partida.Ocupar(logica_juego.Brazil, 20, "Jugador1")
+	if err == nil {
+		t.Fatal("Se esperaba error al ocupar sin territorios desocupados")
+	}
+	t.Log("OK, se ha obtenido el error:", err)
+	partida.HayTerritorioDesocupado = true
+
+	// Intentamos ocupar un territorio con tropas
+	partida.EstadoMapa[logica_juego.Peru].NumTropas = 3
+	partida.EstadoMapa[logica_juego.Peru].Ocupante = "Jugador3"
+	t.Log("Intentamos ocupar un territorio con tropas, se espera error")
+	err = partida.Ocupar(logica_juego.Peru, 20, "Jugador1")
+	if err == nil {
+		t.Fatal("Se esperaba error al ocupar un territorio con tropas")
+	}
+	t.Log("OK, se ha obtenido el error:", err)
+
+	// Intentamos ocupar un territorio no adyacente
+	partida.EstadoMapa[logica_juego.Alberta].NumTropas = 0
+	partida.EstadoMapa[logica_juego.Alberta].Ocupante = "Jugador3"
+	t.Log("Intentamos ocupar un territorio no adyacente, se espera error")
+	err = partida.Ocupar(logica_juego.Alberta, 20, "Jugador1")
+	if err == nil {
+		t.Fatal("Se esperaba error al ocupar un territorio no adyacente")
+	}
+	t.Log("OK, se ha obtenido el error:", err)
+
+	// Intentamos ocupar con un número de tropas menor a numDados - numEjercitosPerdidos
+	numDados := partida.DadosUltimoAtaque
+	numEjercitosPerdidos := partida.TropasPerdidasUltimoAtaque
+	t.Log("Intentamos ocupar un territorio utilizando menos ejércitos que el número de dados de la última tirada,\n" +
+		" menos el número de ejércitos perdidos en el último ataque, se espera error")
+	err = partida.Ocupar(logica_juego.Brazil, numDados-numEjercitosPerdidos-1, "Jugador1")
+	if err == nil {
+		t.Fatal("Se esperaba error al ocupar con tropas < dadosUltimoAtaque - tropasPerdidasUltimoAtaques")
+	}
+	t.Log("OK, se ha obtenido el error:", err)
+
+	// Intentamos ocupar dejando el territorio de origen sin tropas
+	t.Log("Intentamos ocupar un territorio dejando el territorio original sin tropas, se espera error")
+	err = partida.Ocupar(logica_juego.Brazil, 120, "Jugador1")
+	if err == nil {
+		t.Fatal("Se esperaba error al ocupar dejando el territorio original sin tropas")
+	}
+	t.Log("OK, se ha obtenido el error:", err)
+
+	for i := logica_juego.Eastern_australia; i <= logica_juego.Alberta; i++ {
+		partida.EstadoMapa[i].Ocupante = "Jugador1"
+	}
+	partida.EstadoMapa[logica_juego.Brazil].Ocupante = "Jugador2"
+
+	// Realizamos una ocupación correcta
+	t.Log("Intentamos realizar una ocupación correcta")
+	partida.EstadoMapa[logica_juego.Venezuela].NumTropas = 100
+	err = partida.Ocupar(logica_juego.Brazil, 40, "Jugador1")
+	if err != nil {
+		t.Fatal("Error al ocupar:", err)
+	}
+	ultimaOcupacion, ok := partida.Acciones[len(partida.Acciones)-1].(logica_juego.AccionOcupar)
+
+	// Comprobamos la corrección de la ocupación
+	if !ok {
+		t.Fatal("La última acción no es una ocupación")
+	}
+	t.Log("Tropas origen:", ultimaOcupacion.TropasOrigen, ", Tropas destino:", ultimaOcupacion.TropasDestino)
+	if ultimaOcupacion.JugadorOcupado != "Jugador2" || ultimaOcupacion.JugadorOcupante != "Jugador1" {
+		t.Fatal("Los jugadores de la última ocupación no son correctos")
+	}
+	if ultimaOcupacion.Destino != logica_juego.Brazil || ultimaOcupacion.Origen != logica_juego.Venezuela {
+		t.Fatal("Los territorios de la última ocupación no son correctos")
+	}
+	if partida.HayTerritorioDesocupado {
+		t.Fatal("No se ha actualizado correctamente la ocupación en el estado de la partida")
+	}
+	if ultimaOcupacion.TropasOrigen != 60 || ultimaOcupacion.TropasDestino != 40 {
+		t.Fatal("El número de tropas tras la ocupación no es correcto")
+	}
+
+	t.Log("OK, se ha realizado la ocupación correctamente")
+
 }

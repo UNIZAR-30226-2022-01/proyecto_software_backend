@@ -196,13 +196,13 @@ type AccionOcupar struct {
 	IDAccion        int       // 6
 	Origen          NumRegion // ID de región desde la cual se originó el ataque (y usaron sus tropas)
 	Destino         NumRegion // ID de región ocupada
-	TropasOrigen    NumRegion // Número de tropas que han quedado en la región desde la cual se originó el ataque
-	TropasDestino   NumRegion // Número de tropas asignadas a la región ocupada
+	TropasOrigen    int       // Número de tropas que han quedado en la región desde la cual se originó el ataque
+	TropasDestino   int       // Número de tropas asignadas a la región ocupada
 	JugadorOcupante string    // Nombre del atacante
 	JugadorOcupado  string    // Nombre del defensor que ha perdido el territorio
 }
 
-func NewAccionOcupar(origen NumRegion, destino NumRegion, tropasOrigen NumRegion, tropasDestino NumRegion, jugadorOcupante string, jugadorOcupado string) AccionOcupar {
+func NewAccionOcupar(origen NumRegion, destino NumRegion, tropasOrigen int, tropasDestino int, jugadorOcupante string, jugadorOcupado string) AccionOcupar {
 	return AccionOcupar{
 		IDAccion:        int(IDAccionOcupar),
 		Origen:          origen,
