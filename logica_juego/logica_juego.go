@@ -59,24 +59,33 @@ type EstadoPartida struct {
 	HaRecibidoCarta bool // True si ya ha robado carta, para evitar más de un robo
 	HaFortificado   bool // True si ya ha fortificado en el turno
 
+	// Información sobre el último ataque
+	RegionUltimoAtaque         NumRegion // Región desde la que se inició el último ataque
+	DadosUltimoAtaque          int       // Número de dados que lanzo el atacante en el último ataque
+	TropasPerdidasUltimoAtaque int       // Número de tropas que perdió el atacante en el último ataque
+	HayTerritorioDesocupado    bool      // True si hay algún territorio sin ocupar
+
 	// ...
 }
 
 func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
 	e = EstadoPartida{
-		Acciones:         make([]interface{}, 0),
-		Jugadores:        crearSliceJugadores(jugadores),
-		EstadosJugadores: crearMapaEstadosJugadores(jugadores),
-		TurnoJugador:     (LanzarDados()) % len(jugadores), // Primer jugador aleatorio
-		Fase:             Inicio,
-		NumeroTurno:      0,
-		EstadoMapa:       crearEstadoMapa(),
-		Cartas:           crearBaraja(),
-		Descartes:        []Carta{},
-		NumCambios:       0,
-		HaConquistado:    false,
-		HaRecibidoCarta:  false,
-		HaFortificado:    false,
+		Acciones:                   make([]interface{}, 0),
+		Jugadores:                  crearSliceJugadores(jugadores),
+		EstadosJugadores:           crearMapaEstadosJugadores(jugadores),
+		TurnoJugador:               (LanzarDados()) % len(jugadores), // Primer jugador aleatorio
+		Fase:                       Inicio,
+		NumeroTurno:                0,
+		EstadoMapa:                 crearEstadoMapa(),
+		Cartas:                     crearBaraja(),
+		Descartes:                  []Carta{},
+		NumCambios:                 0,
+		HaConquistado:              false,
+		HaRecibidoCarta:            false,
+		HaFortificado:              false,
+		DadosUltimoAtaque:          0,
+		TropasPerdidasUltimoAtaque: 0,
+		HayTerritorioDesocupado:    false,
 	}
 
 	return e
@@ -98,6 +107,11 @@ func (e *EstadoPartida) SiguienteJugador() {
 	e.HaRecibidoCarta = false
 	e.HaConquistado = false
 	e.HaFortificado = false
+
+	// Reiniciamos el estado del último ataque
+	e.DadosUltimoAtaque = 0
+	e.TropasPerdidasUltimoAtaque = 0
+	e.HayTerritorioDesocupado = false
 
 	// Pasamos a la fase de refuerzo
 	e.Fase = Refuerzo

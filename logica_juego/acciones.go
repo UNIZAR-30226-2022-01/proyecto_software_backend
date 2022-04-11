@@ -162,14 +162,14 @@ type AccionAtaque struct {
 	IDAccion               int       // 5
 	Origen                 NumRegion // ID de región de la cual se origina el ataque (y usan sus tropas)
 	Destino                NumRegion // ID de región atacada
-	TropasPerdidasAtacante NumRegion // Tropas perdidas por el atacante
-	TropasPerdidasDefensor NumRegion // Tropas perdidas por el defensor
+	TropasPerdidasAtacante int       // Tropas perdidas por el atacante
+	TropasPerdidasDefensor int       // Tropas perdidas por el defensor
 	NumDadosAtaque         int       // Número de dados lanzados por el atacante
 	JugadorAtacante        string    // Nombre del atacante
 	JugadorDefensor        string    // Nombre del defensor
 }
 
-func NewAccionAtaque(origen NumRegion, destino NumRegion, tropasPerdidasAtacante NumRegion, tropasPerdidasDefensor NumRegion, numDadosAtaque int, jugadorAtacante string, jugadorDefensor string) AccionAtaque {
+func NewAccionAtaque(origen NumRegion, destino NumRegion, tropasPerdidasAtacante int, tropasPerdidasDefensor int, numDadosAtaque int, jugadorAtacante string, jugadorDefensor string) AccionAtaque {
 	return AccionAtaque{IDAccion: int(IDAccionAtaque),
 		Origen:                 origen,
 		Destino:                destino,
