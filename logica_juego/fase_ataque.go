@@ -41,6 +41,7 @@ func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador 
 		return errors.New("No puedes atacar si hay algún territorio sin ocupar")
 	}
 	if jugador != atacante {
+		log.Println("DEVUELVO ERROR TERRITORIO PROPIO")
 		return errors.New("Solo puedes atacar desde un territorio que ocupas")
 	}
 	if !Conectadas(origen, destino) {
@@ -49,7 +50,7 @@ func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador 
 	if atacante == defensor {
 		return errors.New("No puedes atacar a un territorio controlado por ti mismo")
 	}
-	if numDados > 4 || numDados < 1 {
+	if numDados > 3 || numDados < 1 {
 		return errors.New("Solo puedes lanzar 1, 2 o 3 dados")
 	}
 	if numDados >= regionOrigen.NumTropas {

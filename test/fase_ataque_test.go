@@ -1,11 +1,15 @@
 package integracion
 
 import (
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"testing"
 )
 
+// TestAtaqueUnitario prueba todos los diferentes casos correctos y de error de la función de ataque
 func TestAtaqueUnitario(t *testing.T) {
+	t.Log("Purgando DB...")
+	purgarDB()
 	var err error
 	partida := logica_juego.CrearEstadoPartida([]string{"Jugador1", "Jugador2", "Jugador3", "Jugador4", "Jugador5", "Jugador6"})
 	partida.RellenarRegiones()
@@ -189,7 +193,10 @@ func TestAtaqueUnitario(t *testing.T) {
 	t.Log("Se ha saltado correctamente al jugador eliminado")
 }
 
+// TestOcupacionUnitario prueba todos los diferentes casos correctos y de error de la función de ocupar
 func TestOcupacionUnitario(t *testing.T) {
+	t.Log("Purgando DB...")
+	purgarDB()
 	var err error
 	partida := logica_juego.CrearEstadoPartida([]string{"Jugador1", "Jugador2", "Jugador3", "Jugador4", "Jugador5", "Jugador6"})
 	partida.RellenarRegiones()
@@ -355,5 +362,225 @@ func TestOcupacionUnitario(t *testing.T) {
 	}
 
 	t.Log("OK, se ha realizado la ocupación correctamente")
+
+}
+
+// TestIntegracionAtaqueOcupar simula una fase de ataque de una partida, probando diferentes casos correctos y
+// de error de las acciones de ataque y ocupación
+func TestIntegracionAtaqueOcupar(t *testing.T) {
+	var err error
+	t.Log("Purgando DB...")
+	purgarDB()
+
+	t.Log("Creando usuarios...")
+	cookie := crearUsuario("usuario1", t)
+	cookie2 := crearUsuario("usuario2", t)
+	cookie3 := crearUsuario("usuario3", t)
+	cookie4 := crearUsuario("usuario4", t)
+	cookie5 := crearUsuario("usuario5", t)
+	cookie6 := crearUsuario("usuario6", t)
+
+	t.Log("Creando partida...")
+	crearPartida(cookie, t, true)
+	unirseAPartida(cookie2, t, 1)
+	unirseAPartida(cookie3, t, 1)
+	unirseAPartida(cookie4, t, 1)
+	unirseAPartida(cookie5, t, 1)
+	unirseAPartida(cookie6, t, 1)
+
+	// Modificar estado para pasar turno y a fase de ataque
+	partidaCache := comprobarPartidaEnCurso(t, 1)
+	saltarTurnos(t, partidaCache, "usuario5")
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.Fase = logica_juego.Ataque
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+
+	// Configuramos el mapa para las pruebas
+	partidaCache.Estado.EstadoMapa[logica_juego.Venezuela].Ocupante = "usuario1"
+	partidaCache.Estado.EstadoMapa[logica_juego.Venezuela].NumTropas = 100
+	partidaCache.Estado.EstadoMapa[logica_juego.Peru].Ocupante = "usuario1"
+	partidaCache.Estado.EstadoMapa[logica_juego.Brazil].Ocupante = "usuario2"
+	partidaCache.Estado.EstadoMapa[logica_juego.Brazil].NumTropas = 1
+	partidaCache.Estado.EstadoMapa[logica_juego.Alberta].Ocupante = "usuario2"
+	partidaCache.Estado.EstadoMapa[logica_juego.Alberta].Ocupante = "usuario3"
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+
+	// Intento atacar fuera de turno, se espera error
+	t.Log("Intento atacar fuera de turno, se espera error")
+	err = atacar(logica_juego.Venezuela, logica_juego.Brazil, 1, cookie, t)
+	if err == nil {
+		t.Fatal("Se esperaba error al atacar fuera de turno")
+	}
+	t.Log("OK, se ha recibido el error:", err)
+
+	// Saltar a turno de "usuario1" y fase de fortificación
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	saltarTurnos(t, partidaCache, "usuario1")
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.Fase = logica_juego.Fortificar
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+
+	// Intento atacar fuera de fase, se espera error
+	t.Log("Intento atacar fuera de fase, se espera error")
+	err = atacar(logica_juego.Venezuela, logica_juego.Brazil, 1, cookie, t)
+	if err == nil {
+		t.Fatal("Se esperaba error al atacar fuera de fase")
+	}
+	t.Log("OK, se ha recibido el error:", err)
+
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.Fase = logica_juego.Ataque
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+
+	// Intento atacar un territorio controlado por mi mismo, se espera error
+	t.Log("Intento atacar un territorio propio, se espera error")
+	err = atacar(logica_juego.Venezuela, logica_juego.Peru, 1, cookie, t)
+	if err == nil {
+		t.Fatal("Se esperaba error al atacar un territorio propio")
+	}
+	t.Log("OK, se ha recibido el error:", err)
+
+	// Intento atacar un territorio no aydacente, se espera error
+	t.Log("Intento atacar un territorio no adyacente, se espera error")
+	err = atacar(logica_juego.Venezuela, logica_juego.Alberta, 1, cookie, t)
+	if err == nil {
+		t.Fatal("Se esperaba error al atacar un territorio no adyacente")
+	}
+	t.Log("OK, se ha recibido el error:", err)
+
+	// Intento atacar desde un territorio que no me pertenece, se espera error
+	t.Log("Intento atacar desde un territorio que no me pertenece, se espera error")
+	err = atacar(logica_juego.Argentina, logica_juego.Brazil, 1, cookie, t)
+	if err == nil {
+		t.Fatal("Se esperaba error al atacar un territorio que no me pertenece")
+	}
+	t.Log("OK, se ha recibido el error:", err)
+
+	// Intento atacar con más de 5, se espera error
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.EstadosJugadores["usuario1"].Cartas = []logica_juego.Carta{{IdCarta: 1}, {IdCarta: 2},
+		{IdCarta: 3}, {IdCarta: 4}, {IdCarta: 5}}
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+
+	t.Log("Intento atacar con más de 5 cartas, se espera error")
+	err = atacar(logica_juego.Argentina, logica_juego.Brazil, 1, cookie, t)
+	if err == nil {
+		t.Fatal("Se esperaba error al atacar con más de 5 cartas")
+	}
+	t.Log("OK, se ha recibido el error:", err)
+
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.EstadosJugadores["usuario1"].Cartas = nil
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+
+	// Intento atacar con algún territorio sin ocupar, se espera error
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.HayTerritorioDesocupado = true
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+
+	t.Log("Intento atacar con algún territorio sin ocupar, se espera error")
+	err = atacar(logica_juego.Argentina, logica_juego.Brazil, 1, cookie, t)
+	if err == nil {
+		t.Fatal("Se esperaba error al atacar con algún territorio sin ocupar")
+	}
+	t.Log("OK, se ha recibido el error:", err)
+
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.HayTerritorioDesocupado = false
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+
+	// Intento atacar con un número de dados incorrecto, se espera error
+	t.Log("Intento atacar con menos de 1 dado, se espera error")
+	err = atacar(logica_juego.Venezuela, logica_juego.Brazil, 0, cookie, t)
+	if err == nil {
+		t.Fatal("Se esperaba error al atacar con menos de 1 dado")
+	}
+	t.Log("OK, se ha recibido el error:", err)
+
+	t.Log("Intento atacar con más de 3 dados, se espera error")
+	err = atacar(logica_juego.Venezuela, logica_juego.Brazil, 4, cookie, t)
+	if err == nil {
+		t.Fatal("Se esperaba error al atacar con más de 3 dados")
+	}
+	t.Log("OK, se ha recibido el error:", err)
+
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.EstadoMapa[logica_juego.Venezuela].NumTropas = 2
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+
+	t.Log("Intento atacar sin tener más ejércitos que dados, se espera error")
+	err = atacar(logica_juego.Venezuela, logica_juego.Brazil, 2, cookie, t)
+	if err == nil {
+		t.Fatal("Se esperaba error al atacar sin tener más ejércitos que dados")
+	}
+	t.Log("OK, se ha recibido el error:", err)
+
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.EstadoMapa[logica_juego.Venezuela].NumTropas = 100
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+
+	// Atacamos hasta conquistar el territorio
+	t.Log("Intento conquistar un territorio")
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	for !partidaCache.Estado.HayTerritorioDesocupado {
+		t.Log("Ataco al territorio")
+		err = atacar(logica_juego.Venezuela, logica_juego.Brazil, 3, cookie, t)
+		if err != nil {
+			t.Fatal("Error al atacar:", err)
+		}
+
+		partidaCache = comprobarPartidaEnCurso(t, 1)
+	}
+	t.Log("He conquistado")
+
+	numDadosUltimoAtaque := partidaCache.Estado.DadosUltimoAtaque
+	numTropasPerdidas := partidaCache.Estado.TropasPerdidasUltimoAtaque
+	minimoTropas := numDadosUltimoAtaque - numTropasPerdidas
+
+	// Intento ocupar el territorio con menos tropas de las necesarias, se espera error
+	t.Log("Intento ocupar con menos tropas de las necesarias, se espera error")
+	err = ocupar(logica_juego.Brazil, minimoTropas-1, cookie, t)
+	if err == nil {
+		t.Fatal("Se esperaba error al ocupar sin con menos tropas de las necesarias")
+	}
+	t.Log("OK, se ha recibido el error:", err)
+
+	// Intento ocupar el territorio dejando el origen sin tropas, se espera error
+	t.Log("Intento ocupar dejando al origen sin tropas, se espera error")
+	err = ocupar(logica_juego.Brazil, 150, cookie, t)
+	if err == nil {
+		t.Fatal("Se esperaba error al ocupar dejando al origen sin tropas")
+	}
+	t.Log("OK, se ha recibido el error:", err)
+
+	// Intento cambiar de fase sin ocupar
+	t.Log("Intento cambiar de fase sin ocupar, se espera error")
+	err = saltarFase(cookie, t)
+	if err == nil {
+		t.Fatal("Se esperaba error al saltar de fase dejando territorios sin ocupar")
+	}
+	t.Log("OK, se ha recibido el error:", err)
+
+	// Ocupamos el territorio
+	t.Log("Intento ocupar el territorio")
+	err = ocupar(logica_juego.Brazil, 50, cookie, t)
+	if err != nil {
+		t.Fatal("Error al ocupar:", err)
+	}
+	t.Log("OK, se ha ocupado el territorio correctamente")
+
+	// Cambio de fase tras la ocupación
+	// Intento cambiar de fase sin ocupar
+	t.Log("Intento cambiar de fase tras ocupar")
+	err = saltarFase(cookie, t)
+	if err != nil {
+		t.Fatal("Error obtenido al cambiar de fase:", err)
+	}
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	if partidaCache.Estado.Fase != logica_juego.Fortificar {
+		t.Fatal("No se ha cambiado a la fase de fortificar correctamente")
+	}
+	t.Log("OK, se ha cambiado de fase correctamente")
 
 }
