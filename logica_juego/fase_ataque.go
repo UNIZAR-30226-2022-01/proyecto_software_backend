@@ -8,8 +8,20 @@ import (
 	"time"
 )
 
-// Ataque permite a un jugador atacar a una región continua, seleccionando el número de dados a utilizar
-// TODO completar documentación de la función de ataque
+// Ataque permite a un usuario atacar a un territorio adyacente a alguna de sus regiones. Para ello, debe de tener por
+// lo menos dos ejércitos en el territorio desde el que ataca. Al atacar deberá elegir el número de dados a lanzar, entre
+// 1 y 3. Cabe destacar que será necesario tener al menos un ejército más que el número de dados a lanzar, por ejemplo, si
+// quiero lanzar 3 dados, el territorio tendrá que tener 4 ejércitos por lo menos.
+// Por otro lado el defensor tirará 2 dados si tiene 2 ejércitos o más, o 1 en el caso contrario.
+//
+// Para calcular el resultado del ataque, se compararán los dados con mayor valor de ambos jugadores. Si el atacante consigue
+// un resultado mayor, el territorio defensor perderá una tropa. Por otro lado, si empatan o gana el defensor el territorio
+// atacante perderá un ejército. En caso de que ambos jugadores hayan lanzado más de un dado, se repetirá el mismo proceso
+// comparando el valor del segundo dado más alto de cada uno
+//
+// No se puede atacar en los siguientes casos: no es el turno deñ jugador, no es la fase de ataque, el jugador tiene más de
+// 4 cartas, hay algún territorio sin ocupar, el territorio atacado no es adyacente, el territorio atacado no es de un rival,
+// el número de dados no está entre 1 y 3 o el número de ejércitos no supera el número de dados.
 func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador string) error {
 	regionOrigen := e.EstadoMapa[origen]
 	regionDestino := e.EstadoMapa[destino]
@@ -106,8 +118,18 @@ func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador 
 	return nil
 }
 
-// Ocupar permite a un jugador conquistar un territorio desocupado
-// TODO completar documentación de la función Ocupar
+// Ocupar permite a un usuario ocupar un territorio sin tropas, especificando el territorio a ocupar y el número de
+// tropas que quiere mover a él. Dichas tropas se moverán desde el territorio con el que conquistó la región a ser ocupada.
+//
+// Para ocupar se deben cumplir las siguientes condiciones: hay alguna región sin tropas, dicha región es adyacente a
+// la región desde la que se inició el último ataque, la ocupación se realiza durante el turno del jugador y en la fase
+// de ataque, el número de tropas asignadas por la ocupación no deja al territorio origen sin tropas, el número de tropas
+// asignadas es mayor al número de dados usados en el último ataque menos el número de ejércitos que perdió el atacante
+// en dicho ataque.
+//
+// Cabe destacar que siempre que un territorio quede sin tropas tras un ataque, el juego no permitirá continuar atacando
+// ni cambiar de fase o turno hasta que dicho territorio sea ocupado, de manera que solo podrá haber un territorio
+// sin ocupar a la vez.
 func (e *EstadoPartida) Ocupar(territorio NumRegion, numEjercitos int, jugador string) error {
 	// Comprobación de errores
 	if e.ObtenerJugadorTurno() != jugador {

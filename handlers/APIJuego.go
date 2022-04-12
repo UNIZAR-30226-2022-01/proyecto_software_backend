@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"github.com/go-chi/chi/v5"
@@ -229,6 +230,114 @@ func Fortificar(writer http.ResponseWriter, request *http.Request) {
 	partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
 
 	err = partida.Estado.FortificarTerritorio(idTerritorioOrigen, idTerritorioDestino, numTropas, usuario.NombreUsuario)
+	if err != nil {
+		devolverError(writer, err)
+	} else {
+		// Se sobreescribe en el almacén
+		globales.CachePartidas.AlmacenarPartida(partida)
+
+		// Y se encola un trabajo de serialización de su estado
+		globales.CachePartidas.CanalSerializacion <- partida
+		escribirHeaderExito(writer)
+	}
+}
+
+// Atacar permite a un usuario atacar a un territorio adyacente a alguna de sus regiones. Para ello, debe de tener por
+// lo menos dos ejércitos en el territorio desde el que ataca. Al atacar deberá elegir el número de dados a lanzar, entre
+// 1 y 3. Cabe destacar que será necesario tener al menos un ejército más que el número de dados a lanzar, por ejemplo, si
+// quiero lanzar 3 dados, el territorio tendrá que tener 4 ejércitos por lo menos.
+// Por otro lado el defensor tirará 2 dados si tiene 2 ejércitos o más, o 1 en el caso contrario.
+//
+// Para calcular el resultado del ataque, se compararán los dados con mayor valor de ambos jugadores. Si el atacante consigue
+// un resultado mayor, el territorio defensor perderá una tropa. Por otro lado, si empatan o gana el defensor el territorio
+// atacante perderá un ejército. En caso de que ambos jugadores hayan lanzado más de un dado, se repetirá el mismo proceso
+// comparando el valor del segundo dado más alto de cada uno
+//
+// No se puede atacar en los siguientes casos: no es el turno deñ jugador, no es la fase de ataque, el jugador tiene más de
+// 4 cartas, hay algún territorio sin ocupar, el territorio atacado no es adyacente, el territorio atacado no es de un rival,
+// el número de dados no está entre 1 y 3 o el número de ejércitos no supera el número de dados.
+//
+// Ruta: /api/atacar/{id_territorio_origen}/{id_territorio_destino}/{num_dados}
+// Tipo: GET
+func Atacar(writer http.ResponseWriter, request *http.Request) {
+	origen, err1 := strconv.Atoi(chi.URLParam(request, "id_territorio_origen"))
+	destino, err2 := strconv.Atoi(chi.URLParam(request, "id_territorio_destino"))
+	numDados, err3 := strconv.Atoi(chi.URLParam(request, "num_dados"))
+
+	if err1 != nil || err2 != nil || err3 != nil {
+		devolverError(writer, errors.New("Los identificadores de región y el número de tropas deben ser números naturales"))
+		return
+	}
+
+	if origen < 0 || origen >= logica_juego.NUM_REGIONES || destino < 0 || destino >= logica_juego.NUM_REGIONES {
+		devolverError(writer, errors.New("El identificador de región debe estar entre 0 y"+
+			strconv.Itoa(logica_juego.NUM_REGIONES)+"no incluido"))
+	}
+
+	usuario := vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)}
+	idPartida, err := dao.PartidaUsuario(globales.Db, &usuario)
+	if err == sql.ErrNoRows {
+		devolverError(writer, errors.New("No estás participando en ninguna partida."))
+		return
+	} else if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
+	err = partida.Estado.Ataque(logica_juego.NumRegion(origen), logica_juego.NumRegion(destino), numDados, usuario.NombreUsuario)
+	if err != nil {
+		devolverError(writer, err)
+	} else {
+		// Se sobreescribe en el almacén
+		globales.CachePartidas.AlmacenarPartida(partida)
+
+		// Y se encola un trabajo de serialización de su estado
+		globales.CachePartidas.CanalSerializacion <- partida
+		escribirHeaderExito(writer)
+	}
+}
+
+// Ocupar permite a un usuario ocupar un territorio sin tropas, especificando el territorio a ocupar y el número de
+// tropas que quiere mover a él. Dichas tropas se moverán desde el territorio con el que conquistó la región a ser ocupada.
+//
+// Para ocupar se deben cumplir las siguientes condiciones: hay alguna región sin tropas, dicha región es adyacente a
+// la región desde la que se inició el último ataque, la ocupación se realiza durante el turno del jugador y en la fase
+// de ataque, el número de tropas asignadas por la ocupación no deja al territorio origen sin tropas, el número de tropas
+// asignadas es mayor al número de dados usados en el último ataque menos el número de ejércitos que perdió el atacante
+// en dicho ataque.
+//
+// Cabe destacar que siempre que un territorio quede sin tropas tras un ataque, el juego no permitirá continuar atacando
+// ni cambiar de fase o turno hasta que dicho territorio sea ocupado, de manera que solo podrá haber un territorio
+// sin ocupar a la vez.
+// Ruta: /api/ocupar/{territorio_a_ocupar}/{num_ejercitos}
+// Tipo: GET
+func Ocupar(writer http.ResponseWriter, request *http.Request) {
+	regionAOcupar, err1 := strconv.Atoi(chi.URLParam(request, "territorio_a_ocupar"))
+	numEjercitos, err2 := strconv.Atoi(chi.URLParam(request, "num_ejercitos"))
+
+	if err1 != nil || err2 != nil {
+		devolverError(writer, errors.New("Los identificadores de región y el número de tropas deben ser números naturales"))
+		return
+	}
+
+	if regionAOcupar < 0 || regionAOcupar >= logica_juego.NUM_REGIONES {
+		devolverError(writer, errors.New("El identificador de región debe estar entre 0 y"+
+			strconv.Itoa(logica_juego.NUM_REGIONES)+"no incluido"))
+	}
+
+	usuario := vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)}
+	idPartida, err := dao.PartidaUsuario(globales.Db, &usuario)
+	if err == sql.ErrNoRows {
+		devolverError(writer, errors.New("No estás participando en ninguna partida."))
+		return
+	} else if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
+	err = partida.Estado.Ocupar(logica_juego.NumRegion(regionAOcupar), numEjercitos, usuario.NombreUsuario)
 	if err != nil {
 		devolverError(writer, err)
 	} else {
