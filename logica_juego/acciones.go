@@ -276,7 +276,7 @@ func NewAccionObtenerCarta(carta Carta, jugador string) AccionObtenerCarta {
 //
 // Ejemplo en JSON:
 //    {
-//		"IDAccion": 9
+//		"IDAccion": 9,
 // 		"JugadorEliminado": "usuarioEliminado",	// Jugador que ha sido eliminado
 //  	"JugadorEliminador": "usuario1",		// Jugador que ha conquistado el último territorio del eliminado
 //		"CartasRecibidas": 3					// Número de cartas que ha recibido el jugador eliminador
@@ -301,10 +301,11 @@ func NewAccionJugadorEliminado(jugadorEliminado string, jugadorEliminador string
 //
 // Ejemplo en JSON:
 //    {
+//		"IDAccion": 10,
 // 		"JugadorGanador": "usuarioEliminado"	// Jugador que ha ganado la partida
 //    }
 type AccionPartidaFinalizada struct {
-	IDAccion       int // 10
+	IDAccion       int
 	JugadorGanador string
 }
 
