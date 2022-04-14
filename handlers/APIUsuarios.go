@@ -147,9 +147,7 @@ func ObtenerPerfilUsuario(writer http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		devolverErrorSQL(writer)
 	}
-
 	envioUsuario := transformaAElementoListaUsuarios(usuario)
-
 	// Se comprueba si es amigo del usuario solicitante o no
 	amigos, err := dao.ObtenerAmigos(globales.Db, &vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)})
 	for _, amigo := range amigos {

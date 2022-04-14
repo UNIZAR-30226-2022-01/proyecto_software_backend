@@ -12,6 +12,8 @@ const (
 	IDAccionOcupar
 	IDAccionFortificar
 	IDAccionObtenerCarta
+	IDAccionJugadorEliminado
+	IDAccionPartidaFinalizada
 )
 
 // AccionRecibirRegion corresponde a la asignación automática de un territorio a
@@ -170,7 +172,8 @@ type AccionAtaque struct {
 }
 
 func NewAccionAtaque(origen NumRegion, destino NumRegion, tropasPerdidasAtacante int, tropasPerdidasDefensor int, numDadosAtaque int, jugadorAtacante string, jugadorDefensor string) AccionAtaque {
-	return AccionAtaque{IDAccion: int(IDAccionAtaque),
+	return AccionAtaque{
+		IDAccion:               int(IDAccionAtaque),
 		Origen:                 origen,
 		Destino:                destino,
 		TropasPerdidasAtacante: tropasPerdidasAtacante,
@@ -269,6 +272,50 @@ func NewAccionObtenerCarta(carta Carta, jugador string) AccionObtenerCarta {
 	}
 }
 
+// AccionJugadorEliminado corresponde a la eliminación de un jugador del juego, por haber perdido todos los territorios
+//
+// Ejemplo en JSON:
+//    {
+//		"IDAccion": 9
+// 		"JugadorEliminado": "usuarioEliminado",	// Jugador que ha sido eliminado
+//  	"JugadorEliminador": "usuario1",		// Jugador que ha conquistado el último territorio del eliminado
+//		"CartasRecibidas": 3					// Número de cartas que ha recibido el jugador eliminador
+//    }
+type AccionJugadorEliminado struct {
+	IDAccion          int
+	JugadorEliminado  string
+	JugadorEliminador string
+	CartasRecibidas   int
+}
+
+func NewAccionJugadorEliminado(jugadorEliminado string, jugadorEliminador string, cartasRecibidas int) AccionJugadorEliminado {
+	return AccionJugadorEliminado{
+		IDAccion:          int(IDAccionJugadorEliminado),
+		JugadorEliminado:  jugadorEliminado,
+		JugadorEliminador: jugadorEliminador,
+		CartasRecibidas:   cartasRecibidas}
+}
+
+// AccionPartidaFinalizada corresponde a la finalización de una partida, con el jugador que la ha ganado. No habrá más acciones
+// tras recibir esta.
+//
+// Ejemplo en JSON:
+//    {
+// 		"JugadorGanador": "usuarioEliminado"	// Jugador que ha ganado la partida
+//    }
+type AccionPartidaFinalizada struct {
+	IDAccion       int // 10
+	JugadorGanador string
+}
+
+func NewAccionPartidaFinalizada(jugadorGanador string) AccionPartidaFinalizada {
+	return AccionPartidaFinalizada{
+		IDAccion:       int(IDAccionPartidaFinalizada),
+		JugadorGanador: jugadorGanador}
+}
+
+// RegistrarAcciones registra las acciones en gob, para poder serializarlas y deserializarlas desde un array
+// polimórfico (interface{})
 func RegistrarAcciones() {
 	gob.Register(AccionRecibirRegion{})
 	gob.Register(AccionCambioFase{})
@@ -280,5 +327,8 @@ func RegistrarAcciones() {
 	gob.Register(AccionFortificar{})
 	gob.Register(AccionObtenerCarta{})
 	gob.Register(AccionRecibirRegion{})
+	gob.Register(AccionJugadorEliminado{})
+	gob.Register(AccionPartidaFinalizada{})
+
 	gob.Register(struct{}{}) // Placeholder de acciones no implementadas
 }

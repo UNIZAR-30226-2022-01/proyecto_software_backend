@@ -235,3 +235,28 @@ func ExisteEmail(db *sql.DB, email string) bool {
 	}
 	return existe
 }
+
+// OtorgarPuntos añade una cantidad de puntos determinada al usuario dado. Devuelve error en caso de fallo.
+func OtorgarPuntos(db *sql.DB, usuario *vo.Usuario, puntos int) (err error) {
+	_, err = db.Exec(`UPDATE "backend"."Usuario" SET "puntos"="puntos"+$1 WHERE "nombreUsuario"=$2`, puntos, usuario.NombreUsuario)
+
+	return err
+}
+
+// ContabilizarPartidaGanada añade una partida ganada al usuario, contabilizándola también en el cómputo global
+func ContabilizarPartidaGanada(db *sql.DB, usuario *vo.Usuario) (err error) {
+	_, err = db.Exec(`UPDATE "backend"."Usuario" SET "partidasGanadas"="partidasGanadas"+1 WHERE "nombreUsuario"=$1`, usuario.NombreUsuario)
+
+	if err != nil {
+		return err
+	} else {
+		return ContabilizarPartida(db, usuario)
+	}
+}
+
+// ContabilizarPartida añade una partida jugada al usuario
+func ContabilizarPartida(db *sql.DB, usuario *vo.Usuario) (err error) {
+	_, err = db.Exec(`UPDATE "backend"."Usuario" SET "partidasTotales"="partidasTotales"+1 WHERE "nombreUsuario"=$1`, usuario.NombreUsuario)
+
+	return err
+}

@@ -115,7 +115,7 @@ func TestAtaqueUnitario(t *testing.T) {
 	ultimaAccion := partida.Acciones[len(partida.Acciones)-1]
 	ultimoAtaque, ok := ultimaAccion.(logica_juego.AccionAtaque)
 	if !ok {
-		t.Fatal("La última acción no es un ataque")
+		t.Fatal("La última acción no es un ataque:", ultimaAccion)
 	}
 
 	if ultimoAtaque.NumDadosAtaque != 3 {
@@ -151,9 +151,10 @@ func TestAtaqueUnitario(t *testing.T) {
 			t.Fatal("Se ha obtenido el siguiente error al atacar:", err)
 		}
 
-		ultimoAtaque, ok = partida.Acciones[len(partida.Acciones)-1].(logica_juego.AccionAtaque)
+		// La última es una eliminación
+		ultimoAtaque, ok = partida.Acciones[len(partida.Acciones)-2].(logica_juego.AccionAtaque)
 		if !ok {
-			t.Fatal("La última acción no es de ataque")
+			t.Fatal("La penúltima acción no es de ataque", ultimaAccion)
 		}
 
 		tropasDefensor -= ultimoAtaque.TropasPerdidasDefensor

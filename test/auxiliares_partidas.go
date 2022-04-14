@@ -91,6 +91,44 @@ func crearPartida(cookie *http.Cookie, t *testing.T, publica bool) {
 	}
 }
 
+// Idéntica a la anterior, pero con 3 jugadores
+func crearPartidaReducida(cookie *http.Cookie, t *testing.T, publica bool) {
+	client := &http.Client{}
+
+	var campos url.Values
+	if publica {
+		campos = url.Values{
+			"password":     {""},
+			"maxJugadores": {"3"},
+			"tipo":         {"Publica"}, // o "Privada"
+		}
+	} else {
+		campos = url.Values{
+			"password":     {"password"},
+			"maxJugadores": {"3"},
+			"tipo":         {"Privada"}, // o "Privada"
+		}
+	}
+
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/crearPartida", strings.NewReader(campos.Encode()))
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // Para indicar que el formulario "va en la url", porque campos.Encode() hace eso
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		t.Fatal("Error en POST de crear partida:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al crear una partida:", resp.StatusCode)
+	}
+}
+
 func consultarEstadoLobby(cookie *http.Cookie, idPartida int, t *testing.T) (estado vo.EstadoLobby) {
 	client := &http.Client{}
 

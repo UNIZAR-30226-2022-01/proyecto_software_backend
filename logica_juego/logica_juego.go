@@ -30,7 +30,6 @@ type EstadoJugador struct {
 	Cartas            []Carta
 	UltimoIndiceLeido int
 	Tropas            int
-	//GrafoRegiones     *simple.UndirectedGraph // Sub-grafo de GrafoMapa, con únicamente las regiones controladas por el jugador
 }
 
 type EstadoRegion struct {
@@ -71,7 +70,9 @@ type EstadoPartida struct {
 	HayTerritorioDesocupado    bool      // True si hay algún territorio sin ocupar
 	UltimoDefensor             string    // Nombre del jugador defensor en el último ataque
 
-	// ...
+	// Flag de partida terminada, pendiente por ser tener su estado consultado por todos los jugadores previo a su eliminación
+	Terminada                      bool
+	JugadoresRestantesPorConsultar []string
 }
 
 func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
@@ -80,23 +81,25 @@ func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
 		jugadoresActivos[i] = true
 	}
 	e = EstadoPartida{
-		Acciones:                   make([]interface{}, 0),
-		Jugadores:                  crearSliceJugadores(jugadores),
-		EstadosJugadores:           crearMapaEstadosJugadores(jugadores),
-		TurnoJugador:               (LanzarDados()) % len(jugadores), // Primer jugador aleatorio
-		Fase:                       Inicio,
-		NumeroTurno:                0,
-		EstadoMapa:                 crearEstadoMapa(),
-		Cartas:                     crearBaraja(),
-		Descartes:                  []Carta{},
-		NumCambios:                 0,
-		HaConquistado:              false,
-		HaRecibidoCarta:            false,
-		HaFortificado:              false,
-		DadosUltimoAtaque:          0,
-		TropasPerdidasUltimoAtaque: 0,
-		HayTerritorioDesocupado:    false,
-		JugadoresActivos:           jugadoresActivos,
+		Acciones:                       make([]interface{}, 0),
+		Jugadores:                      crearSliceJugadores(jugadores),
+		EstadosJugadores:               crearMapaEstadosJugadores(jugadores),
+		TurnoJugador:                   (LanzarDados()) % len(jugadores), // Primer jugador aleatorio
+		Fase:                           Inicio,
+		NumeroTurno:                    0,
+		EstadoMapa:                     crearEstadoMapa(),
+		Cartas:                         crearBaraja(),
+		Descartes:                      []Carta{},
+		NumCambios:                     0,
+		HaConquistado:                  false,
+		HaRecibidoCarta:                false,
+		HaFortificado:                  false,
+		DadosUltimoAtaque:              0,
+		TropasPerdidasUltimoAtaque:     0,
+		HayTerritorioDesocupado:        false,
+		JugadoresActivos:               jugadoresActivos,
+		Terminada:                      false,
+		JugadoresRestantesPorConsultar: crearSliceJugadores(jugadores),
 	}
 
 	return e

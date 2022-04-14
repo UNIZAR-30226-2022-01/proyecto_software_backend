@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"github.com/go-chi/chi/v5"
@@ -381,20 +382,89 @@ func ObtenerEstadoPartida(writer http.ResponseWriter, request *http.Request) {
 		devolverErrorSQL(writer)
 	}
 
-	// Indexado de slices en go: [x:y)
 	// Se obtiene acciones de [UltimoIndiceLeido+1...)
 	acciones := partida.Estado.Acciones[partida.Estado.EstadosJugadores[usuario.NombreUsuario].UltimoIndiceLeido+1:]
 
 	// Se marca que el usuario ha leído hasta el último índice
 	partida.Estado.EstadosJugadores[usuario.NombreUsuario].UltimoIndiceLeido = len(partida.Estado.Acciones) - 1
 
-	// Se sobreescribe en el almacén
-	globales.CachePartidas.AlmacenarPartida(partida)
+	// Y si ha terminado
+	if partida.Estado.Terminada {
+		for i, jugador := range partida.Estado.JugadoresRestantesPorConsultar {
+			// Si aún no había comprobado el estado hasta ahora
+			if jugador == usuario.NombreUsuario {
+				err := terminarPartida(usuario, &partida, i)
+				if err != nil {
+					devolverErrorSQL(writer)
+					return // No se procesará el potencial fin de partida o modifica en la BD/cache si hay un error
+				}
+			}
+		}
+	}
 
-	// Y se encola un trabajo de serialización de su estado
-	globales.CachePartidas.CanalSerializacion <- partida
+	// Si ha terminado y no queda ningún usuario más por consultar su estado, se elimina
+	if partida.Estado.Terminada && (len(partida.Estado.JugadoresRestantesPorConsultar) == 0) {
+		// De la DB
+		err := dao.BorrarPartida(globales.Db, &vo.Partida{IdPartida: idPartida})
+		if err != nil {
+			log.Println("Error al borrar una partida de la base de datos, borrando del cache:", err)
+		}
+
+		// De la cache
+		globales.CachePartidas.EliminarPartida(vo.Partida{IdPartida: idPartida})
+	} else {
+		// Se sobreescribe en el almacén
+		globales.CachePartidas.AlmacenarPartida(partida)
+
+		// Y se encola un trabajo de serialización de su estado
+		globales.CachePartidas.CanalSerializacion <- partida
+	}
 
 	writer.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(writer).Encode(acciones)
 	escribirHeaderExito(writer)
+}
+
+// Trata el abandono de una partida por parte de un jugador dado, dejando de participar en ella,
+// otorgando los puntos según haya ganado o perdido, contabilizando que el usuario ha participado en una
+// partida y que ya ha consultado el estado final en el estado de la partida
+func terminarPartida(usuario vo.Usuario, partida *vo.Partida, i int) error {
+	err := dao.AbandonarPartida(globales.Db, &usuario)
+
+	if err != nil && err != sql.ErrNoRows {
+		// Es un error, pero no derivado de un reintento de consultar acciones e intentar abandonar
+		// tras un error previo (se ha ejecutado el abandono pero ha fallado otorgar puntos)
+		log.Println("Error al abandonar una partida, forzando un reintento más tarde:", err)
+		return err
+	} else {
+		// Otorga al jugador puntos dependiendo de cómo haya quedado en la partida
+		if partida.Estado.ContarTerritoriosOcupados(usuario.NombreUsuario) == 0 { // Ha perdido
+			err = dao.OtorgarPuntos(globales.Db, &usuario, logica_juego.PUNTOS_PERDER)
+			if err != nil {
+				// Fuerza a que el jugador consulte el estado más tarde para poder salir, al no registrarlo
+				log.Println("Error al otorgar puntos a", usuario, ":", err)
+				return err
+			}
+			err = dao.ContabilizarPartida(globales.Db, &usuario)
+		} else { // Ha ganado
+			err = dao.OtorgarPuntos(globales.Db, &usuario, logica_juego.PUNTOS_GANAR)
+			if err != nil {
+				// Fuerza a que el jugador consulte el estado más tarde para poder salir, al no registrarlo
+				log.Println("Error al otorgar puntos a", usuario, ":", err)
+				return err
+			}
+			err = dao.ContabilizarPartidaGanada(globales.Db, &usuario)
+		}
+
+		if err != nil {
+			// Fuerza a que el jugador consulte el estado más tarde para poder salir, al no registrarlo
+			log.Println("Error al contabilizar partida jugada/ganada a", usuario, ":", err)
+			return err
+		} else {
+			// Lo registra
+			partida.Estado.JugadoresRestantesPorConsultar = append(partida.Estado.JugadoresRestantesPorConsultar[:i], partida.Estado.JugadoresRestantesPorConsultar[i+1:]...)
+		}
+	}
+
+	return err
 }

@@ -98,6 +98,51 @@ func AbandonarLobby(db *sql.DB, usuario *vo.Usuario) (err error) {
 	}
 }
 
+// AbandonarPartida intenta abandonar una partida dada si está en curso, o devuelve un error apropiado en caso contrario ya formateado.
+// Adicionalmente, si la partida se queda sin jugadores, se borrará.
+func AbandonarPartida(db *sql.DB, usuario *vo.Usuario) (err error) {
+	idPartida := 0
+
+	err = db.QueryRow(`SELECT "backend"."Participa"."ID_partida" FROM "backend"."Participa" WHERE "backend"."Participa"."nombreUsuario" = $1`, usuario.NombreUsuario).Scan(&idPartida)
+	if err != nil && err != sql.ErrNoRows { // Error de SQL general
+		return errors.New("Se ha producido un error al procesar los datos.")
+	} else if err == sql.ErrNoRows {
+		return errors.New("No estás participando en ninguna partida.")
+	}
+
+	enCurso := false
+	err = db.QueryRow(`SELECT "backend"."Partida"."enCurso" FROM "backend"."Partida" WHERE "backend"."Partida"."id" = $1`, idPartida).Scan(&enCurso)
+	if err != nil { // Error de SQL general
+		return errors.New("Se ha producido un error al procesar los datos.")
+	} else if !enCurso {
+		return errors.New("La partida no está en curso.")
+	}
+
+	// Si no, la partida está en curso y se está participando en ella
+	_, err = db.Exec(`DELETE FROM backend."Participa" WHERE "backend"."Participa"."nombreUsuario" = $1`, usuario.NombreUsuario)
+	if err != nil {
+		return errors.New("Se ha producido un error al procesar los datos.")
+	}
+
+	// Se comprueba si la partida se ha quedado sin usuarios y, si lo está, se borra
+	numUsuarios := 0
+	err = db.QueryRow(`SELECT COUNT(*) FROM backend."Participa" where backend."Participa"."ID_partida" = $1;`, idPartida).Scan(&numUsuarios)
+	if err != nil {
+		return errors.New("Se ha producido un error al procesar los datos.")
+	}
+
+	if numUsuarios == 0 {
+		err = BorrarPartida(db, &vo.Partida{IdPartida: idPartida})
+		if err != nil {
+			return errors.New("Se ha producido un error al procesar los datos.")
+		} else {
+			return nil
+		}
+	} else {
+		return nil
+	}
+}
+
 // ObtenerEstadoLobby devuelve el estado del lobby de una partida identificada por su id
 // Devuelve si es pública o no, si está o no en curso, el número máximo de jugadores y
 // los jugadores que se encuentran en el lobby

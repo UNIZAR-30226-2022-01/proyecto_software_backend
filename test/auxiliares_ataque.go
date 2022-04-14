@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -64,4 +65,10 @@ func ocupar(territorioAOcupar logica_juego.NumRegion, numTropas int, cookie *htt
 	}
 
 	return nil
+}
+
+// Fuerza el paso a la fase de ataque, sin comprobaciones
+func pasarAFaseAtaque(partidaCache vo.Partida) {
+	partidaCache.Estado.Fase = logica_juego.Ataque
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
 }

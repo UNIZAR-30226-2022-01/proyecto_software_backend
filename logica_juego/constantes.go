@@ -5,6 +5,11 @@ type TipoTropa int
 type NumRegion int
 
 const (
+	PUNTOS_PERDER = 10
+	PUNTOS_GANAR  = 25
+)
+
+const (
 	Inicio Fase = iota // Repartir regiones
 	Refuerzo
 	Ataque

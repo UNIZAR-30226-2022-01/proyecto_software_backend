@@ -74,6 +74,8 @@ func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador 
 	tropasPerdidasAtacante := 0
 	tropasPerdidasDefensor := 0
 
+	emitirAccionJugadorEliminado := false
+	numCartasDefensor := 0
 	for i >= 0 && j >= 0 {
 		if dadosAtacante[i] > dadosDefensor[j] {
 			regionDestino.NumTropas--
@@ -83,15 +85,20 @@ func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador 
 				e.HayTerritorioDesocupado = true
 				regionDestino.Ocupante = ""
 
-				if e.contarTerritoriosOcupados(defensor) == 0 {
+				if e.ContarTerritoriosOcupados(defensor) == 0 {
 					// Le damos todas las cartas del defensor al atacante
+					numCartasDefensor = len(e.EstadosJugadores[defensor].Cartas)
+
 					e.EstadosJugadores[atacante].Cartas = append(e.EstadosJugadores[atacante].Cartas,
 						e.EstadosJugadores[defensor].Cartas...)
 					e.EstadosJugadores[defensor].Cartas = nil
 
 					// Indicamos que el jugador ha sido derrotado
 					e.JugadoresActivos[e.obtenerTurnoJugador(defensor)] = false
-					// TODO ¿crear accion para indicar la eliminación del jugador?
+
+					emitirAccionJugadorEliminado = true // Emitir acción de ataque después de eliminarlo
+
+					//log.Println("D-D-D-D-DDDERROTADO!")
 				}
 				break
 			}
@@ -116,6 +123,12 @@ func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador 
 	// Añadimos la acción correspondiente al ataque
 	e.Acciones = append(e.Acciones, NewAccionAtaque(origen, destino, tropasPerdidasAtacante, tropasPerdidasDefensor,
 		numDados, atacante, defensor))
+
+	// Se emite después del ataque
+	if emitirAccionJugadorEliminado {
+		e.Acciones = append(e.Acciones, NewAccionJugadorEliminado(defensor, atacante, numCartasDefensor))
+	}
+
 	return nil
 }
 
@@ -166,9 +179,12 @@ func (e *EstadoPartida) Ocupar(territorio NumRegion, numEjercitos int, jugador s
 	e.EstadoMapa[e.RegionUltimoAtaque].NumTropas -= numEjercitos
 
 	// Comprobamos si ha ganado la partida
-	if e.contarTerritoriosOcupados(jugador) == NUM_REGIONES {
-		// TODO implementar el final de la partida
-		log.Println("El jugador", jugador, "ha ganado la partida")
+	if e.ContarTerritoriosOcupados(jugador) == NUM_REGIONES {
+		// Se introduce una acción de fin de partida
+		e.Acciones = append(e.Acciones, NewAccionPartidaFinalizada(jugador))
+
+		// Y se marca como terminada, para borrarla tras ser consultada por todos los jugadores
+		e.Terminada = true
 	}
 
 	// Añadimos la acción de ocupación
