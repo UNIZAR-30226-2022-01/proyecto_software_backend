@@ -5,7 +5,6 @@ package logica_juego
 import (
 	"errors"
 	"gonum.org/v1/gonum/graph/simple"
-	"log"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -131,14 +130,15 @@ func (e *EstadoPartida) SiguienteJugador() {
 	e.TropasPerdidasUltimoAtaque = 0
 	e.HayTerritorioDesocupado = false
 
-	// Pasamos a la fase de refuerzo
-	e.Fase = Refuerzo
-
 	if e.Fase != Inicio {
 		e.Acciones = append(e.Acciones, NewAccionCambioFase(Refuerzo, e.Jugadores[e.TurnoJugador]))
+		// Se introduce una acción de nuevo turno al asignar tropas de refuerzo
 		e.AsignarTropasRefuerzo(e.Jugadores[e.TurnoJugador])
+		// Pasamos a la fase de refuerzo
+		e.Fase = Refuerzo
 	} else {
 		// No se asignan nuevas tropas durante la fase de inicio
+		e.Acciones = append(e.Acciones, NewAccionCambioFase(Inicio, e.Jugadores[e.TurnoJugador]))
 		e.Acciones = append(e.Acciones, NewAccionInicioTurno(e.Jugadores[e.TurnoJugador], 0, 0, 0))
 	}
 }
@@ -253,8 +253,8 @@ func (e *EstadoPartida) ReforzarTerritorio(idTerritorio int, numTropas int, juga
 		return errors.New("Solo puedes reforzar durante tu turno, el jugador en este turno es " + e.ObtenerJugadorTurno())
 	}
 
-	if e.Fase != Refuerzo {
-		return errors.New("Solo se puede reforzar durante la fase de refuerzo")
+	if e.Fase == Ataque || e.Fase == Fortificar {
+		return errors.New("Solo se puede reforzar durante la fase de refuerzo o durante el inicio de la partida")
 	}
 
 	if estado.Tropas-numTropas < 0 {
@@ -283,8 +283,34 @@ func (e *EstadoPartida) FinDeFase(jugador string) error {
 
 	estadoJugador := e.EstadosJugadores[jugador]
 	switch e.Fase {
+	case Inicio:
+		if len(estadoJugador.Cartas) > 4 {
+			return errors.New("Estás obligado a cambiar cartas hasta tener menos de 5")
+		}
+		if estadoJugador.Tropas > 0 {
+			return errors.New("Estás obligado a asignar todas tus tropas para cambiar de fase")
+		}
+		// Se comprueba si la fase ha finalizado (no le quedan tropas a ningún jugador)
+		todosSinTropas := true
+		for _, jugador := range e.Jugadores {
+			estadoJugador := e.EstadosJugadores[jugador]
+
+			if estadoJugador.Tropas != 0 {
+				todosSinTropas = false
+				break
+			}
+		}
+
+		if todosSinTropas {
+			// Pasamos a fase de ataque
+			e.Fase = Ataque
+			e.Acciones = append(e.Acciones, NewAccionCambioFase(Ataque, jugador))
+		} else {
+			// Se mantiene en la fase de inicio para el siguiente jugador
+			e.SiguienteJugador()
+		}
+
 	case Refuerzo:
-		log.Println("NUM CARTAS", len(estadoJugador.Cartas))
 		if len(estadoJugador.Cartas) > 4 {
 			return errors.New("Estás obligado a cambiar cartas hasta tener menos de 5")
 		}

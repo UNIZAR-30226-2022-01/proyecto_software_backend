@@ -70,7 +70,7 @@ func invarianteNumeroDeCartas(eP logica_juego.EstadoPartida, eJ logica_juego.Est
 	}
 }
 
-func cambioDeFaseConDemasiadasCartas(t *testing.T, partidaCache vo.Partida, err error, cookie *http.Cookie) (vo.Partida, error) {
+func cambioDeFaseConDemasiadasCartas(t *testing.T, partidaCache vo.Partida, err error, cookie *http.Cookie, usuario string) (vo.Partida, error) {
 	partidaCache = comprobarPartidaEnCurso(t, 1)
 	baraja := partidaCache.Estado.Cartas
 
@@ -78,7 +78,7 @@ func cambioDeFaseConDemasiadasCartas(t *testing.T, partidaCache vo.Partida, err 
 	for numCartas := 0; numCartas <= 5; numCartas++ {
 		for _, carta := range baraja {
 			if carta.IdCarta == numCartas {
-				partidaCache.Estado.EstadosJugadores["usuario1"].Cartas = append(partidaCache.Estado.EstadosJugadores["usuario1"].Cartas, carta)
+				partidaCache.Estado.EstadosJugadores[usuario].Cartas = append(partidaCache.Estado.EstadosJugadores[usuario].Cartas, carta)
 				break
 			}
 		}
@@ -92,7 +92,7 @@ func cambioDeFaseConDemasiadasCartas(t *testing.T, partidaCache vo.Partida, err 
 	t.Log("OK: No se ha podido saltar la fase, error:", err)
 
 	partidaCache = comprobarPartidaEnCurso(t, 1)
-	partidaCache.Estado.EstadosJugadores["usuario1"].Cartas = nil
+	partidaCache.Estado.EstadosJugadores[usuario].Cartas = nil
 	globales.CachePartidas.AlmacenarPartida(partidaCache)
 	return partidaCache, err
 }
