@@ -97,8 +97,6 @@ func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador 
 					e.JugadoresActivos[e.obtenerTurnoJugador(defensor)] = false
 
 					emitirAccionJugadorEliminado = true // Emitir acción de ataque después de eliminarlo
-
-					//log.Println("D-D-D-D-DDDERROTADO!")
 				}
 				break
 			}

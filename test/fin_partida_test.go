@@ -64,7 +64,7 @@ func TestFinPartida(t *testing.T) {
 
 	// Eliminar a usuario3
 	atacarYOcupar(t, partidaCache, cookies, logica_juego.Western_australia, logica_juego.Indonesia)
-	estado = preguntarEstado(t, cookies[1])
+	estado = preguntarEstado(t, cookies[2])
 	//t.Log(estado.Acciones[len(estado.Acciones)-1])
 	t.Log(estado.Acciones)
 
@@ -89,25 +89,41 @@ func TestFinPartida(t *testing.T) {
 	// Comprobar jugadores restantes por solicitar estado antes de eliminar la partida
 	partidaCache = comprobarPartidaEnCurso(t, 1)
 
-	if len(partidaCache.Estado.JugadoresRestantesPorConsultar) != 2 {
-		t.Fatal("Número de jugadores por consultar tras haberlo solicitado usuario2 solo incorrecto:", partidaCache.Estado.JugadoresRestantesPorConsultar)
+	if len(partidaCache.Estado.JugadoresRestantesPorConsultar) != 1 {
+		t.Fatal("Número de jugadores por consultar tras haber sido eliminados usuario2 y usuario3 incorrecto:", partidaCache.Estado.JugadoresRestantesPorConsultar)
 	} else {
 		t.Log("jugadores restantes por preguntar estado antes de cerrar:", partidaCache.Estado.JugadoresRestantesPorConsultar)
 	}
 
 	estado = preguntarEstado(t, cookies[0])
+	if len(estado.JugadoresRestantesPorConsultar) != 0 {
+		t.Fatal("Número de jugadores por consultar tras haber sido eliminados usuario2 y usuario3 y consultar usuario1 incorrecto:", estado.JugadoresRestantesPorConsultar)
+	} else {
+		t.Log("jugadores restantes por preguntar estado justo antes de cerrar:", estado.JugadoresRestantesPorConsultar)
+	}
+
+	_, existePartidaTrasEliminacion := globales.CachePartidas.ObtenerPartida(1)
+
+	if existePartidaTrasEliminacion {
+		t.Fatal("La partida aún existe en la cache tras haber sido terminada")
+	} else {
+		t.Log("Partida eliminada correctamente")
+	}
+
+	// Prueba previa a haber permitido que se puedan salir de la partida usuarios eliminados
+	/*estado = preguntarEstado(t, cookies[0])
 	partidaCache = comprobarPartidaEnCurso(t, 1)
 	if len(partidaCache.Estado.JugadoresRestantesPorConsultar) != 1 {
 		t.Fatal("Número de jugadores por consultar tras haberlo solicitado usuario2 y usuario1 incorrecto:", partidaCache.Estado.JugadoresRestantesPorConsultar)
 	} else {
 		t.Log("jugadores restantes por preguntar estado antes de cerrar:", partidaCache.Estado.JugadoresRestantesPorConsultar)
 	}
-
-	estado = preguntarEstado(t, cookies[2])
+	*/
+	/*estado = preguntarEstado(t, cookies[2])
 	_, existe := globales.CachePartidas.ObtenerPartida(1)
 	if existe {
 		t.Fatal("La partida sigue en la cache después de haberse consultado por todos los jugadores tras finalizar")
-	}
+	}*/
 
 	perfilUsuario1 := obtenerPerfilUsuario(cookies[0], "usuario1", t)
 	if perfilUsuario1.PartidasGanadas != 1 {

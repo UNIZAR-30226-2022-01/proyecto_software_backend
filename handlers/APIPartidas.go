@@ -388,8 +388,8 @@ func ObtenerEstadoPartida(writer http.ResponseWriter, request *http.Request) {
 	// Se marca que el usuario ha leído hasta el último índice
 	partida.Estado.EstadosJugadores[usuario.NombreUsuario].UltimoIndiceLeido = len(partida.Estado.Acciones) - 1
 
-	// Y si ha terminado
-	if partida.Estado.Terminada {
+	// Y si ha terminado, o el jugador ha perdido
+	if partida.Estado.Terminada || partida.Estado.ContarTerritoriosOcupados(usuario.NombreUsuario) == 0 {
 		for i, jugador := range partida.Estado.JugadoresRestantesPorConsultar {
 			// Si aún no había comprobado el estado hasta ahora
 			if jugador == usuario.NombreUsuario {
