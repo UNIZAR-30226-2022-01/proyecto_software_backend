@@ -205,7 +205,7 @@ func PasarDeFase(writer http.ResponseWriter, request *http.Request) {
 // se devolverá un status 500 junto a un mensaje de error en el cuerpo, en otro caso devolverá status 200
 // y generará una acción de fortificación.
 //
-// Ruta: /api/fortificarTerritorio/{id_territorio_origen}/{id_territorio_destino}/{num_tropas}
+// Ruta: /api/fortificar/{id_territorio_origen}/{id_territorio_destino}/{num_tropas}
 // Tipo: POST
 func Fortificar(writer http.ResponseWriter, request *http.Request) {
 	idTerritorioOrigen, err1 := strconv.Atoi(chi.URLParam(request, "id_territorio_origen"))
