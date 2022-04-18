@@ -273,3 +273,26 @@ func ModificarBiografia(db *sql.DB, usuario *vo.Usuario, biografia string) error
 	_, err := db.Exec(`UPDATE backend."Usuario" SET biografia=$1 WHERE "nombreUsuario"=$2`, biografia, usuario.NombreUsuario)
 	return err
 }
+
+// TieneObjeto devuelve true si y solo si el objeto "item" está en la colección de objetos de "usuario"
+func TieneObjeto(db *sql.DB, usuario *vo.Usuario, item vo.ItemTienda) (existe bool, err error) {
+	err = db.QueryRow(`SELECT EXISTS(SELECT * FROM backend."TieneItems" WHERE "ID_item" = $1 AND "nombreUsuario" = $2)`,
+		item.Id, usuario.NombreUsuario).Scan(&existe)
+	if err != nil {
+		return false, err
+	}
+
+	return existe, nil
+}
+
+// ModificarDados modifica el aspecto de dados equipado por el usuario
+func ModificarDados(db *sql.DB, usuario *vo.Usuario, dados vo.ItemTienda) error {
+	_, err := db.Exec(`UPDATE backend."Usuario" SET "ID_dado"=$1 WHERE "nombreUsuario"=$2`, dados.Id, usuario.NombreUsuario)
+	return err
+}
+
+// ModificarFichas modifica el aspecto de fichas equipado por el usuario
+func ModificarFichas(db *sql.DB, usuario *vo.Usuario, fichas vo.ItemTienda) error {
+	_, err := db.Exec(`UPDATE backend."Usuario" SET "ID_ficha"=$1 WHERE "nombreUsuario"=$2`, fichas.Id, usuario.NombreUsuario)
+	return err
+}
