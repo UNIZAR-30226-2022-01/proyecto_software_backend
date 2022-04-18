@@ -192,6 +192,7 @@ func routerAPI() http.Handler {
 		r.Get("/consultarTienda", handlers.ConsultarTienda)
 		r.Get("/consultarColeccion/{usuario}", handlers.ConsultarColeccion)
 		r.Get("/comprarObjeto/{id_objeto}", handlers.ComprarObjeto)
+		r.Post("/modificarBiografia", handlers.ModificarBiografia)
 	})
 
 	return r

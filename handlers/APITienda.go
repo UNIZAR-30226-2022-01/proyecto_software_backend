@@ -22,6 +22,9 @@ import (
 // 	  Tipo: 		string
 //	  }, {...}, ...
 // ]
+//
+// Devuelve status 500 en caso de error y 200 en caso contrario
+//
 // Ruta: /api/consultarTienda
 // Tipo: GET
 func ConsultarTienda(writer http.ResponseWriter, request *http.Request) {
@@ -46,6 +49,9 @@ func ConsultarTienda(writer http.ResponseWriter, request *http.Request) {
 // 	  Tipo: 		string
 //	  }, {...}, ...
 // ]
+//
+// Devuelve status 500 en caso de error y 200 en caso contrario
+//
 // Ruta: /api/consultarColeccion/{usuario}
 // Tipo: GET
 func ConsultarColeccion(writer http.ResponseWriter, request *http.Request) {
@@ -65,6 +71,8 @@ func ConsultarColeccion(writer http.ResponseWriter, request *http.Request) {
 // Para ello, especificará como parte de la URL el identificador del objeto que desea comprar. La compra se realizará
 // siempre que dicho objeto exista, no sea uno de los objetos iniciales, el jugador tenga los puntos suficientes para
 // comprarlo y el jugador no lo haya comprado ya.
+//
+// Devuelve status 500 en caso de error y 200 en caso contrario
 //
 // Ruta: /api/comprarObjeto/{id_objeto}
 // Tipo: GET

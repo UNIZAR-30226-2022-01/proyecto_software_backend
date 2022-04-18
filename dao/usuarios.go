@@ -267,3 +267,9 @@ func ContabilizarPartida(db *sql.DB, usuario *vo.Usuario) (err error) {
 
 	return err
 }
+
+// ModificarBiografia actualiza la biografia del usuario
+func ModificarBiografia(db *sql.DB, usuario *vo.Usuario, biografia string) error {
+	_, err := db.Exec(`UPDATE backend."Usuario" SET biografia=$1 WHERE "nombreUsuario"=$2`, biografia, usuario.NombreUsuario)
+	return err
+}

@@ -81,7 +81,15 @@ func TestFuncionesSociales(t *testing.T) {
 		t.Fatal("No se ha obtenido correctamente el perfil del usuario")
 	}
 
-	// TODO -> probar si recuperamos la biografia y otros campos correctamente una vez se puedan modificar
+	// Intentamos modificar la biografía del usuario
+	biografia := "Mejor jugador del Risk 2021"
+	t.Log("Intentamos modificar la biografía del usuario")
+	modificarBiografia(cookie, biografia, t)
+	usuario := obtenerPerfilUsuario(cookie, "usuario", t)
+	if usuario.Biografia != biografia {
+		t.Fatal("No se ha cambiado la biografía correctamente")
+	}
+	t.Log("La nueva biografía es:", usuario.Biografia)
 
 	// Buscamos usuarios cuyo nombre empiece por "Amigo"
 	resultadoBusqueda := buscarUsuariosSimilares(cookie, "Amigo", t)

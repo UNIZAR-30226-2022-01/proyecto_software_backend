@@ -251,3 +251,30 @@ func buscarUsuariosSimilares(cookie *http.Cookie, patron string, t *testing.T) [
 
 	return nil
 }
+
+func modificarBiografia(cookie *http.Cookie, biografia string, t *testing.T) {
+	client := &http.Client{}
+
+	var campos url.Values
+	campos = url.Values{
+		"biografia": {biografia},
+	}
+
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/modificarBiografia", strings.NewReader(campos.Encode()))
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // Para indicar que el formulario "va en la url", porque campos.Encode() hace eso
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		t.Fatal("Error en POST de modificar biografia:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al modificar biografia:", resp.StatusCode)
+	}
+}

@@ -266,3 +266,23 @@ func ObtenerNotificaciones(writer http.ResponseWriter, request *http.Request) {
 	err = json.NewEncoder(writer).Encode(notificaciones)
 	escribirHeaderExito(writer)
 }
+
+// ModificarBiografia permite al usuario modificar su biografía, especificando una nueva en el campo "biografia" del
+// formulario enviado.
+//
+// Devuelve status 500 en caso de error y 200 en caso contrario
+//
+// Ruta: /api/modificarBiografia
+// Tipo: Post
+func ModificarBiografia(writer http.ResponseWriter, request *http.Request) {
+	usuario := middleware.ObtenerUsuarioCookie(request)
+	biografia := request.FormValue("biografia")
+
+	err := dao.ModificarBiografia(globales.Db, &vo.Usuario{NombreUsuario: usuario}, biografia)
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	escribirHeaderExito(writer)
+}
