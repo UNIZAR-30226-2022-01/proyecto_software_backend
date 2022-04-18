@@ -1,14 +1,27 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware"
 	"github.com/go-chi/chi/v5"
 	"net/http"
+	"strconv"
 )
 
-// TODO documentar
+// ConsultarTienda devuelve la lista de objetos disponibles en la tienda en formato JSON. La estructura de la lista
+// devuelta es la siguiente:
+// [ {
+//    Id: 			int
+// 	  Nombre: 		string
+// 	  Descripcion: 	string
+// 	  Precio: 		int
+// 	  Tipo: 		string
+//	  }, {...}, ...
+// ]
 // Ruta: /api/consultarTienda
 // Tipo: GET
 func ConsultarTienda(writer http.ResponseWriter, request *http.Request) {
@@ -23,8 +36,16 @@ func ConsultarTienda(writer http.ResponseWriter, request *http.Request) {
 	escribirHeaderExito(writer)
 }
 
-// TODO documentar
-// consultar los objetos de un usuario
+// ConsultarColeccion permite consultar los objetos que ha comprado un usuario, cuyo nombre se especifica como parte de
+// la URL. Devuelve una lista de objetos codificada en JSON, con el siguiente formato:
+// [ {
+//    Id: 			int
+// 	  Nombre: 		string
+// 	  Descripcion: 	string
+// 	  Precio: 		int
+// 	  Tipo: 		string
+//	  }, {...}, ...
+// ]
 // Ruta: /api/consultarColeccion/{usuario}
 // Tipo: GET
 func ConsultarColeccion(writer http.ResponseWriter, request *http.Request) {
@@ -37,5 +58,40 @@ func ConsultarColeccion(writer http.ResponseWriter, request *http.Request) {
 
 	writer.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(writer).Encode(objetos)
+	escribirHeaderExito(writer)
+}
+
+// ComprarObjeto permite al jugador comprar un objeto de la tienda siempre y cuando tenga los puntos necesarios.
+// Para ello, especificará como parte de la URL el identificador del objeto que desea comprar. La compra se realizará
+// siempre que dicho objeto exista, no sea uno de los objetos iniciales, el jugador tenga los puntos suficientes para
+// comprarlo y el jugador no lo haya comprado ya.
+//
+// Ruta: /api/comprarObjeto/{id_objeto}
+// Tipo: GET
+func ComprarObjeto(writer http.ResponseWriter, request *http.Request) {
+	idItem, err := strconv.Atoi(chi.URLParam(request, "id_objeto"))
+	usuario := middleware.ObtenerUsuarioCookie(request)
+
+	if err != nil {
+		devolverError(writer, errors.New("El identificador del objeto debe ser un número natural"))
+		return
+	}
+
+	item, err := dao.ObtenerObjeto(globales.Db, idItem)
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	err = dao.ComprarObjeto(globales.Db, usuario, item)
+	if err == sql.ErrNoRows {
+		devolverErrorSQL(writer)
+		return
+	}
+	if err != nil {
+		devolverError(writer, err)
+		return
+	}
+
 	escribirHeaderExito(writer)
 }

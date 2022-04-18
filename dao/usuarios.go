@@ -243,6 +243,13 @@ func OtorgarPuntos(db *sql.DB, usuario *vo.Usuario, puntos int) (err error) {
 	return err
 }
 
+// RetirarPuntos retira una cantidad de puntos determinada al usuario dado. Devuelve error en caso de fallo.
+func RetirarPuntos(db *sql.DB, usuario *vo.Usuario, puntos int) (err error) {
+	_, err = db.Exec(`UPDATE "backend"."Usuario" SET "puntos"="puntos"-$1 WHERE "nombreUsuario"=$2`, puntos, usuario.NombreUsuario)
+
+	return err
+}
+
 // ContabilizarPartidaGanada añade una partida ganada al usuario, contabilizándola también en el cómputo global
 func ContabilizarPartidaGanada(db *sql.DB, usuario *vo.Usuario) (err error) {
 	_, err = db.Exec(`UPDATE "backend"."Usuario" SET "partidasGanadas"="partidasGanadas"+1 WHERE "nombreUsuario"=$1`, usuario.NombreUsuario)

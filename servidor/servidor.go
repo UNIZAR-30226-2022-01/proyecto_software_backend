@@ -191,6 +191,7 @@ func routerAPI() http.Handler {
 		r.Get("/obtenerSolicitudesPendientes", handlers.ObtenerSolicitudesPendientes)
 		r.Get("/consultarTienda", handlers.ConsultarTienda)
 		r.Get("/consultarColeccion/{usuario}", handlers.ConsultarColeccion)
+		r.Get("/comprarObjeto/{id_objeto}", handlers.ComprarObjeto)
 	})
 
 	return r
