@@ -190,6 +190,7 @@ func routerAPI() http.Handler {
 		r.Get("/obtenerUsuariosSimilares/{patron}", handlers.ObtenerUsuariosSimilares)
 		r.Get("/obtenerSolicitudesPendientes", handlers.ObtenerSolicitudesPendientes)
 		r.Get("/consultarTienda", handlers.ConsultarTienda)
+		r.Get("/consultarColeccion/{usuario}", handlers.ConsultarColeccion)
 	})
 
 	return r

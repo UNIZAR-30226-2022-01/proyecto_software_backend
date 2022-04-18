@@ -145,7 +145,7 @@ func TestAtaqueUnitario(t *testing.T) {
 	tropasDefensor := 1
 
 	t.Log("Atacamos hasta que el defensor se quede sin tropas")
-	for tropasDefensor > 0 {
+	for partida.EstadoMapa[logica_juego.Brazil].NumTropas > 0 {
 		err = partida.Ataque(logica_juego.Venezuela, logica_juego.Brazil, 3, "Jugador1")
 		if err != nil {
 			t.Fatal("Se ha obtenido el siguiente error al atacar:", err)

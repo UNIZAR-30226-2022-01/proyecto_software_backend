@@ -14,7 +14,7 @@ import (
 func fortificarTerritorioConError(t *testing.T, cookie *http.Cookie, numTropas int, territorio1 int, territorio2 int) {
 	client := &http.Client{}
 
-	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/fortificarTerritorio/"+strconv.Itoa(territorio1)+"/"+strconv.Itoa(territorio2)+"/"+strconv.Itoa(numTropas), nil)
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/fortificar/"+strconv.Itoa(territorio1)+"/"+strconv.Itoa(territorio2)+"/"+strconv.Itoa(numTropas), nil)
 	if err != nil {
 		t.Fatal("Error al construir request:", err)
 	}
@@ -39,7 +39,7 @@ func fortificarTerritorioConError(t *testing.T, cookie *http.Cookie, numTropas i
 func fortificarTerritorio(t *testing.T, cookie *http.Cookie, numTropas int, territorio1 int, territorio2 int) {
 	client := &http.Client{}
 
-	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/fortificarTerritorio/"+strconv.Itoa(territorio1)+"/"+strconv.Itoa(territorio2)+"/"+strconv.Itoa(numTropas), nil)
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/fortificar/"+strconv.Itoa(territorio1)+"/"+strconv.Itoa(territorio2)+"/"+strconv.Itoa(numTropas), nil)
 	if err != nil {
 		t.Fatal("Error al construir request:", err)
 	}
