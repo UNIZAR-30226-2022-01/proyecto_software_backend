@@ -214,6 +214,31 @@ func ObtenerUsuariosSimilares(writer http.ResponseWriter, request *http.Request)
 	escribirHeaderExito(writer)
 }
 
+// ObtenerRanking devuelve una lista de todos los usuarios registrados, ordenados por el número de partidas ganadas.
+// Dicha lista se devolverá en el siguiente formato JSON:
+// [
+//  {
+//   NombreUsuario: string
+//   PartidasGanadas: int
+//   PartidasTotales: int
+// 	}, {...}, ...
+// ]
+//
+// Devolverá status 500 en caso de error y status 200 en cualquier otro caso
+//
+// Ruta: /api/ranking
+// Tipo: GET
+func ObtenerRanking(writer http.ResponseWriter, request *http.Request) {
+	ranking, err := dao.Ranking(globales.Db)
+	if err != nil {
+		devolverErrorSQL(writer)
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(writer).Encode(ranking)
+	escribirHeaderExito(writer)
+}
+
 // ObtenerNotificaciones devuelve un listado codificado en JSON de notificaciones
 // a mostrar, relativas al usuario que lo solicita.
 // Si ocurre algún error durante el procesamiento, enviará código de error 500

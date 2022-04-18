@@ -296,3 +296,26 @@ func ModificarFichas(db *sql.DB, usuario *vo.Usuario, fichas vo.ItemTienda) erro
 	_, err := db.Exec(`UPDATE backend."Usuario" SET "ID_ficha"=$1 WHERE "nombreUsuario"=$2`, fichas.Id, usuario.NombreUsuario)
 	return err
 }
+
+// Ranking devuelve la lista de usuarios del sistema ordenada por partidas ganadas
+func Ranking(db *sql.DB) (ranking []vo.ElementoRankingUsuarios, err error) {
+	rows, err := db.Query(`SELECT "nombreUsuario", "partidasGanadas", "partidasTotales" FROM backend."Usuario" 
+				ORDER BY "partidasGanadas" DESC`)
+
+	if err != nil {
+		return []vo.ElementoRankingUsuarios{}, err
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		var jugador vo.ElementoRankingUsuarios
+		err = rows.Scan(&jugador.NombreUsuario, &jugador.PartidasGanadas, &jugador.PartidasTotales)
+		if err != nil {
+			return []vo.ElementoRankingUsuarios{}, err
+		}
+
+		ranking = append(ranking, jugador)
+	}
+
+	return ranking, nil
+}

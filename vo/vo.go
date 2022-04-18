@@ -90,6 +90,12 @@ type ElementoListaUsuarios struct {
 	EsAmigo         bool
 }
 
+type ElementoRankingUsuarios struct {
+	NombreUsuario   string
+	PartidasGanadas int
+	PartidasTotales int
+}
+
 type EstadoLobby struct {
 	EnCurso          bool
 	EsPublico        bool
