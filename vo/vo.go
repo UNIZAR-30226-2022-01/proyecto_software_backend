@@ -97,3 +97,11 @@ type EstadoLobby struct {
 	MaxJugadores     int
 	NombresJugadores []string
 }
+
+type ItemTienda struct {
+	Id          int
+	Nombre      string
+	Descripcion string
+	Precio      int
+	Tipo        string
+}
