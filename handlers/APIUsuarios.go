@@ -289,98 +289,54 @@ func ModificarBiografia(writer http.ResponseWriter, request *http.Request) {
 	escribirHeaderExito(writer)
 }
 
-// ModificarDados permite al usuario equipar un aspecto de dado que haya comprado previamente. Para ello, especificará
-// el aspecto con el identificador del objeto en la URL. En caso de que ese objeto no exista, no sea un aspecto de dado o
-// no esté en la colección del usuario, no lo podrá equipar.
+// ModificarAspecto permite al usuario equipar un aspecto que haya comprado previamente. Para ello, especificará
+// el aspecto con el identificador del objeto en la URL. En caso de que ese objeto no exista, o no esté en la colección
+//del usuario, no lo podrá equipar.
 //
 // Devuelve status 500 en caso de error, 200 en cualquier otro caso
 //
-// Ruta: /api/modificarDados/{id_dados}
+// Ruta: /api/modificarAspecto/{id_aspecto}
 // Tipo: Get
-func ModificarDados(writer http.ResponseWriter, request *http.Request) {
+func ModificarAspecto(writer http.ResponseWriter, request *http.Request) {
 	usuario := middleware.ObtenerUsuarioCookie(request)
-	idDados, err := strconv.Atoi(chi.URLParam(request, "id_dados"))
+	idAspecto, err := strconv.Atoi(chi.URLParam(request, "id_aspecto"))
 	if err != nil {
-		devolverError(writer, errors.New("El identificador del dado debe ser un número natural"))
+		devolverError(writer, errors.New("El identificador del aspecto debe ser un número natural"))
 		return
 	}
 
-	dados, err := dao.ObtenerObjeto(globales.Db, idDados)
+	aspecto, err := dao.ObtenerObjeto(globales.Db, idAspecto)
 	if err != nil {
 		devolverErrorSQL(writer)
 		return
 	}
 
-	// Comprobamos que son dados realmente
-	if dados.Tipo != "dado" {
-		devolverError(writer, errors.New("No puedes equipar como dado un objeto que no lo es"))
-		return
-	}
-
-	// Comprobamos que el usuario tenga los dados o que son los dados iniciales
-	if dados.Id != 1 {
-		existe, err := dao.TieneObjeto(globales.Db, &vo.Usuario{NombreUsuario: usuario}, dados)
+	// Comprobamos que el usuario tenga el aspecto o que es algún aspecto inicial
+	if aspecto.Id > 2 {
+		existe, err := dao.TieneObjeto(globales.Db, &vo.Usuario{NombreUsuario: usuario}, aspecto)
 		if err != nil {
 			devolverErrorSQL(writer)
 			return
 		}
 
 		if !existe {
-			devolverError(writer, errors.New("No puedes equipar unos dados que no has comprado"))
-		}
-	}
-
-	err = dao.ModificarDados(globales.Db, &vo.Usuario{NombreUsuario: usuario}, dados)
-	if err != nil {
-		devolverErrorSQL(writer)
-		return
-	}
-
-	escribirHeaderExito(writer)
-}
-
-// ModificarFichas permite al usuario equipar un aspecto de ficha que haya comprado previamente. Para ello, especificará
-// el aspecto con el identificador del objeto en la URL. En caso de que ese objeto no exista, no sea un aspecto de ficha o
-// no esté en la colección del usuario, no lo podrá equipar.
-//
-// Devuelve status 500 en caso de error, 200 en cualquier otro caso
-//
-// Ruta: /api/modificarFichas/{id_fichas}
-// Tipo: Get
-func ModificarFichas(writer http.ResponseWriter, request *http.Request) {
-	usuario := middleware.ObtenerUsuarioCookie(request)
-	idDados, err := strconv.Atoi(chi.URLParam(request, "id_fichas"))
-	if err != nil {
-		devolverError(writer, errors.New("El identificador de la ficha debe ser un número natural"))
-		return
-	}
-
-	fichas, err := dao.ObtenerObjeto(globales.Db, idDados)
-	if err != nil {
-		devolverErrorSQL(writer)
-		return
-	}
-
-	// Comprobamos que son fichas realmente
-	if fichas.Tipo != "ficha" {
-		devolverError(writer, errors.New("No puedes equipar como ficha un objeto que no lo es"))
-		return
-	}
-
-	// Comprobamos que el usuario tenga los fichas o que son las fichas iniciales
-	if fichas.Id != 1 {
-		existe, err := dao.TieneObjeto(globales.Db, &vo.Usuario{NombreUsuario: usuario}, fichas)
-		if err != nil {
-			devolverErrorSQL(writer)
+			devolverError(writer, errors.New("No puedes equipar un aspecto que no has comprado"))
 			return
 		}
-
-		if !existe {
-			devolverError(writer, errors.New("No puedes equipar unas fichas que no has comprado"))
-		}
 	}
 
-	err = dao.ModificarFichas(globales.Db, &vo.Usuario{NombreUsuario: usuario}, fichas)
+	switch aspecto.Tipo {
+	case "ficha":
+		// Modificamos el aspecto de las fichas del jugador
+		err = dao.ModificarFichas(globales.Db, &vo.Usuario{NombreUsuario: usuario}, aspecto)
+	case "dado":
+		// Modificamos el aspecto de las dados del jugador
+		err = dao.ModificarDados(globales.Db, &vo.Usuario{NombreUsuario: usuario}, aspecto)
+	default:
+		devolverError(writer, errors.New("Aspecto no reconocido"))
+		return
+	}
+
 	if err != nil {
 		devolverErrorSQL(writer)
 		return
