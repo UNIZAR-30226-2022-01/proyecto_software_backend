@@ -217,11 +217,7 @@ func AbandonarLobby(writer http.ResponseWriter, request *http.Request) {
 	err := dao.AbandonarLobby(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario})
 	// AbandonarLobby ya da el error formateado
 	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		_, err = writer.Write([]byte(err.Error()))
-		if err != nil {
-			log.Println("Error al escribir respuesta en:", err)
-		}
+		devolverError(writer, err)
 	} else {
 		escribirHeaderExito(writer)
 	}
