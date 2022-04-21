@@ -29,6 +29,7 @@ func EnviarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) {
 	err := dao.CrearSolicitudAmistad(globales.Db, &usuarioEmisor, &usuarioReceptor)
 	if err != nil {
 		devolverErrorSQL(writer)
+		return
 	}
 
 	escribirHeaderExito(writer)
@@ -50,6 +51,7 @@ func AceptarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) 
 	err := dao.AceptarSolicitudAmistad(globales.Db, &usuarioEmisor, &usuarioReceptor)
 	if err != nil {
 		devolverErrorSQL(writer)
+		return
 	}
 
 	escribirHeaderExito(writer)
@@ -71,6 +73,7 @@ func RechazarSolicitudAmistad(writer http.ResponseWriter, request *http.Request)
 	err := dao.RechazarSolicitudAmistad(globales.Db, &usuarioEmisor, &usuarioReceptor)
 	if err != nil {
 		devolverErrorSQL(writer)
+		return
 	}
 
 	escribirHeaderExito(writer)
@@ -90,6 +93,7 @@ func ListarAmigos(writer http.ResponseWriter, request *http.Request) {
 	amigos, err := dao.ObtenerAmigos(globales.Db, &usuario)
 	if err != nil {
 		devolverErrorSQL(writer)
+		return
 	}
 
 	var listaAmigos []string
@@ -117,6 +121,7 @@ func ObtenerSolicitudesPendientes(writer http.ResponseWriter, request *http.Requ
 	pendientes, err := dao.ConsultarSolicitudesPendientes(globales.Db, &usuario)
 	if err != nil {
 		devolverErrorSQL(writer)
+		return
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
@@ -148,6 +153,7 @@ func ObtenerPerfilUsuario(writer http.ResponseWriter, request *http.Request) {
 	usuario, err := dao.ObtenerUsuario(globales.Db, nombreUsuario)
 	if err != nil {
 		devolverErrorSQL(writer)
+		return
 	}
 	envioUsuario := transformaAElementoListaUsuarios(usuario)
 	// Se comprueba si es amigo del usuario solicitante o no
@@ -192,6 +198,7 @@ func ObtenerUsuariosSimilares(writer http.ResponseWriter, request *http.Request)
 	usuarios, err := dao.ObtenerUsuariosSimilares(globales.Db, patron)
 	if err != nil {
 		devolverErrorSQL(writer)
+		return
 	}
 
 	var envioUsuarios []vo.ElementoListaUsuariosSimilares
@@ -232,6 +239,7 @@ func ObtenerRanking(writer http.ResponseWriter, request *http.Request) {
 	ranking, err := dao.Ranking(globales.Db)
 	if err != nil {
 		devolverErrorSQL(writer)
+		return
 	}
 
 	writer.Header().Set("Content-Type", "application/json")

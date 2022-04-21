@@ -199,6 +199,7 @@ func ObtenerEstadoLobby(writer http.ResponseWriter, request *http.Request) {
 	estadoLobby, err := dao.ObtenerEstadoLobby(globales.Db, partida)
 	if err != nil {
 		devolverErrorSQL(writer)
+		return
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
@@ -291,11 +292,13 @@ func ObtenerPartidas(writer http.ResponseWriter, request *http.Request) {
 	amigos, err := dao.ObtenerAmigos(globales.Db, &usuario)
 	if err != nil {
 		devolverErrorSQL(writer)
+		return
 	}
 
 	partidas, err := dao.ObtenerPartidasNoEnCurso(globales.Db)
 	if err != nil {
 		devolverErrorSQL(writer)
+		return
 	}
 
 	partidasPrivadas, partidasPublicas := dividirPartidasPrivadasYPublicas(partidas)
@@ -369,14 +372,17 @@ func ObtenerEstadoPartida(writer http.ResponseWriter, request *http.Request) {
 	idPartida, err := dao.PartidaUsuario(globales.Db, &usuario)
 	if err == sql.ErrNoRows {
 		devolverError(writer, errors.New("No estás participando en ninguna partida."))
+		return
 	} else if err != nil {
 		devolverErrorSQL(writer)
+		return
 	}
 
 	// Se obtiene una copia de la partida
 	partida, existe := globales.CachePartidas.ObtenerPartida(idPartida)
 	if !existe {
 		devolverErrorSQL(writer)
+		return
 	}
 
 	// Se obtiene acciones de [UltimoIndiceLeido+1...)

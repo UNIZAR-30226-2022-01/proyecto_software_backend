@@ -23,16 +23,19 @@ func Registro(writer http.ResponseWriter, request *http.Request) {
 
 	if dao.ExisteEmail(globales.Db, email) {
 		devolverError(writer, errors.New("El email introducido ya está registrado"))
+		return
 	}
 
 	if dao.ExisteUsuario(globales.Db, nombre) {
 		devolverError(writer, errors.New("El nombre de usuario introducido ya existe"))
+		return
 	}
 
 	hash, err := hashPassword(password)
 
 	if err != nil {
 		devolverError(writer, errors.New("Se ha producido un error al procesar los datos."))
+		return
 	} else {
 		usuarioVO := vo.Usuario{email, nombre, hash, "", http.Cookie{}, 0, 0, 0, 0, 0}
 		err = dao.InsertarUsuario(globales.Db, &usuarioVO)
@@ -68,8 +71,10 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 
 	if err != nil {
 		devolverError(writer, errors.New("Se ha producido un error al procesar los datos."))
+		return
 	} else if existe != nil {
 		devolverError(writer, errors.New("La contraseña o nombre de usuario introducidos son incorrectos"))
+		return
 	} else {
 		err, cookie := middleware.GenerarCookieUsuario(&writer, nombre)
 		if err != nil {
