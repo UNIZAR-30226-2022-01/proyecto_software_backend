@@ -442,7 +442,7 @@ func terminarPartida(usuario vo.Usuario, partida *vo.Partida, i int) error {
 	} else {
 		// Otorga al jugador puntos dependiendo de cómo haya quedado en la partida
 		if partida.Estado.ContarTerritoriosOcupados(usuario.NombreUsuario) == 0 { // Ha perdido
-			err = dao.OtorgarPuntos(globales.Db, &usuario, logica_juego.PUNTOS_PERDER)
+			err = dao.OtorgarPuntos(globales.Db, &usuario, logica_juego.PUNTOS_PERDER, false)
 			if err != nil {
 				// Fuerza a que el jugador consulte el estado más tarde para poder salir, al no registrarlo
 				log.Println("Error al otorgar puntos a", usuario, ":", err)
@@ -450,7 +450,7 @@ func terminarPartida(usuario vo.Usuario, partida *vo.Partida, i int) error {
 			}
 			err = dao.ContabilizarPartida(globales.Db, &usuario)
 		} else { // Ha ganado
-			err = dao.OtorgarPuntos(globales.Db, &usuario, logica_juego.PUNTOS_GANAR)
+			err = dao.OtorgarPuntos(globales.Db, &usuario, logica_juego.PUNTOS_GANAR, true)
 			if err != nil {
 				// Fuerza a que el jugador consulte el estado más tarde para poder salir, al no registrarlo
 				log.Println("Error al otorgar puntos a", usuario, ":", err)

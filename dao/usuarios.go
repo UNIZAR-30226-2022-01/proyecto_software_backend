@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/gob"
 	"errors"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"net/http"
 )
@@ -237,8 +238,14 @@ func ExisteEmail(db *sql.DB, email string) bool {
 }
 
 // OtorgarPuntos añade una cantidad de puntos determinada al usuario dado. Devuelve error en caso de fallo.
-func OtorgarPuntos(db *sql.DB, usuario *vo.Usuario, puntos int) (err error) {
+func OtorgarPuntos(db *sql.DB, usuario *vo.Usuario, puntos int, partidaGanada bool) (err error) {
 	_, err = db.Exec(`UPDATE "backend"."Usuario" SET "puntos"="puntos"+$1 WHERE "nombreUsuario"=$2`, puntos, usuario.NombreUsuario)
+	if err != nil {
+		return err
+	}
+
+	err = AlmacenarNotificacionConEstado(db, usuario, logica_juego.NewNotificacionPuntosObtenidos(puntos, partidaGanada))
+	// Un fallo de almacenar la notificación habiendo ya otorgado puntos no es crítico, se puede admitir continuar
 
 	return err
 }
@@ -318,4 +325,57 @@ func Ranking(db *sql.DB) (ranking []vo.ElementoRankingUsuarios, err error) {
 	}
 
 	return ranking, nil
+}
+
+// AlmacenarNotificacionConEstado guarda una notificación dependiente del estado del juego para el usuario dado.
+// Se borrará junto al resto al ser consultadas en grupo
+func AlmacenarNotificacionConEstado(db *sql.DB, usuario *vo.Usuario, notificacion interface{}) (err error) {
+	err, notificaciones := ObtenerNotificacionesConEstado(db, usuario)
+	if err != nil {
+		return err
+	}
+
+	notificaciones = append(notificaciones, notificacion)
+
+	err = almacenarNotificacionesConEstado(db, usuario, notificaciones)
+	return err
+}
+
+// ObtenerNotificacionesConEstado devuelve un slice de notificaciones con estado almacenadas para el usuario.
+// Todas las notificaciones se borrarán una vez consultadas
+func ObtenerNotificacionesConEstado(db *sql.DB, usuario *vo.Usuario) (err error, notificaciones []interface{}) {
+	var b bytes.Buffer
+	decoder := gob.NewDecoder(&b)
+
+	// Puede no tener notificaciones, y por tanto ser un NULL
+	var buffer sql.NullString
+
+	err = db.QueryRow(`SELECT "notificacionesPendientesConEstado" FROM backend."Usuario" WHERE "nombreUsuario"=$1`, usuario.NombreUsuario).Scan(&buffer)
+	if err != nil {
+		return err, notificaciones
+	}
+
+	if buffer.Valid { // No era NULL
+		b.Write([]byte(buffer.String))
+		err = decoder.Decode(&notificaciones)
+	}
+
+	// Borra las notificaciones con estado, ya que ya se han consultado
+	_, err = db.Exec(`UPDATE backend."Usuario" SET "notificacionesPendientesConEstado" = NULL WHERE "nombreUsuario"=$1`, usuario.NombreUsuario)
+
+	return err, notificaciones
+}
+
+// Función auxiliar para AlmacenarNotificacionConEstado
+func almacenarNotificacionesConEstado(db *sql.DB, usuario *vo.Usuario, notificaciones []interface{}) (err error) {
+	var b bytes.Buffer
+	encoder := gob.NewEncoder(&b)
+	err = encoder.Encode(notificaciones)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(`UPDATE "backend"."Usuario" SET "notificacionesPendientesConEstado" = $1 WHERE "backend"."Usuario"."nombreUsuario" = $2`, b.Bytes(), usuario.NombreUsuario)
+
+	return err
 }

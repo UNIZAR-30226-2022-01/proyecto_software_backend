@@ -297,6 +297,17 @@ func ObtenerNotificaciones(writer http.ResponseWriter, request *http.Request) {
 		}
 	}
 
+	// Añade las notificaciones con estado almacenadas en la base de datos
+	err, notificacionesConEstado := dao.ObtenerNotificacionesConEstado(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario})
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	if len(notificacionesConEstado) > 0 {
+		notificaciones = append(notificaciones, notificacionesConEstado)
+	}
+
 	writer.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(writer).Encode(notificaciones)
 	escribirHeaderExito(writer)

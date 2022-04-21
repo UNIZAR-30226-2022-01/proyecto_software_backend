@@ -35,7 +35,26 @@ func NewNotificacionTurno(jugadorPrevio string) NotificacionTurno {
 	return NotificacionTurno{IDNotificacion: NOTIFICACION_TURNO, JugadorPrevio: jugadorPrevio}
 }
 
+// NotificacionPuntosObtenidos representa una notificación de obtención de nuevos puntos, por ganar o perder una partida
+//
+// Ejemplo en JSON:
+//    {
+//        "IDNotificacion":	2,
+//        "Puntos":	"usuario6",
+//		  "PartidaGanada": false
+//    }
+type NotificacionPuntosObtenidos struct {
+	IDNotificacion int  // 2
+	Puntos         int  // Puntos obtenidos
+	PartidaGanada  bool // Razón para la obtención de los puntos (false: por perder una partida, true: por ganar una partida)
+}
+
+func NewNotificacionPuntosObtenidos(puntos int, partidaGanada bool) NotificacionPuntosObtenidos {
+	return NotificacionPuntosObtenidos{IDNotificacion: NOTIFICACION_PUNTOS, Puntos: puntos, PartidaGanada: partidaGanada}
+}
+
 func RegistrarNotificaciones() {
 	gob.Register(NotificacionAmistad{})
 	gob.Register(NotificacionTurno{})
+	gob.Register(NotificacionPuntosObtenidos{})
 }

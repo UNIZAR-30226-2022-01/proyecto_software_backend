@@ -24,7 +24,7 @@ func TestTienda(t *testing.T) {
 	t.Log("Se han recuperado los siguientes objetos de la tienda:", items)
 
 	// Le damos puntos al usuario de forma artificial para que pueda comprar
-	dao.OtorgarPuntos(globales.Db, &vo.Usuario{NombreUsuario: "usuario"}, 100)
+	dao.OtorgarPuntos(globales.Db, &vo.Usuario{NombreUsuario: "usuario"}, 100, true)
 
 	// Intentamos comprar un objeto inexistente, se espera error
 	t.Log("Intentamos comprar un objeto inexistente, se espera error")
@@ -42,7 +42,7 @@ func TestTienda(t *testing.T) {
 		t.Fatal("Se esperaba error al comprar un objeto inexistente")
 	}
 	t.Log("OK, se ha obtenido el error:", err)
-	dao.OtorgarPuntos(globales.Db, &vo.Usuario{NombreUsuario: "usuario"}, 100)
+	dao.OtorgarPuntos(globales.Db, &vo.Usuario{NombreUsuario: "usuario"}, 100, true)
 
 	// Intentamos comprar un objeto inicial, se espera error
 	t.Log("Intentamos comprar un objeto inicial, se espera error")

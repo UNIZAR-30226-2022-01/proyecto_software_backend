@@ -1,6 +1,11 @@
 package integracion
 
-import "testing"
+import (
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
+	"testing"
+)
 
 func TestNotificaciones(t *testing.T) {
 	t.Log("Purgando DB...")
@@ -44,5 +49,21 @@ func TestNotificaciones(t *testing.T) {
 		t.Fatal("Se esperaba una notificación de turno y otra de amistad, obtenido:", notificaciones)
 	} else {
 		t.Log("Notificaciones tras tener turno pendiente y amistad pendiente:", notificaciones)
+	}
+
+	// Probar notificaciones de puntos
+	dao.OtorgarPuntos(globales.Db, &vo.Usuario{NombreUsuario: "usuario1"}, 100, true)
+	notificaciones = obtenerNotificaciones(t, cookie)
+	if len(notificaciones) != 3 {
+		t.Fatal("Se esperaba una notificación de turno, otra de amistad y otra de puntos, obtenido:", notificaciones)
+	} else {
+		t.Log("Notificaciones tras tener turno pendiente, amistad pendiente y otra de puntos:", notificaciones)
+	}
+
+	notificaciones = obtenerNotificaciones(t, cookie)
+	if len(notificaciones) != 2 {
+		t.Fatal("Se esperaba que se borrara la notificación de puntos, obtenido:", notificaciones)
+	} else {
+		t.Log("Notificaciones tras tener turno pendiente y amistad pendiente y habiendo obtenido ya una de puntos:", notificaciones)
 	}
 }
