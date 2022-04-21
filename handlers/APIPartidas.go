@@ -10,7 +10,6 @@ import (
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
-	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
 	"strconv"
@@ -190,9 +189,11 @@ func UnirseAPartida(writer http.ResponseWriter, request *http.Request) {
 // Ruta: /api/obtenerEstadoLobby/{id}
 // Tipo: GET
 func ObtenerEstadoLobby(writer http.ResponseWriter, request *http.Request) {
-	partida, err := strconv.Atoi(chi.URLParam(request, "id"))
+	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
+	partida, err := dao.ObtenerIDPartida(globales.Db, nombreUsuario)
 	if err != nil {
-		devolverError(writer, errors.New("El id de la partida debe ser un número entero"))
+		devolverError(writer, err)
+		return
 	}
 
 	estadoLobby, err := dao.ObtenerEstadoLobby(globales.Db, partida)

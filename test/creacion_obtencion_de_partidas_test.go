@@ -69,7 +69,7 @@ func TestCreacionYObtencionPartidas(t *testing.T) {
 	unirseAPartida(cookiesNoAmigos[0], t, 1)
 
 	// Consultamos el estado del lobby
-	estadoLobby := consultarEstadoLobby(cookiesAmigos[0], 1, t)
+	estadoLobby := consultarEstadoLobby(cookiesAmigos[0], t)
 	if estadoLobby.EsPublico {
 		t.Fatal("La partida debería ser privada")
 	}
@@ -97,7 +97,7 @@ func TestCreacionYObtencionPartidas(t *testing.T) {
 	unirseAPartida(cookiesNoAmigos[4], t, 4)
 
 	// Consultamos el estado del lobby
-	estadoLobby = consultarEstadoLobby(cookiesAmigos[0], 4, t)
+	estadoLobby = consultarEstadoLobby(cookiesAmigos[3], t)
 	if !estadoLobby.EsPublico {
 		t.Fatal("La partida debería ser pública")
 	}

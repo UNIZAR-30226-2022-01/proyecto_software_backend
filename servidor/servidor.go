@@ -171,7 +171,7 @@ func routerAPI() http.Handler {
 		r.Get("/obtenerPartidas", handlers.ObtenerPartidas)
 		r.Get("/obtenerEstadoPartida", handlers.ObtenerEstadoPartida)
 		r.Post("/reforzarTerritorio/{id}/{numTropas}", handlers.ReforzarTerritorio)
-		r.Get("/obtenerEstadoLobby/{id}", handlers.ObtenerEstadoLobby)
+		r.Get("/obtenerEstadoLobby", handlers.ObtenerEstadoLobby)
 		r.Get("/cambiarCartas/{carta1}/{carta2}/{carta3}", handlers.CambiarCartas)
 		r.Get("/consultarCartas", handlers.ConsultarCartas)
 		r.Get("/pasarDeFase", handlers.PasarDeFase)

@@ -129,10 +129,10 @@ func crearPartidaReducida(cookie *http.Cookie, t *testing.T, publica bool) {
 	}
 }
 
-func consultarEstadoLobby(cookie *http.Cookie, idPartida int, t *testing.T) (estado vo.EstadoLobby) {
+func consultarEstadoLobby(cookie *http.Cookie, t *testing.T) (estado vo.EstadoLobby) {
 	client := &http.Client{}
 
-	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerEstadoLobby/"+strconv.Itoa(idPartida), nil)
+	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerEstadoLobby", nil)
 	if err != nil {
 		t.Fatal("Error al construir request:", err)
 	}

@@ -8,6 +8,19 @@ import (
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 )
 
+// ObtenerIDPartida devuelve el ID de la partida en la que está participando el usuario, dado su nombre.
+// En caso de error o de que no esté participando en ninguna partida, devuelve -1 y un error formateado
+func ObtenerIDPartida(db *sql.DB, nombreUsuario string) (idPartida int, err error) {
+	err = db.QueryRow(`SELECT "backend"."Participa"."ID_partida" FROM "backend"."Participa" WHERE "backend"."Participa"."nombreUsuario" = $1`, nombreUsuario).Scan(&idPartida)
+	if err != nil && err != sql.ErrNoRows { // Error de SQL general
+		return -1, errors.New("Se ha producido un error al procesar los datos.")
+	} else if err == sql.ErrNoRows {
+		return -1, errors.New("No estás participando en ninguna partida.")
+	}
+
+	return idPartida, err
+}
+
 // CrearPartida crea una nueva partida, la cual será añadida a la base de datos
 // El usuario especificará el número de jugadores máximos, si la partida es pública
 // o privada, y la contraseña cuando sea necesario
