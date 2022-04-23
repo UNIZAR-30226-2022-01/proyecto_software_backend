@@ -74,7 +74,7 @@ func serializarAJSONEImprimir(t *testing.T, obj interface{}) {
 
 func saltarFase(cookie *http.Cookie, t *testing.T) error {
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/pasarDeFase", nil)
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/pasarDeFase", nil)
 	if err != nil {
 		t.Fatal("Error al construir request:", err)
 	}

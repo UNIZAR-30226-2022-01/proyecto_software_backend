@@ -268,7 +268,6 @@ func ObtenerNotificaciones(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
 
 	usuariosPendientes, err := dao.ConsultarSolicitudesPendientes(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario})
-
 	for _, usuario := range usuariosPendientes {
 		notificaciones = append(notificaciones, logica_juego.NewNotificacionAmistad(usuario))
 	}

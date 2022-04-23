@@ -5,6 +5,7 @@ import (
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"reflect"
@@ -134,7 +135,8 @@ func obtenerNotificaciones(t *testing.T, cookie *http.Cookie) (notificaciones []
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatal("Obtenido código de error no 200 al obtener notificaciones:", resp.StatusCode)
+		body, _ := ioutil.ReadAll(resp.Body)
+		t.Fatal("Obtenido código de error no 200 al obtener notificaciones:", resp.StatusCode, string(body))
 	} else {
 		//body, _ := ioutil.ReadAll(resp.Body)
 		//bodyString := string(body)
