@@ -4,6 +4,7 @@ package dao
 import (
 	"database/sql"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	_ "github.com/lib/pq" // Driver que usa el paquete de sql, para postgres
 	"log"
@@ -59,6 +60,7 @@ func MonitorizarCanalBorrado(db *sql.DB, partidas chan int, stop chan struct{}, 
 				go BorrarPartida(db, &vo.Partida{IdPartida: idPartida})
 			case jugador = <-usuariosInactivos:
 				go AbandonarPartida(db, &vo.Usuario{NombreUsuario: jugador})
+				go AlmacenarNotificacionConEstado(db, &vo.Usuario{NombreUsuario: jugador}, logica_juego.NewNotificacionExpulsion())
 			case <-stop:
 				return
 			}
