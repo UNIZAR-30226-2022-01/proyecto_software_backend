@@ -164,7 +164,7 @@ func routerAPI() http.Handler {
 		// Obligamos el acceso con login previo
 		r.Use(middlewarePropio.MiddlewareSesion())
 
-		// Partidas
+		// Partidas y lobby
 		r.Post("/crearPartida", handlers.CrearPartida)
 		r.Post("/unirseAPartida", handlers.UnirseAPartida)
 		r.Post("/abandonarLobby", handlers.AbandonarLobby)
@@ -173,14 +173,15 @@ func routerAPI() http.Handler {
 		r.Get("/obtenerEstadoPartidaCompleto", handlers.ObtenerEstadoPartidaCompleto)
 		r.Get("/jugandoEnPartida", handlers.JugandoEnPartida)
 
+		// Acciones del juego
 		r.Post("/reforzarTerritorio/{id}/{numTropas}", handlers.ReforzarTerritorio)
 		r.Get("/obtenerEstadoLobby", handlers.ObtenerEstadoLobby)
-		r.Get("/cambiarCartas/{carta1}/{carta2}/{carta3}", handlers.CambiarCartas)
+		r.Post("/cambiarCartas/{carta1}/{carta2}/{carta3}", handlers.CambiarCartas)
 		r.Get("/consultarCartas", handlers.ConsultarCartas)
-		r.Get("/pasarDeFase", handlers.PasarDeFase)
+		r.Post("/pasarDeFase", handlers.PasarDeFase)
 		r.Post("/fortificar/{id_territorio_origen}/{id_territorio_destino}/{num_tropas}", handlers.Fortificar)
-		r.Get("/atacar/{id_territorio_origen}/{id_territorio_destino}/{num_dados}", handlers.Atacar)
-		r.Get("/ocupar/{territorio_a_ocupar}/{num_ejercitos}", handlers.Ocupar)
+		r.Post("/atacar/{id_territorio_origen}/{id_territorio_destino}/{num_dados}", handlers.Atacar)
+		r.Post("/ocupar/{territorio_a_ocupar}/{num_ejercitos}", handlers.Ocupar)
 
 		// Usuarios
 		r.Post("/aceptarSolicitudAmistad/{nombre}", handlers.AceptarSolicitudAmistad)
