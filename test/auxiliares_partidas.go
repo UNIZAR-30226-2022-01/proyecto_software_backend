@@ -210,6 +210,37 @@ func unirseAPartida(cookie *http.Cookie, t *testing.T, id int) {
 	}
 }
 
+func jugandoEnPartida(cookie *http.Cookie, t *testing.T) (esta bool) {
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/jugandoEnPartida", nil)
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // Para indicar que el formulario "va en la url", porque campos.Encode() hace eso
+
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal("Error en GET de jugandoEnPartida:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 de jugandoEnPartida:", resp.StatusCode)
+	} else {
+		err = json.NewDecoder(resp.Body).Decode(&esta)
+		if err != nil {
+			t.Fatal("Error al leer JSON de respuesta de jugandoEnPartida:", err)
+		}
+
+		t.Log("Respuesta de jugandoEnPartida:", esta)
+		return esta
+	}
+
+	return esta
+}
+
 func obtenerPartidas(cookie *http.Cookie, t *testing.T) []vo.ElementoListaPartidas {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerPartidas", nil)

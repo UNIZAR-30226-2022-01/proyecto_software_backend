@@ -96,4 +96,15 @@ func TestInicioPartida(t *testing.T) {
 	}
 
 	t.Log("Lista de acciones completa:", accionesCompl.Acciones)
+
+	// Comprobación de la llamada de estar en una partida, estando en una
+	if !jugandoEnPartida(cookie, t) {
+		t.Fatal("A \"usuario1\" no se le indica como jugando en ninguna partida al preguntarlo")
+	}
+
+	cookie7 := crearUsuario("usuario7", t)
+	// Comprobación de la llamada de estar en una partida, no estando en ninguna
+	if jugandoEnPartida(cookie7, t) {
+		t.Fatal("A \"usuario7\" se le indica como jugando en una partida al preguntarlo")
+	}
 }

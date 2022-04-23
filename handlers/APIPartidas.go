@@ -517,6 +517,28 @@ func ObtenerEstadoPartidaCompleto(writer http.ResponseWriter, request *http.Requ
 	escribirHeaderExito(writer)
 }
 
+// JugandoEnPartida devuelve verdad si el jugador está participando en una partida, o falso en caso contrario.
+// El formato es un booleano codificado en JSON de la siguiente forma:
+// true
+// false
+//
+// Ruta: /api/jugandoEnPartida
+// Tipo: GET
+func JugandoEnPartida(writer http.ResponseWriter, request *http.Request) {
+	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
+
+	esta, err := dao.UsuarioEnPartida(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario})
+
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(writer).Encode(esta)
+	escribirHeaderExito(writer)
+}
+
 // Trata el abandono de una partida por parte de un jugador dado, dejando de participar en ella,
 // otorgando los puntos según haya ganado o perdido, contabilizando que el usuario ha participado en una
 // partida y que ya ha consultado el estado final en el estado de la partida
