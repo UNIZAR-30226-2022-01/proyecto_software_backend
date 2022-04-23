@@ -58,10 +58,14 @@ func (ap *AlmacenPartidas) AlmacenarPartida(partida vo.Partida) {
 	ap.Partidas[partida.IdPartida] = partida
 }
 
-// EliminarPartida elimina una partida del almacén
+// EliminarPartida elimina una partida del almacén y se encarga del cierre correcto de sus goroutines asociadas
 func (ap *AlmacenPartidas) EliminarPartida(partida vo.Partida) {
 	ap.Mtx.Lock()
 	defer ap.Mtx.Unlock()
+
+	// Para la goroutine de expulsión de jugadores
+	partida.Estado.Stop <- struct{}{}
+
 	delete(ap.Partidas, partida.IdPartida)
 }
 

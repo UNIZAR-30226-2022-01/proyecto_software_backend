@@ -72,6 +72,12 @@ type EstadoPartida struct {
 	// Flag de partida terminada, pendiente por ser tener su estado consultado por todos los jugadores previo a su eliminación
 	Terminada                      bool
 	JugadoresRestantesPorConsultar []string
+
+	// Canales de señalización de refresco del contador de expulsión a un jugador
+	// e indicación de jugador a expulsar, tratados por una goroutine al crear el estado
+	RefrescarExpulsion chan struct{}
+	JugadorAExpulsar   chan string
+	Stop               chan struct{}
 }
 
 func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
@@ -99,9 +105,73 @@ func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
 		JugadoresActivos:               jugadoresActivos,
 		Terminada:                      false,
 		JugadoresRestantesPorConsultar: crearSliceJugadores(jugadores),
+		RefrescarExpulsion:             make(chan struct{}),
+		JugadorAExpulsar:               make(chan string),
+		Stop:                           make(chan struct{}),
 	}
 
+	// Goroutine de tratamiento de expulsiones, que trata un timer de expulsión
+	// a un jugador dado. Permite refrescar el timer, indicar un nuevo jugador
+	// y parar la goroutine
+	go func(rf chan struct{}, nj chan string, stop chan struct{}) {
+		timer := time.NewTimer(time.Hour * HORAS_EXPULSION_INACTIVIDAD)
+		var jugador string
+
+		select {
+		// Expulsa al jugador
+		case <-timer.C:
+			e.expulsarJugador(jugador)
+		// Crea un nuevo timer
+		case <-rf:
+			timer = time.NewTimer(time.Hour * HORAS_EXPULSION_INACTIVIDAD)
+
+		// Cambia a un nuevo jugador a expulsar
+		case jugador = <-nj:
+
+		// Para la goroutine
+		case <-stop:
+			return
+		}
+	}(e.RefrescarExpulsion, e.JugadorAExpulsar, e.Stop)
+
 	return e
+}
+
+// Marca un jugador como expulsado (derrotado), añade una acción de expulsión y pasa al siguiente jugador
+// si es posible o para la Goroutine de expulsión si no quedan jugadores
+func (e *EstadoPartida) expulsarJugador(jugador string) {
+	e.JugadoresActivos[e.obtenerTurnoJugador(jugador)] = false
+
+	e.Acciones = append(e.Acciones, NewAccionJugadorExpulsado(jugador))
+
+	jugadoresActivos := 0
+	for _, act := range e.JugadoresActivos {
+		if act {
+			jugadoresActivos += 1
+		}
+	}
+
+	if jugadoresActivos > 0 {
+		e.SiguienteJugador()
+	} else {
+		// Todos los jugadores han sido derrotados o expulsados, se para la Goroutine y espera
+		// a que consulten el estado
+		e.Stop <- struct{}{}
+	}
+}
+
+// HaSidoEliminado devuelve true si el usuario ha sido eliminado por otro jugador,
+// false en otro caso
+// El nombre de jugador indicado debe existir en la partida
+func (e *EstadoPartida) HaSidoEliminado(jugador string) bool {
+	return e.ContarTerritoriosOcupados(jugador) == 0
+}
+
+// HaSidoExpulsado devuelve true si el usuario ha sido eliminado por inactividad,
+// false en otro caso
+// El nombre de jugador indicado debe existir en la partida
+func (e *EstadoPartida) HaSidoExpulsado(jugador string) bool {
+	return !e.JugadoresActivos[e.obtenerTurnoJugador(jugador)] && e.ContarTerritoriosOcupados(jugador) != 0
 }
 
 // SiguienteJugadorSinAccion cambia el turno a otro jugador sin emitir ninguna acción.
@@ -472,7 +542,7 @@ func regionEnCola(cola []NumRegion, region NumRegion) bool {
 	return false
 }
 
-// Devuelve un subgrafo de GrafoMapa con únicamente las regiones/nodos controladas por el jugador
+// ObtenerSubgrafoRegiones devuelve un subgrafo de GrafoMapa con únicamente las regiones/nodos controladas por el jugador
 // TODO: La librería de grafos no exporta sus campos y no se puede serializar junto al resto del estado,
 // TODO: por lo que se tienen que recrear o almacenar cacheados en otra estructura que no se serialice
 // TODO: Valorar el coste de almacenamiento vs. recreación en cada llamada a fortificar (el coste es de
@@ -489,7 +559,7 @@ func (e *EstadoPartida) ObtenerSubgrafoRegiones(jugador string) *simple.Undirect
 	return subgrafo
 }
 
-// Añade una región dada al subgrafo del jugador, conectándola con el resto
+// AñadirASubGrafo añade una región dada al subgrafo del jugador, conectándola con el resto
 // de regiones del subgrafo que se encontraran conectadas con ella en el grafo
 // del mapa completo
 func AñadirASubGrafo(region NumRegion, subgrafo *simple.UndirectedGraph) {

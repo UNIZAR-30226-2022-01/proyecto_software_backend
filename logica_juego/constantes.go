@@ -5,8 +5,9 @@ type TipoTropa int
 type NumRegion int
 
 const (
-	PUNTOS_PERDER = 10
-	PUNTOS_GANAR  = 25
+	PUNTOS_PERDER               = 10
+	PUNTOS_GANAR                = 25
+	HORAS_EXPULSION_INACTIVIDAD = 24
 )
 
 const (
@@ -30,4 +31,5 @@ const (
 	NOTIFICACION_AMISTAD = iota
 	NOTIFICACION_TURNO
 	NOTIFICACION_PUNTOS
+	NOTIFICACION_EXPULSION
 )

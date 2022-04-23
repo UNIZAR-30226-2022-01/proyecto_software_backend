@@ -13,6 +13,7 @@ const (
 	IDAccionFortificar
 	IDAccionObtenerCarta
 	IDAccionJugadorEliminado
+	IDAccionJugadorExpulsado
 	IDAccionPartidaFinalizada
 )
 
@@ -294,6 +295,24 @@ func NewAccionJugadorEliminado(jugadorEliminado string, jugadorEliminador string
 		JugadorEliminado:  jugadorEliminado,
 		JugadorEliminador: jugadorEliminador,
 		CartasRecibidas:   cartasRecibidas}
+}
+
+// AccionJugadorExpulsado corresponde a la eliminación de un jugador del juego, por haber estado ausente demasiado tiempo
+//
+// Ejemplo en JSON:
+//    {
+//		"IDAccion": 10,
+// 		"JugadorEliminado": "usuarioEliminado",	// Jugador que ha sido expulsado
+//    }
+type AccionJugadorExpulsado struct {
+	IDAccion         int
+	JugadorEliminado string
+}
+
+func NewAccionJugadorExpulsado(jugadorEliminado string) AccionJugadorExpulsado {
+	return AccionJugadorExpulsado{
+		IDAccion:         int(IDAccionJugadorExpulsado),
+		JugadorEliminado: jugadorEliminado}
 }
 
 // AccionPartidaFinalizada corresponde a la finalización de una partida, con el jugador que la ha ganado. No habrá más acciones
