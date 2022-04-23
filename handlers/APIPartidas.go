@@ -428,6 +428,95 @@ func ObtenerEstadoPartida(writer http.ResponseWriter, request *http.Request) {
 	escribirHeaderExito(writer)
 }
 
+// ObtenerEstadoPartidaCompleto devuelve la lista de todas las acciones transcurridas desde el inicio de la partida
+// hasta el momento, que deberán ser procesadas en orden. Las siguientes llamadas a ObtenerEstadoPartida consultarán las
+// acciones desde dicho momento, pudiendo ser por tanto un sustituto a ObtenerEstadoPartida.
+// El formato es una lista de acciones, codificada en JSON de la siguiente forma:
+// [{acción}, {acción}]
+//
+// Donde cada acción es una acción específica a distinguir según el primer campo común a todas, "IDAccion", para su interpretación.
+//
+// Ejemplo:
+// [
+//   {
+//      "IDAccion":0,
+//      "Region":0,
+//      "TropasRestantes":19,
+//      "TerritoriosRestantes":41,
+//      "Jugador":"usuario4"
+//   },
+//   {
+//      "IDAccion":1,
+//      "Jugador":"usuario5"
+//   }
+//]
+//
+// La lista de acciones y su formato en JSON están disponibles en el módulo de logica_juego, en acciones.go
+//
+// Ruta: /api/obtenerEstadoPartida
+// Tipo: GET
+func ObtenerEstadoPartidaCompleto(writer http.ResponseWriter, request *http.Request) {
+	usuario := vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)}
+
+	idPartida, err := dao.PartidaUsuario(globales.Db, &usuario)
+	if err == sql.ErrNoRows {
+		devolverError(writer, errors.New("No estás participando en ninguna partida."))
+		return
+	} else if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	// Se obtiene una copia de la partida
+	partida, existe := globales.CachePartidas.ObtenerPartida(idPartida)
+	if !existe {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	// Se obtiene acciones de [UltimoIndiceLeido+1...)
+	acciones := partida.Estado.Acciones
+
+	// Se marca que el usuario ha leído hasta el último índice
+	partida.Estado.EstadosJugadores[usuario.NombreUsuario].UltimoIndiceLeido = len(partida.Estado.Acciones) - 1
+
+	// Y si ha terminado, o el jugador ha perdido
+	if partida.Estado.Terminada || partida.Estado.ContarTerritoriosOcupados(usuario.NombreUsuario) == 0 {
+		for i, jugador := range partida.Estado.JugadoresRestantesPorConsultar {
+			// Si aún no había comprobado el estado hasta ahora
+			if jugador == usuario.NombreUsuario {
+				err := terminarPartida(usuario, &partida, i)
+				if err != nil {
+					devolverErrorSQL(writer)
+					return // No se procesará el potencial fin de partida o modifica en la BD/cache si hay un error
+				}
+			}
+		}
+	}
+
+	// Si ha terminado y no queda ningún usuario más por consultar su estado, se elimina
+	if partida.Estado.Terminada && (len(partida.Estado.JugadoresRestantesPorConsultar) == 0) {
+		// De la DB
+		err := dao.BorrarPartida(globales.Db, &vo.Partida{IdPartida: idPartida})
+		if err != nil {
+			log.Println("Error al borrar una partida de la base de datos, borrando del cache:", err)
+		}
+
+		// De la cache
+		globales.CachePartidas.EliminarPartida(vo.Partida{IdPartida: idPartida})
+	} else {
+		// Se sobreescribe en el almacén
+		globales.CachePartidas.AlmacenarPartida(partida)
+
+		// Y se encola un trabajo de serialización de su estado
+		globales.CachePartidas.CanalSerializacion <- partida
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(writer).Encode(acciones)
+	escribirHeaderExito(writer)
+}
+
 // Trata el abandono de una partida por parte de un jugador dado, dejando de participar en ella,
 // otorgando los puntos según haya ganado o perdido, contabilizando que el usuario ha participado en una
 // partida y que ya ha consultado el estado final en el estado de la partida

@@ -170,6 +170,7 @@ func routerAPI() http.Handler {
 		r.Post("/abandonarLobby", handlers.AbandonarLobby)
 		r.Get("/obtenerPartidas", handlers.ObtenerPartidas)
 		r.Get("/obtenerEstadoPartida", handlers.ObtenerEstadoPartida)
+		r.Get("/obtenerEstadoPartidaCompleto", handlers.ObtenerEstadoPartidaCompleto)
 		r.Post("/reforzarTerritorio/{id}/{numTropas}", handlers.ReforzarTerritorio)
 		r.Get("/obtenerEstadoLobby", handlers.ObtenerEstadoLobby)
 		r.Get("/cambiarCartas/{carta1}/{carta2}/{carta3}", handlers.CambiarCartas)
@@ -178,7 +179,6 @@ func routerAPI() http.Handler {
 		r.Post("/fortificar/{id_territorio_origen}/{id_territorio_destino}/{num_tropas}", handlers.Fortificar)
 		r.Get("/atacar/{id_territorio_origen}/{id_territorio_destino}/{num_dados}", handlers.Atacar)
 		r.Get("/ocupar/{territorio_a_ocupar}/{num_ejercitos}", handlers.Ocupar)
-		//r.Post("/fin_fase_fortificar", handlers.FinFaseFortificar)
 
 		// Usuarios
 		r.Post("/aceptarSolicitudAmistad/{nombre}", handlers.AceptarSolicitudAmistad)

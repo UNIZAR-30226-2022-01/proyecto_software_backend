@@ -2,6 +2,7 @@ package integracion
 
 import (
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
+	"reflect"
 	"testing"
 )
 
@@ -72,10 +73,27 @@ func TestInicioPartida(t *testing.T) {
 		t.Log("Estado de ", jugador, ":", partidaCache.Estado.EstadosJugadores[jugador])
 	}
 
-	comprobarAcciones(t, cookie)
+	estadoPrimeraLlamada := comprobarAcciones(t, cookie)
 	comprobarAcciones(t, cookie2)
 	comprobarAcciones(t, cookie3)
 	comprobarAcciones(t, cookie4)
 	comprobarAcciones(t, cookie5)
 	comprobarAcciones(t, cookie6)
+
+	// Comprobar la llamada de obtención de todas las acciones hasta el momento
+	accionesCompl := preguntarEstadoCompleto(t, cookie)
+
+	if !reflect.DeepEqual(estadoPrimeraLlamada.Acciones, accionesCompl.Acciones) {
+		t.Log("Las acciones obtenidas en la primera llamada a obtener acciones y en la llamada de obtener todas no coinciden")
+		t.Log("Acciones de llamada normal:", estadoPrimeraLlamada.Acciones)
+		t.Fatal("Acciones de llamada de estado completo:", accionesCompl.Acciones)
+	}
+
+	estadoPrimeraLlamada = preguntarEstado(t, cookie)
+	accionesCompl = preguntarEstadoCompleto(t, cookie)
+	if len(estadoPrimeraLlamada.Acciones) != 0 && len(accionesCompl.Acciones) != len(partidaCache.Estado.Acciones) {
+		t.Fatal("Se esperaba que la lista de acciones normal fuera vacía y la de acciones completa fuera igual que antes. Acciones normal:", estadoPrimeraLlamada.Acciones, ", acciones completa:", accionesCompl.Acciones)
+	}
+
+	t.Log("Lista de acciones completa:", accionesCompl.Acciones)
 }

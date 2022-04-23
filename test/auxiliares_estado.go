@@ -12,27 +12,59 @@ import (
 	"time"
 )
 
-func comprobarAcciones(t *testing.T, cookie *http.Cookie) {
-	estado := preguntarEstado(t, cookie)
+func comprobarAcciones(t *testing.T, cookie *http.Cookie) (estado logica_juego.EstadoPartida) {
+	estado = preguntarEstado(t, cookie)
 
 	if len(estado.Acciones) != (logica_juego.NUM_REGIONES + 2) { // + 2 para que tenga en cuenta cambio de fase
 		t.Fatal("Se esperaban", logica_juego.NUM_REGIONES, "acciones en el log, y hay", len(estado.Acciones))
-	} else {
+	} /*else {
 		t.Log("Contenidos de acciones:", estado.Acciones)
-	}
+	}*/
 
-	estado = preguntarEstado(t, cookie)
-	if len(estado.Acciones) != 0 {
-		t.Fatal("Se esperaban 0 acciones en el log, y hay", len(estado.Acciones))
-	} else {
-		t.Log("Contenidos de acciones tras leerlas todas:", estado.Acciones)
-	}
+	estadoPost := preguntarEstado(t, cookie)
+	if len(estadoPost.Acciones) != 0 {
+		t.Fatal("Se esperaban 0 acciones en el log, y hay", len(estadoPost.Acciones))
+	} /*else {
+		t.Log("Contenidos de acciones tras leerlas todas:", estadoPost.Acciones)
+	}*/
+
+	return estado
 }
 
 func preguntarEstado(t *testing.T, cookie *http.Cookie) (estado logica_juego.EstadoPartida) {
 	client := &http.Client{}
 
 	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerEstadoPartida", nil)
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // Para indicar que el formulario "va en la url", porque campos.Encode() hace eso
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		t.Fatal("Error en POST de preguntar estado:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al preguntar estado:", resp.StatusCode)
+	}
+
+	//body, err := ioutil.ReadAll(resp.Body)
+	//bodyString := string(body)
+	//t.Log("Respuesta al preguntar estado:", bodyString)
+
+	err = json.NewDecoder(resp.Body).Decode(&estado.Acciones)
+
+	return estado
+}
+
+func preguntarEstadoCompleto(t *testing.T, cookie *http.Cookie) (estado logica_juego.EstadoPartida) {
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerEstadoPartidaCompleto", nil)
 	if err != nil {
 		t.Fatal("Error al construir request:", err)
 	}
