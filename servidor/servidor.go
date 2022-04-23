@@ -55,6 +55,8 @@ func IniciarServidor(test bool) {
 		logica_juego.InicializarGrafoMapa()
 		logica_juego.InicializarContinentes()
 		globales.CachePartidas = globales.IniciarAlmacenPartidas()
+		globales.IniciarCanalesEliminacionPartidasDB()
+		dao.MonitorizarCanalBorrado(globales.Db, globales.CanalEliminacionPartidasDB, globales.CanalParadaBorradoPartidasDB, globales.CanalExpulsionUsuariosDB)
 
 		// Registra los tipos a decodificar por gob a partir de interface{}
 		logica_juego.RegistrarAcciones()
@@ -96,6 +98,7 @@ func IniciarServidor(test bool) {
 	// Termina todos los módulos de forma segura
 	if os.Args[1] == "-api" {
 		globales.Db.Close()
+		globales.CanalParadaBorradoPartidasDB <- struct{}{}
 	}
 
 	os.Exit(0)
@@ -157,7 +160,6 @@ func routerAPI() http.Handler {
 	// Formularios
 	r.Post("/registro", handlers.Registro)
 	r.Post("/login", handlers.Login)
-	//TODO: Otro POST para formularios de cambiar perfil de usuario
 
 	// Rutas REST
 	r.Route("/api", func(r chi.Router) {

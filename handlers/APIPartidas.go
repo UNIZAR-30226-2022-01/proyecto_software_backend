@@ -392,11 +392,22 @@ func ObtenerEstadoPartida(writer http.ResponseWriter, request *http.Request) {
 	partida.Estado.EstadosJugadores[usuario.NombreUsuario].UltimoIndiceLeido = len(partida.Estado.Acciones) - 1
 
 	// Y si ha terminado, o el jugador ha perdido
-	if partida.Estado.Terminada || partida.Estado.ContarTerritoriosOcupados(usuario.NombreUsuario) == 0 {
+	if partida.Estado.Terminada || partida.Estado.HaSidoEliminado(usuario.NombreUsuario) {
 		for i, jugador := range partida.Estado.JugadoresRestantesPorConsultar {
 			// Si aún no había comprobado el estado hasta ahora
 			if jugador == usuario.NombreUsuario {
-				err := terminarPartida(usuario, &partida, i)
+				err := terminarPartida(usuario, &partida, i, false)
+				if err != nil {
+					devolverErrorSQL(writer)
+					return // No se procesará el potencial fin de partida o modifica en la BD/cache si hay un error
+				}
+			}
+		}
+	} else if partida.Estado.HaSidoExpulsado(usuario.NombreUsuario) {
+		for i, jugador := range partida.Estado.JugadoresRestantesPorConsultar {
+			// Si aún no había comprobado el estado hasta ahora
+			if jugador == usuario.NombreUsuario {
+				err := terminarPartida(usuario, &partida, i, true)
 				if err != nil {
 					devolverErrorSQL(writer)
 					return // No se procesará el potencial fin de partida o modifica en la BD/cache si hay un error
@@ -408,10 +419,7 @@ func ObtenerEstadoPartida(writer http.ResponseWriter, request *http.Request) {
 	// Si ha terminado y no queda ningún usuario más por consultar su estado, se elimina
 	if partida.Estado.Terminada && (len(partida.Estado.JugadoresRestantesPorConsultar) == 0) {
 		// De la DB
-		err := dao.BorrarPartida(globales.Db, &vo.Partida{IdPartida: idPartida})
-		if err != nil {
-			log.Println("Error al borrar una partida de la base de datos, borrando del cache:", err)
-		}
+		globales.CanalEliminacionPartidasDB <- idPartida
 
 		// De la cache
 		globales.CachePartidas.EliminarPartida(vo.Partida{IdPartida: idPartida})
@@ -481,11 +489,22 @@ func ObtenerEstadoPartidaCompleto(writer http.ResponseWriter, request *http.Requ
 	partida.Estado.EstadosJugadores[usuario.NombreUsuario].UltimoIndiceLeido = len(partida.Estado.Acciones) - 1
 
 	// Y si ha terminado, o el jugador ha perdido
-	if partida.Estado.Terminada || partida.Estado.ContarTerritoriosOcupados(usuario.NombreUsuario) == 0 {
+	if partida.Estado.Terminada || partida.Estado.HaSidoEliminado(usuario.NombreUsuario) {
 		for i, jugador := range partida.Estado.JugadoresRestantesPorConsultar {
 			// Si aún no había comprobado el estado hasta ahora
 			if jugador == usuario.NombreUsuario {
-				err := terminarPartida(usuario, &partida, i)
+				err := terminarPartida(usuario, &partida, i, false)
+				if err != nil {
+					devolverErrorSQL(writer)
+					return // No se procesará el potencial fin de partida o modifica en la BD/cache si hay un error
+				}
+			}
+		}
+	} else if partida.Estado.HaSidoExpulsado(usuario.NombreUsuario) {
+		for i, jugador := range partida.Estado.JugadoresRestantesPorConsultar {
+			// Si aún no había comprobado el estado hasta ahora
+			if jugador == usuario.NombreUsuario {
+				err := terminarPartida(usuario, &partida, i, true)
 				if err != nil {
 					devolverErrorSQL(writer)
 					return // No se procesará el potencial fin de partida o modifica en la BD/cache si hay un error
@@ -497,10 +516,7 @@ func ObtenerEstadoPartidaCompleto(writer http.ResponseWriter, request *http.Requ
 	// Si ha terminado y no queda ningún usuario más por consultar su estado, se elimina
 	if partida.Estado.Terminada && (len(partida.Estado.JugadoresRestantesPorConsultar) == 0) {
 		// De la DB
-		err := dao.BorrarPartida(globales.Db, &vo.Partida{IdPartida: idPartida})
-		if err != nil {
-			log.Println("Error al borrar una partida de la base de datos, borrando del cache:", err)
-		}
+		globales.CanalEliminacionPartidasDB <- idPartida
 
 		// De la cache
 		globales.CachePartidas.EliminarPartida(vo.Partida{IdPartida: idPartida})
@@ -542,7 +558,7 @@ func JugandoEnPartida(writer http.ResponseWriter, request *http.Request) {
 // Trata el abandono de una partida por parte de un jugador dado, dejando de participar en ella,
 // otorgando los puntos según haya ganado o perdido, contabilizando que el usuario ha participado en una
 // partida y que ya ha consultado el estado final en el estado de la partida
-func terminarPartida(usuario vo.Usuario, partida *vo.Partida, i int) error {
+func terminarPartida(usuario vo.Usuario, partida *vo.Partida, i int, expulsadoPorInactividad bool) error {
 	err := dao.AbandonarPartida(globales.Db, &usuario)
 
 	if err != nil && err != sql.ErrNoRows {
@@ -551,8 +567,8 @@ func terminarPartida(usuario vo.Usuario, partida *vo.Partida, i int) error {
 		log.Println("Error al abandonar una partida, forzando un reintento más tarde:", err)
 		return err
 	} else {
-		// Otorga al jugador puntos dependiendo de cómo haya quedado en la partida
-		if partida.Estado.ContarTerritoriosOcupados(usuario.NombreUsuario) == 0 { // Ha perdido
+		// Otorga al jugador puntos dependiendo de cómo haya quedado en la partida (si no ha sido expulsado por inactividad)
+		if partida.Estado.ContarTerritoriosOcupados(usuario.NombreUsuario) == 0 && !expulsadoPorInactividad { // Ha perdido
 			err = dao.OtorgarPuntos(globales.Db, &usuario, logica_juego.PUNTOS_PERDER, false)
 			if err != nil {
 				// Fuerza a que el jugador consulte el estado más tarde para poder salir, al no registrarlo
@@ -560,7 +576,7 @@ func terminarPartida(usuario vo.Usuario, partida *vo.Partida, i int) error {
 				return err
 			}
 			err = dao.ContabilizarPartida(globales.Db, &usuario)
-		} else { // Ha ganado
+		} else if !expulsadoPorInactividad { // Ha ganado
 			err = dao.OtorgarPuntos(globales.Db, &usuario, logica_juego.PUNTOS_GANAR, true)
 			if err != nil {
 				// Fuerza a que el jugador consulte el estado más tarde para poder salir, al no registrarlo

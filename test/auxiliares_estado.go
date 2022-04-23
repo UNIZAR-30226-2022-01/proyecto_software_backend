@@ -46,7 +46,7 @@ func preguntarEstado(t *testing.T, cookie *http.Cookie) (estado logica_juego.Est
 	resp, err := client.Do(req)
 
 	if err != nil {
-		t.Fatal("Error en POST de preguntar estado:", err)
+		t.Fatal("Error en GET de preguntar estado:", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -76,7 +76,7 @@ func preguntarEstadoCompleto(t *testing.T, cookie *http.Cookie) (estado logica_j
 	resp, err := client.Do(req)
 
 	if err != nil {
-		t.Fatal("Error en POST de preguntar estado:", err)
+		t.Fatal("Error en GET de preguntar estado:", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {

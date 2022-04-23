@@ -68,9 +68,14 @@ type EstadoPartida struct {
 	HayTerritorioDesocupado    bool      // True si hay algún territorio sin ocupar
 	UltimoDefensor             string    // Nombre del jugador defensor en el último ataque
 
-	// Flag de partida terminada, pendiente por ser tener su estado consultado por todos los jugadores previo a su eliminación
+	// Flag de partida terminada, pendiente por ser tener su estado consultado por todos los jugadores
+	// previo a su eliminación
 	Terminada                      bool
 	JugadoresRestantesPorConsultar []string
+
+	// Timestamp de la última acción realizada en el juego por el usuario del turno actual, para
+	// tratar la eliminación de usuarios inactivos
+	UltimaAccion time.Time
 }
 
 func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
@@ -97,9 +102,55 @@ func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
 		JugadoresActivos:               jugadoresActivos,
 		Terminada:                      false,
 		JugadoresRestantesPorConsultar: crearSliceJugadores(jugadores),
+		UltimaAccion:                   time.Now(),
 	}
 
 	return e
+}
+
+// ExpulsarJugador contabiliza un jugador como expulsado (derrotado), añade una acción de expulsión y
+// pasa al siguiente jugador si es posible o para la Goroutine de expulsión si no quedan jugadores
+func (e *EstadoPartida) ExpulsarJugador() {
+	jugador := e.Jugadores[e.TurnoJugador]
+
+	e.JugadoresActivos[e.obtenerTurnoJugador(jugador)] = false
+
+	e.Acciones = append(e.Acciones, NewAccionJugadorExpulsado(jugador))
+
+	jugadoresActivos := 0
+	for _, act := range e.JugadoresActivos {
+		if act {
+			jugadoresActivos += 1
+		}
+	}
+
+	if jugadoresActivos > 0 {
+		e.SiguienteJugador()
+	} else {
+		// Todos los jugadores han sido derrotados o expulsados, se para la Goroutine y espera
+		// a que consulten el estado
+		e.Terminada = true
+		e.JugadoresRestantesPorConsultar = nil
+	}
+}
+
+// TerminadaPorExpulsiones devuelve true si la partida ha terminado por tener todos sus jugadores expulsados, false en otro caso
+func (e *EstadoPartida) TerminadaPorExpulsiones() bool {
+	return e.Terminada && len(e.JugadoresRestantesPorConsultar) == 0
+}
+
+// HaSidoEliminado devuelve true si el usuario ha sido eliminado por otro jugador,
+// false en otro caso
+// El nombre de jugador indicado debe existir en la partida
+func (e *EstadoPartida) HaSidoEliminado(jugador string) bool {
+	return e.ContarTerritoriosOcupados(jugador) == 0
+}
+
+// HaSidoExpulsado devuelve true si el usuario ha sido eliminado por inactividad,
+// false en otro caso
+// El nombre de jugador indicado debe existir en la partida
+func (e *EstadoPartida) HaSidoExpulsado(jugador string) bool {
+	return !e.JugadoresActivos[e.obtenerTurnoJugador(jugador)] && e.ContarTerritoriosOcupados(jugador) != 0
 }
 
 // SiguienteJugadorSinAccion cambia el turno a otro jugador sin emitir ninguna acción.
@@ -139,6 +190,9 @@ func (e *EstadoPartida) SiguienteJugador() {
 		e.Acciones = append(e.Acciones, NewAccionCambioFase(Inicio, e.Jugadores[e.TurnoJugador]))
 		e.Acciones = append(e.Acciones, NewAccionInicioTurno(e.Jugadores[e.TurnoJugador], 0, 0, 0))
 	}
+
+	// Refresca el timestamp
+	e.UltimaAccion = time.Now()
 }
 
 // AsignarTropasRefuerzo otorga un número de ejércitos al jugador que comienza un turno, dependiendo del número de territorios
@@ -346,6 +400,9 @@ func (e *EstadoPartida) FinDeFase(jugador string) error {
 		e.SiguienteJugador()
 	}
 
+	// Refresca el timestamp
+	e.UltimaAccion = time.Now()
+
 	return nil
 }
 
@@ -470,7 +527,7 @@ func regionEnCola(cola []NumRegion, region NumRegion) bool {
 	return false
 }
 
-// Devuelve un subgrafo de GrafoMapa con únicamente las regiones/nodos controladas por el jugador
+// ObtenerSubgrafoRegiones devuelve un subgrafo de GrafoMapa con únicamente las regiones/nodos controladas por el jugador
 // TODO: La librería de grafos no exporta sus campos y no se puede serializar junto al resto del estado,
 // TODO: por lo que se tienen que recrear o almacenar cacheados en otra estructura que no se serialice
 // TODO: Valorar el coste de almacenamiento vs. recreación en cada llamada a fortificar (el coste es de
@@ -487,7 +544,7 @@ func (e *EstadoPartida) ObtenerSubgrafoRegiones(jugador string) *simple.Undirect
 	return subgrafo
 }
 
-// Añade una región dada al subgrafo del jugador, conectándola con el resto
+// AñadirASubGrafo añade una región dada al subgrafo del jugador, conectándola con el resto
 // de regiones del subgrafo que se encontraran conectadas con ella en el grafo
 // del mapa completo
 func AñadirASubGrafo(region NumRegion, subgrafo *simple.UndirectedGraph) {

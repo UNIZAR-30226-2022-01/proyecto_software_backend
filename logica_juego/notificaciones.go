@@ -53,8 +53,23 @@ func NewNotificacionPuntosObtenidos(puntos int, partidaGanada bool) Notificacion
 	return NotificacionPuntosObtenidos{IDNotificacion: NOTIFICACION_PUNTOS, Puntos: puntos, PartidaGanada: partidaGanada}
 }
 
+// NotificacionExpulsion representa una notificación de que se ha sido expulsado de una partida por inactividad
+//
+// Ejemplo en JSON:
+//    {
+//        "IDNotificacion":	3,
+//    }
+type NotificacionExpulsion struct {
+	IDNotificacion int // 3
+}
+
+func NewNotificacionExpulsion() NotificacionExpulsion {
+	return NotificacionExpulsion{IDNotificacion: NOTIFICACION_EXPULSION}
+}
+
 func RegistrarNotificaciones() {
 	gob.Register(NotificacionAmistad{})
 	gob.Register(NotificacionTurno{})
 	gob.Register(NotificacionPuntosObtenidos{})
+	gob.Register(NotificacionExpulsion{})
 }
