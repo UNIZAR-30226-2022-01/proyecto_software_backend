@@ -134,3 +134,13 @@ func Conectadas(region1 NumRegion, region2 NumRegion) bool {
 
 	return GrafoMapa.HasEdgeBetween(nodo1.ID(), nodo2.ID())
 }
+
+// Adyacentes devuelve una lista de regiones aydacentes a "region" en el grafo
+func Adyacentes(region NumRegion) (regiones []NumRegion) {
+	for i := Eastern_australia; i < Alberta; i++ {
+		if Conectadas(region, i) {
+			regiones = append(regiones, i)
+		}
+	}
+	return regiones
+}

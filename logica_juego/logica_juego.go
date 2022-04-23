@@ -47,8 +47,7 @@ type EstadoPartida struct {
 	// Si ha sido derrotado, será false
 	JugadoresActivos []bool
 
-	Fase        Fase
-	NumeroTurno int
+	Fase Fase
 
 	EstadoMapa map[NumRegion]*EstadoRegion
 
@@ -85,7 +84,6 @@ func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
 		EstadosJugadores:               crearMapaEstadosJugadores(jugadores),
 		TurnoJugador:                   (LanzarDados()) % len(jugadores), // Primer jugador aleatorio
 		Fase:                           Inicio,
-		NumeroTurno:                    0,
 		EstadoMapa:                     crearEstadoMapa(),
 		Cartas:                         crearBaraja(),
 		Descartes:                      []Carta{},
