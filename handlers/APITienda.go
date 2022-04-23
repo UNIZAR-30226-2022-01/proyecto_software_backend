@@ -75,7 +75,7 @@ func ConsultarColeccion(writer http.ResponseWriter, request *http.Request) {
 // Devuelve status 500 en caso de error y 200 en caso contrario
 //
 // Ruta: /api/comprarObjeto/{id_objeto}
-// Tipo: GET
+// Tipo: POST
 func ComprarObjeto(writer http.ResponseWriter, request *http.Request) {
 	idItem, err := strconv.Atoi(chi.URLParam(request, "id_objeto"))
 	usuario := middleware.ObtenerUsuarioCookie(request)

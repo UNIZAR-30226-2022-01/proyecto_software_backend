@@ -339,7 +339,7 @@ func ModificarBiografia(writer http.ResponseWriter, request *http.Request) {
 // Devuelve status 500 en caso de error, 200 en cualquier otro caso
 //
 // Ruta: /api/modificarAspecto/{id_aspecto}
-// Tipo: Get
+// Tipo: POST
 func ModificarAspecto(writer http.ResponseWriter, request *http.Request) {
 	usuario := middleware.ObtenerUsuarioCookie(request)
 	idAspecto, err := strconv.Atoi(chi.URLParam(request, "id_aspecto"))

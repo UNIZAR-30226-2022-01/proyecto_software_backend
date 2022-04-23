@@ -196,9 +196,9 @@ func routerAPI() http.Handler {
 		r.Get("/obtenerSolicitudesPendientes", handlers.ObtenerSolicitudesPendientes)
 		r.Get("/consultarTienda", handlers.ConsultarTienda)
 		r.Get("/consultarColeccion/{usuario}", handlers.ConsultarColeccion)
-		r.Get("/comprarObjeto/{id_objeto}", handlers.ComprarObjeto)
+		r.Post("/comprarObjeto/{id_objeto}", handlers.ComprarObjeto)
 		r.Post("/modificarBiografia", handlers.ModificarBiografia)
-		r.Get("/modificarAspecto/{id_aspecto}", handlers.ModificarAspecto)
+		r.Post("/modificarAspecto/{id_aspecto}", handlers.ModificarAspecto)
 		r.Get("/ranking", handlers.ObtenerRanking)
 	})
 
