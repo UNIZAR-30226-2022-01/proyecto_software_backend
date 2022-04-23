@@ -348,6 +348,7 @@ func RegistrarAcciones() {
 	gob.Register(AccionObtenerCarta{})
 	gob.Register(AccionRecibirRegion{})
 	gob.Register(AccionJugadorEliminado{})
+	gob.Register(AccionJugadorExpulsado{})
 	gob.Register(AccionPartidaFinalizada{})
 
 	gob.Register(struct{}{}) // Placeholder de acciones no implementadas

@@ -258,7 +258,7 @@ func Fortificar(writer http.ResponseWriter, request *http.Request) {
 // el número de dados no está entre 1 y 3 o el número de ejércitos no supera el número de dados.
 //
 // Ruta: /api/atacar/{id_territorio_origen}/{id_territorio_destino}/{num_dados}
-// Tipo: GET
+// Tipo: POST
 func Atacar(writer http.ResponseWriter, request *http.Request) {
 	origen, err1 := strconv.Atoi(chi.URLParam(request, "id_territorio_origen"))
 	destino, err2 := strconv.Atoi(chi.URLParam(request, "id_territorio_destino"))
@@ -311,7 +311,7 @@ func Atacar(writer http.ResponseWriter, request *http.Request) {
 // ni cambiar de fase o turno hasta que dicho territorio sea ocupado, de manera que solo podrá haber un territorio
 // sin ocupar a la vez.
 // Ruta: /api/ocupar/{territorio_a_ocupar}/{num_ejercitos}
-// Tipo: GET
+// Tipo: POST
 func Ocupar(writer http.ResponseWriter, request *http.Request) {
 	regionAOcupar, err1 := strconv.Atoi(chi.URLParam(request, "territorio_a_ocupar"))
 	numEjercitos, err2 := strconv.Atoi(chi.URLParam(request, "num_ejercitos"))

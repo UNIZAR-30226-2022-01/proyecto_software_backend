@@ -6,6 +6,7 @@ import (
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -54,7 +55,6 @@ func comprobarPartidaEnCurso(t *testing.T, idp int) vo.Partida {
 
 func crearPartida(cookie *http.Cookie, t *testing.T, publica bool) {
 	// O usar cookie jar de https://stackoverflow.com/questions/12756782/go-http-post-and-use-cookies
-
 	client := &http.Client{}
 
 	var campos url.Values
@@ -89,6 +89,8 @@ func crearPartida(cookie *http.Cookie, t *testing.T, publica bool) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("Obtenido código de error no 200 al crear una partida:", resp.StatusCode)
 	}
+
+	log.Println("partida creada")
 }
 
 // Idéntica a la anterior, pero con 3 jugadores

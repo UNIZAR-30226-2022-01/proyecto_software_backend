@@ -4,6 +4,7 @@ package dao
 import (
 	"database/sql"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	_ "github.com/lib/pq" // Driver que usa el paquete de sql, para postgres
 	"log"
 	"os"
@@ -41,4 +42,26 @@ func InicializarConexionDb(test bool) *sql.DB {
 	log.Println("Conectado a la DB.")
 
 	return db
+}
+
+// MonitorizarCanalBorrado pone en marcha una Goroutine de atención a eliminado de partidas y usuarios. Diseñado
+// para eliminar partidas terminadas o con usuarios inactivos y usuarios inactivos, sin necesitar la intervención de los handlers.
+func MonitorizarCanalBorrado(db *sql.DB, partidas chan int, stop chan struct{}, usuariosInactivos chan string) {
+	var idPartida int
+	var jugador string
+
+	go func(db *sql.DB, partidas chan int, stop chan struct{}, usuariosInactivos chan string) {
+		for {
+			// Si hubiera un fallo en la base de datos que impidiera el borrado de una partida o usuario,
+			// tras el reinicio del servidor se reintentaría, ya que se cargará de nuevo las partidas en la cache
+			select {
+			case idPartida = <-partidas:
+				go BorrarPartida(db, &vo.Partida{IdPartida: idPartida})
+			case jugador = <-usuariosInactivos:
+				go AbandonarPartida(db, &vo.Usuario{NombreUsuario: jugador})
+			case <-stop:
+				return
+			}
+		}
+	}(db, partidas, stop, usuariosInactivos)
 }

@@ -69,15 +69,14 @@ type EstadoPartida struct {
 	HayTerritorioDesocupado    bool      // True si hay algún territorio sin ocupar
 	UltimoDefensor             string    // Nombre del jugador defensor en el último ataque
 
-	// Flag de partida terminada, pendiente por ser tener su estado consultado por todos los jugadores previo a su eliminación
+	// Flag de partida terminada, pendiente por ser tener su estado consultado por todos los jugadores
+	// previo a su eliminación
 	Terminada                      bool
 	JugadoresRestantesPorConsultar []string
 
-	// Canales de señalización de refresco del contador de expulsión a un jugador
-	// e indicación de jugador a expulsar, tratados por una goroutine al crear el estado
-	RefrescarExpulsion chan struct{}
-	JugadorAExpulsar   chan string
-	Stop               chan struct{}
+	// Timestamp de la última acción realizada en el juego por el usuario del turno actual, para
+	// tratar la eliminación de usuarios inactivos
+	UltimaAccion time.Time
 }
 
 func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
@@ -105,41 +104,17 @@ func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
 		JugadoresActivos:               jugadoresActivos,
 		Terminada:                      false,
 		JugadoresRestantesPorConsultar: crearSliceJugadores(jugadores),
-		RefrescarExpulsion:             make(chan struct{}),
-		JugadorAExpulsar:               make(chan string),
-		Stop:                           make(chan struct{}),
+		UltimaAccion:                   time.Now(),
 	}
-
-	// Goroutine de tratamiento de expulsiones, que trata un timer de expulsión
-	// a un jugador dado. Permite refrescar el timer, indicar un nuevo jugador
-	// y parar la goroutine
-	go func(rf chan struct{}, nj chan string, stop chan struct{}) {
-		timer := time.NewTimer(time.Hour * HORAS_EXPULSION_INACTIVIDAD)
-		var jugador string
-
-		select {
-		// Expulsa al jugador
-		case <-timer.C:
-			e.expulsarJugador(jugador)
-		// Crea un nuevo timer
-		case <-rf:
-			timer = time.NewTimer(time.Hour * HORAS_EXPULSION_INACTIVIDAD)
-
-		// Cambia a un nuevo jugador a expulsar
-		case jugador = <-nj:
-
-		// Para la goroutine
-		case <-stop:
-			return
-		}
-	}(e.RefrescarExpulsion, e.JugadorAExpulsar, e.Stop)
 
 	return e
 }
 
-// Marca un jugador como expulsado (derrotado), añade una acción de expulsión y pasa al siguiente jugador
-// si es posible o para la Goroutine de expulsión si no quedan jugadores
-func (e *EstadoPartida) expulsarJugador(jugador string) {
+// ExpulsarJugador contabiliza un jugador como expulsado (derrotado), añade una acción de expulsión y
+// pasa al siguiente jugador si es posible o para la Goroutine de expulsión si no quedan jugadores
+func (e *EstadoPartida) ExpulsarJugador() {
+	jugador := e.Jugadores[e.TurnoJugador]
+
 	e.JugadoresActivos[e.obtenerTurnoJugador(jugador)] = false
 
 	e.Acciones = append(e.Acciones, NewAccionJugadorExpulsado(jugador))
@@ -156,8 +131,14 @@ func (e *EstadoPartida) expulsarJugador(jugador string) {
 	} else {
 		// Todos los jugadores han sido derrotados o expulsados, se para la Goroutine y espera
 		// a que consulten el estado
-		e.Stop <- struct{}{}
+		e.Terminada = true
+		e.JugadoresRestantesPorConsultar = nil
 	}
+}
+
+// TerminadaPorExpulsiones devuelve true si la partida ha terminado por tener todos sus jugadores expulsados, false en otro caso
+func (e *EstadoPartida) TerminadaPorExpulsiones() bool {
+	return e.Terminada && len(e.JugadoresRestantesPorConsultar) == 0
 }
 
 // HaSidoEliminado devuelve true si el usuario ha sido eliminado por otro jugador,
@@ -211,6 +192,9 @@ func (e *EstadoPartida) SiguienteJugador() {
 		e.Acciones = append(e.Acciones, NewAccionCambioFase(Inicio, e.Jugadores[e.TurnoJugador]))
 		e.Acciones = append(e.Acciones, NewAccionInicioTurno(e.Jugadores[e.TurnoJugador], 0, 0, 0))
 	}
+
+	// Refresca el timestamp
+	e.UltimaAccion = time.Now()
 }
 
 // AsignarTropasRefuerzo otorga un número de ejércitos al jugador que comienza un turno, dependiendo del número de territorios
@@ -417,6 +401,9 @@ func (e *EstadoPartida) FinDeFase(jugador string) error {
 		// Pasamos el turno al siguiente jugador
 		e.SiguienteJugador()
 	}
+
+	// Refresca el timestamp
+	e.UltimaAccion = time.Now()
 
 	return nil
 }

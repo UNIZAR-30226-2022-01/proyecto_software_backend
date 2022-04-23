@@ -419,10 +419,7 @@ func ObtenerEstadoPartida(writer http.ResponseWriter, request *http.Request) {
 	// Si ha terminado y no queda ningún usuario más por consultar su estado, se elimina
 	if partida.Estado.Terminada && (len(partida.Estado.JugadoresRestantesPorConsultar) == 0) {
 		// De la DB
-		err := dao.BorrarPartida(globales.Db, &vo.Partida{IdPartida: idPartida})
-		if err != nil {
-			log.Println("Error al borrar una partida de la base de datos, borrando del cache:", err)
-		}
+		globales.CanalEliminacionPartidasDB <- idPartida
 
 		// De la cache
 		globales.CachePartidas.EliminarPartida(vo.Partida{IdPartida: idPartida})
@@ -519,10 +516,7 @@ func ObtenerEstadoPartidaCompleto(writer http.ResponseWriter, request *http.Requ
 	// Si ha terminado y no queda ningún usuario más por consultar su estado, se elimina
 	if partida.Estado.Terminada && (len(partida.Estado.JugadoresRestantesPorConsultar) == 0) {
 		// De la DB
-		err := dao.BorrarPartida(globales.Db, &vo.Partida{IdPartida: idPartida})
-		if err != nil {
-			log.Println("Error al borrar una partida de la base de datos, borrando del cache:", err)
-		}
+		globales.CanalEliminacionPartidasDB <- idPartida
 
 		// De la cache
 		globales.CachePartidas.EliminarPartida(vo.Partida{IdPartida: idPartida})
