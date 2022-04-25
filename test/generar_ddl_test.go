@@ -27,6 +27,29 @@ func TestGenerarPartidaDebug(t *testing.T) {
 	// Cada uno asigna dichas 20 tropas a uno de sus territorios
 	partidaCache := comprobarPartidaEnCurso(t, 1)
 
+	// Da cartas al jugador1
+	partidaCache.Estado.EstadosJugadores["jugador1"].Cartas = []logica_juego.Carta{
+		// Carta comodín
+		{IdCarta: 1,
+			Tipo:      logica_juego.Infanteria,
+			Region:    logica_juego.Alaska,
+			EsComodin: true},
+		// Tres cartas intercambiables
+		{IdCarta: 4,
+			Tipo:      logica_juego.Artilleria,
+			Region:    logica_juego.China,
+			EsComodin: false},
+		{IdCarta: 5,
+			Tipo:      logica_juego.Artilleria,
+			Region:    logica_juego.Eastern_australia,
+			EsComodin: false},
+		{IdCarta: 6,
+			Tipo:      logica_juego.Artilleria,
+			Region:    logica_juego.Western_europe,
+			EsComodin: false},
+	}
+
+	// Crea una acción de cada tipo y sobreescribe las acciones de la partida con esto
 	acciones := []interface{}{
 		logica_juego.NewAccionRecibirRegion(1, 15, 3, "jugador1"),
 		logica_juego.NewAccionCambioFase(1, "jugador1"),
@@ -37,7 +60,7 @@ func TestGenerarPartidaDebug(t *testing.T) {
 		logica_juego.NewAccionOcupar(logica_juego.Great_britain, logica_juego.Northern_europe, 2, 7, "jugador1", "jugador2"),
 		logica_juego.NewAccionFortificar(logica_juego.China, logica_juego.Alaska, 9, 12, "jugador4"),
 		logica_juego.NewAccionObtenerCarta(logica_juego.Carta{IdCarta: 2, Tipo: logica_juego.Artilleria, Region: logica_juego.Northern_europe, EsComodin: false}, "jugador2"),
-		logica_juego.NewAccionJugadorEliminado("jugador3", "jugador5", 4),
+		logica_juego.NewAccionJugadorEliminado("jugador3", "jugador1", 4), // Para provocar una consulta de cartas
 		logica_juego.NewAccionJugadorExpulsado("jugador5"),
 		logica_juego.NewAccionPartidaFinalizada("jugador1"),
 	}
