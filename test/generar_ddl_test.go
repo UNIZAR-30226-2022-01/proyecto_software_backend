@@ -8,6 +8,48 @@ import (
 	"time"
 )
 
+func TestGenerarPartidaDebug(t *testing.T) {
+	//t.Skip("Se ha saltado la generación de ficheros DDL")
+	purgarDB()
+	// Creamos 6 usuarios, de nombre "jugadorx" y misma contraseña
+	jugadores := []string{"jugador1", "jugador2", "jugador3", "jugador4", "jugador5", "jugador6"}
+	var cookies []*http.Cookie
+	for _, j := range jugadores {
+		cookies = append(cookies, crearUsuario(j, t))
+	}
+	crearPartida(cookies[0], t, true)
+	// Unimos todos los jugadores a la partida
+	for _, c := range cookies[1:] {
+		unirseAPartida(c, t, 1)
+	}
+
+	// Comienza la partida, cada uno con 20 tropas
+	// Cada uno asigna dichas 20 tropas a uno de sus territorios
+	partidaCache := comprobarPartidaEnCurso(t, 1)
+
+	acciones := []interface{}{
+		logica_juego.NewAccionRecibirRegion(1, 15, 3, "jugador1"),
+		logica_juego.NewAccionCambioFase(1, "jugador1"),
+		logica_juego.NewAccionInicioTurno("jugador1", 3, 5, 2),
+		logica_juego.NewAccionCambioCartas(1, true, []logica_juego.NumRegion{logica_juego.Afghanistan, logica_juego.Alberta}, false),
+		logica_juego.NewAccionReforzar("jugador1", logica_juego.Central_america, 3),
+		logica_juego.NewAccionAtaque(logica_juego.Congo, logica_juego.South_africa, 3, 4, 3, "jugador1", "usuario2"),
+		logica_juego.NewAccionOcupar(logica_juego.Great_britain, logica_juego.Northern_europe, 2, 7, "jugador1", "jugador2"),
+		logica_juego.NewAccionFortificar(logica_juego.China, logica_juego.Alaska, 9, 12, "jugador4"),
+		logica_juego.NewAccionObtenerCarta(logica_juego.Carta{IdCarta: 2, Tipo: logica_juego.Artilleria, Region: logica_juego.Northern_europe, EsComodin: false}, "jugador2"),
+		logica_juego.NewAccionJugadorEliminado("jugador3", "jugador5", 4),
+		logica_juego.NewAccionJugadorExpulsado("jugador5"),
+		logica_juego.NewAccionPartidaFinalizada("jugador1"),
+	}
+
+	partidaCache.Estado.Acciones = acciones
+	globales.CachePartidas.AlmacenarPartida(partidaCache)
+
+	globales.CachePartidas.CanalSerializacion <- partidaCache
+
+	time.Sleep(3 * time.Second)
+}
+
 func TestGenerarDDL(t *testing.T) {
 	// Comentar la línea 12 para modificar la DB de forma que contenga los datos necesarios para la creación de los ddl
 	t.Skip("Se ha saltado la generación de ficheros DDL")

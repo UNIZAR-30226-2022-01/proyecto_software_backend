@@ -10,6 +10,7 @@ services:
 #        - ../../modelo/ddl_ataque.sql:/docker-entrypoint-initdb.d/inserts.sql
 #        - ../../modelo/ddl_refuerzo.sql:/docker-entrypoint-initdb.d/inserts.sql
 #        - ../../modelo/ddl_fortificacion.sql:/docker-entrypoint-initdb.d/inserts.sql
+#        - ../../modelo/ddl_debug.sql:/docker-entrypoint-initdb.d/inserts.sql
     # Fichero con variables de entorno (usuario/pw)
     env_file:
         - postgres.env
