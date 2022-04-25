@@ -555,6 +555,39 @@ func JugandoEnPartida(writer http.ResponseWriter, request *http.Request) {
 	escribirHeaderExito(writer)
 }
 
+// ObtenerJugadoresPartida devuelve una lista con los nombres de los jugadores de la partida en la que
+// se está participando.
+// Si no se está participando en una partida o la partida no está en curso, se devolverá un código 500
+// junto al error en el cuerpo. En otro caso, se devolverá un código 200 y una lista de nombres.
+//
+// El formato es una lista de nombres, codificada en JSON de la siguiente forma:
+// [string, string, ...]
+//
+// Ruta: /api/obtenerJugadoresPartida
+// Tipo: GET
+func ObtenerJugadoresPartida(writer http.ResponseWriter, request *http.Request) {
+	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
+
+	idPartida, err := dao.ObtenerIDPartida(globales.Db, nombreUsuario)
+	if err != nil {
+		devolverError(writer, errors.New("No estás participando en ninguna partida"))
+		return
+	}
+
+	partida, err := dao.ObtenerPartida(globales.Db, idPartida)
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	} else if !partida.EnCurso {
+		devolverError(writer, errors.New("La partida no está en curso"))
+		return
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(writer).Encode(partida.Estado.Jugadores)
+	escribirHeaderExito(writer)
+}
+
 // Trata el abandono de una partida por parte de un jugador dado, dejando de participar en ella,
 // otorgando los puntos según haya ganado o perdido, contabilizando que el usuario ha participado en una
 // partida y que ya ha consultado el estado final en el estado de la partida
