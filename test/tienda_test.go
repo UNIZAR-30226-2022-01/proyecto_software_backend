@@ -137,7 +137,7 @@ func TestTienda(t *testing.T) {
 func modificarAspecto(cookie *http.Cookie, idAspecto int, t *testing.T) error {
 	client := &http.Client{}
 
-	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/modificarAspecto/"+strconv.Itoa(idAspecto), nil)
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/modificarAspecto/"+strconv.Itoa(idAspecto), nil)
 	if err != nil {
 		t.Fatal("Error al construir request:", err)
 	}
@@ -193,7 +193,7 @@ func consultarTienda(cookie *http.Cookie, t *testing.T) []vo.ItemTienda {
 
 func comprarObjeto(cookie *http.Cookie, idObjeto int, t *testing.T) error {
 	cliente := &http.Client{}
-	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/comprarObjeto/"+strconv.Itoa(idObjeto), nil)
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/comprarObjeto/"+strconv.Itoa(idObjeto), nil)
 	if err != nil {
 		t.Fatal("Error al construir request:", err)
 	}

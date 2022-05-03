@@ -137,6 +137,26 @@ func rechazarSolicitudDeAmistad(cookie *http.Cookie, t *testing.T, nombre string
 	}
 }
 
+func eliminarAmigo(cookie *http.Cookie, amigo string, t *testing.T) {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/eliminarAmigo/"+amigo, nil) // ya no MAPS D:
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		t.Fatal("Error en POST de rechazar amistad:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al rechazar amistad:", resp.StatusCode)
+	}
+}
+
 func listarAmigos(cookie *http.Cookie, t *testing.T) []string {
 	cliente := &http.Client{}
 	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/listarAmigos", nil)

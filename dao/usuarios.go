@@ -123,6 +123,24 @@ func RechazarSolicitudAmistad(db *sql.DB, emisor *vo.Usuario, receptor *vo.Usuar
 	return err
 }
 
+// EliminarAmigo elimina una relación de amistad entre los usuarios usuario1 y usuario2
+func EliminarAmigo(db *sql.DB, usuario1 *vo.Usuario, usuario2 *vo.Usuario) error {
+	res, err := db.Exec(`DELETE FROM "backend"."EsAmigo" WHERE "nombreUsuario1" = $1 AND "nombreUsuario2" = $2`,
+		usuario1.NombreUsuario, usuario2.NombreUsuario)
+	filas, _ := res.RowsAffected()
+	if err != nil || filas == 0 {
+		// Intentamos borrar otra vez, podrían estar en el orden inverso
+		res, err = db.Exec(`DELETE FROM "backend"."EsAmigo" WHERE "nombreUsuario1" = $1 AND "nombreUsuario2" = $2`,
+			usuario2.NombreUsuario, usuario1.NombreUsuario)
+		filas, _ = res.RowsAffected()
+		if filas == 0 {
+			return errors.New("No existe la relación de amistad entre los usuarios")
+		}
+	}
+
+	return err
+}
+
 // ConsultarSolicitudesPendientes devuelve una lista en la que se indican los nombres de usuario
 // que han enviado una solicitud de amistad a "usuario", estando dicha solicitud pendiente.
 func ConsultarSolicitudesPendientes(db *sql.DB, usuario *vo.Usuario) (usuarios []string, err error) {

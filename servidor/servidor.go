@@ -201,6 +201,7 @@ func routerAPI() http.Handler {
 		r.Post("/modificarBiografia", handlers.ModificarBiografia)
 		r.Post("/modificarAspecto/{id_aspecto}", handlers.ModificarAspecto)
 		r.Get("/ranking", handlers.ObtenerRanking)
+		r.Get("/eliminarAmigo/{nombre}", handlers.EliminarAmigo)
 	})
 
 	return r

@@ -83,3 +83,9 @@ INSERT INTO backend."ItemTienda"
 (id, nombre, descripcion, precio, tipo)
 VALUES(2, 'Avatar por defecto.', 'Avatar por defecto, aburrido.', 0, 'avatar'::backend."item");
 
+INSERT INTO backend."ItemTienda" (id, nombre, descripcion, precio, tipo) VALUES
+     (4, 'Fichas rojas', 'Fichas de color rojo', 10, 'ficha'),
+     (5, 'Fichas azules', 'Fichas de color azul', 10, 'ficha'),
+     (6, 'Fichas verdes', 'Fichas de color rojo', 10, 'ficha'),
+     (7, 'Dados plateados', 'Dados de color plateado', 10, 'dado'),
+     (8, 'Dados dorados', 'Dados de color dorado', 10, 'dado');

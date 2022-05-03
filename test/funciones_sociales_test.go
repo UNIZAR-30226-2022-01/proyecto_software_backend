@@ -40,25 +40,27 @@ func TestFuncionesSociales(t *testing.T) {
 		}
 	}
 
-	// Rechazamos todas las solicitudes
-	for _, a := range amigos {
+	// Rechazamos todas las solicitudes menos la última
+	for _, a := range amigos[:len(amigos)-1] {
 		rechazarSolicitudDeAmistad(cookie, t, a)
 	}
 
 	solicitudesPendientes = consultarSolicitudesPendientes(cookie, t)
-	if len(solicitudesPendientes) != 0 {
-		t.Fatal("Se han recuperado solicitudes pendientes cuando no debería haberlas")
+	if len(solicitudesPendientes) != 1 {
+		t.Fatal("Hay más de una solicitud pendiente")
 	}
 
 	// Solicita amistad al resto de usuarios
-	for _, a := range amigos {
+	for _, a := range amigos[:len(amigos)-1] {
 		solicitarAmistad(cookie, t, a)
 	}
 
 	// Cada uno acepta la solicitud
-	for _, c := range cookiesAmigos {
+	for _, c := range cookiesAmigos[:len(cookiesAmigos)-1] {
 		aceptarSolicitudDeAmistad(c, t, "usuario")
 	}
+
+	aceptarSolicitudDeAmistad(cookie, t, "Amigo5")
 
 	amigosRegistrados := listarAmigos(cookie, t)
 	if len(amigos) != len(amigosRegistrados) {
@@ -137,4 +139,23 @@ func TestFuncionesSociales(t *testing.T) {
 	if noAmigo.EsAmigo {
 		t.Fatal("NoAmigo1 se ha devuelto como amigo al consultarlo:", noAmigo)
 	}
+
+	// Borrar amistades
+	t.Log("Intentamos borrar un amigo")
+	eliminarAmigo(cookie, "Amigo5", t)
+
+	listaAmigos := listarAmigos(cookie, t)
+	if len(listaAmigos) != 4 {
+		t.Fatal("No se ha borrado el amigo correctamente")
+	}
+	t.Log("OK, se ha borrado el amigo")
+
+	t.Log("Intentamos borrar a otro amigo")
+	eliminarAmigo(cookie, "Amigo1", t)
+
+	listaAmigos = listarAmigos(cookie, t)
+	if len(listaAmigos) != 3 {
+		t.Fatal("No se ha borrado el amigo correctamente")
+	}
+	t.Log("OK, se ha borrado el amigo")
 }

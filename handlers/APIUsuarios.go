@@ -79,6 +79,27 @@ func RechazarSolicitudAmistad(writer http.ResponseWriter, request *http.Request)
 	escribirHeaderExito(writer)
 }
 
+// EliminarAmigo elimina una relación de amistad entre dos usuarios, el nombre del usuario a borrar de tu lista
+// se especificará como parte de la URL. Devolverá status 500 en caso de error, 200 en cualquier otro caso.
+//
+// Ruta: /api/eliminarAmigo/{nombre}
+// Tipo: GET
+func EliminarAmigo(writer http.ResponseWriter, request *http.Request) {
+	nombreAmigo := chi.URLParam(request, "nombre")
+	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
+
+	usuario1 := vo.Usuario{NombreUsuario: nombreUsuario}
+	usuario2 := vo.Usuario{NombreUsuario: nombreAmigo}
+
+	err := dao.EliminarAmigo(globales.Db, &usuario1, &usuario2)
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	escribirHeaderExito(writer)
+}
+
 // ListarAmigos devuelve una lista con los nombres de los amigos del usuario que genera la solicitud
 // Si ocurre algún error durante el procesamiento, enviará código de error 500
 // En cualquier otro caso, enviará códgo 200
