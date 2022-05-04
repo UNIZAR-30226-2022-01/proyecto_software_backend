@@ -6,6 +6,7 @@ import (
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/servidor"
+	"github.com/joho/godotenv"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -55,6 +56,15 @@ func init() {
 	os.Setenv("PUERTO_WEB", "8080")
 	os.Setenv("USUARIO_DB", "postgres")
 	os.Setenv("PASSWORD_DB", "postgres")
+
+	// Datos privados, a rellenar manualmente
+	/*os.Setenv("DIRECCION_ENVIO_EMAILS", "noreply@")
+	os.Setenv("HOST_SMTP", "...")
+	os.Setenv("PUERTO_SMTP", "...")
+	os.Setenv("USUARIO_SMTP", "...")
+	os.Setenv("PASS_SMTP", "...")*/
+	godotenv.Load("../mail.env")
+	godotenv.Load("../dns.env")
 
 	go servidor.IniciarServidor(true)
 	time.Sleep(5 * time.Second)

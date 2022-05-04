@@ -50,6 +50,43 @@ func crearUsuario(nombre string, t *testing.T) (cookie *http.Cookie) {
 	return cookie
 }
 
+func crearUsuarioConEmail(nombre string, email string, t *testing.T) (cookie *http.Cookie) {
+	cookie = nil
+
+	campos := url.Values{
+		"nombre":   {nombre},
+		"email":    {email},
+		"password": {nombre},
+	}
+	resp, err := http.PostForm("http://localhost:"+os.Getenv(globales.PUERTO_API)+"/registro", campos)
+	if err != nil {
+		t.Fatal("No se ha podido realizar request POST:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al registrar un usuario:", resp.StatusCode)
+	}
+
+	// De ObtenerUsuarioCookie
+	for _, c := range resp.Cookies() {
+		if c.Name == middleware.NOMBRE_COOKIE_USUARIO { // Es una cookie de usuario
+			// Obtener el usuario del valor de la cookie
+			nombreCookie := c.Value[:strings.IndexRune(c.Value, middleware.SEPARADOR_VALOR_COOKIE_USUARIO)]
+			if nombre != nombreCookie {
+				t.Fatal("Obtenido nombre de cookie diferente del esperado:", nombreCookie, "esperaba:", nombre)
+			}
+			cookie = c
+			break
+		}
+	}
+
+	if cookie == nil {
+		t.Fatal("No se ha obtenido una cookie en la respuesta de crear usuario para", nombre)
+	}
+
+	return cookie
+}
+
 func solicitarAmistad(cookie *http.Cookie, t *testing.T, nombre string) {
 	t.Log("Solicitando amistad de userPrincipal a", nombre)
 

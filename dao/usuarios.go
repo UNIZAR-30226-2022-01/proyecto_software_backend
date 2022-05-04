@@ -7,7 +7,10 @@ import (
 	"errors"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
+	"math/rand"
 	"net/http"
+	"sync"
+	"time"
 )
 
 // ConsultarCookie devuelve una cookie del usuario dado, buscando por su nombre. En caso de fallo o no
@@ -396,4 +399,77 @@ func almacenarNotificacionesConEstado(db *sql.DB, usuario *vo.Usuario, notificac
 	_, err = db.Exec(`UPDATE "backend"."Usuario" SET "notificacionesPendientesConEstado" = $1 WHERE "backend"."Usuario"."nombreUsuario" = $2`, b.Bytes(), usuario.NombreUsuario)
 
 	return err
+}
+
+// ObtenerNombreExpiracionTokenResetPassword devuelve el nombre del usuario que tenga el token indicado junto a la expiración del token,
+// o un error si el usuario no existe u ocurre algún otro error
+func ObtenerNombreExpiracionTokenResetPassword(db *sql.DB, token string) (err error, usuario string, expiracion time.Time) {
+	// Puede no tener ningún token, y por tanto ser un NULL
+	var bufferNombre sql.NullString
+	var bufferExpiracion sql.NullTime
+
+	err = db.QueryRow(`SELECT "nombreUsuario", "ultimaPeticionResetPassword" FROM backend."Usuario" WHERE "tokenResetPassword"=$1`, token).Scan(&bufferNombre, &bufferExpiracion)
+	if err != nil {
+		return err, usuario, expiracion
+	}
+
+	if bufferNombre.Valid && bufferExpiracion.Valid { // No eran NULL
+		usuario = bufferNombre.String
+		expiracion = bufferExpiracion.Time
+	} else {
+		err = errors.New("")
+	}
+
+	return err, usuario, expiracion
+}
+
+// ObtenerToken devuelve el token de reset de contraseña dado un usuario. A utilizar solo para debugging y tests de integración.
+func ObtenerToken(db *sql.DB, usuario string) string {
+	var bufferToken sql.NullString
+	_ = db.QueryRow(`SELECT "tokenResetPassword" FROM backend."Usuario" WHERE "nombreUsuario"=$1`, usuario).Scan(&bufferToken)
+
+	return bufferToken.String
+}
+
+// CrearTokenResetPassword almacena y devuelve un token de reset de contraseña para el usuario indicado,
+// o devuelve un error si el usuario no existe u ocurre algún otro error
+func CrearTokenResetPassword(db *sql.DB, usuario string) (err error, token string) {
+	token = crearTokenAleatorio()
+	fechaExpiracion := time.Now().Add(2 * 24 * time.Hour) // Tiempo de expiración de 2 dias
+
+	_, err = db.Exec(`UPDATE "backend"."Usuario" SET "tokenResetPassword" = $1, "ultimaPeticionResetPassword" = $2 WHERE "backend"."Usuario"."nombreUsuario" = $3`,
+		token, fechaExpiracion, usuario)
+
+	return err, token
+}
+
+// ObtenerEmailUsuario devuelve el email de un usuario dado, o devuelve un error si el usuario no existe u ocurre algún otro error
+func ObtenerEmailUsuario(db *sql.DB, usuario string) (err error, email string) {
+	err = db.QueryRow(`SELECT "email" FROM backend."Usuario" WHERE "nombreUsuario"=$1`, usuario).Scan(&email)
+
+	return err, email
+}
+
+// ResetearContraseña cambia el hash de contraseña del usuario indicado por el dado. Devuelve error si no existe u ocurre algún otro error
+func ResetearContraseña(db *sql.DB, usuario string, hashContraseña string) (err error) {
+	_, err = db.Exec(`UPDATE "backend"."Usuario" SET "passwordHash" = $1 WHERE "backend"."Usuario"."nombreUsuario" = $2`, hashContraseña, usuario)
+
+	return err
+}
+
+var onlyOnce sync.Once
+
+// Adaptado de https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
+func crearTokenAleatorio() string {
+	onlyOnce.Do(func() {
+		rand.Seed(time.Now().UnixNano())
+	})
+
+	var caracteresTokenAleatorio = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789")
+
+	b := make([]rune, LONGITUD_TOKEN_RESET_PASSWORD)
+	for i := range b {
+		b[i] = caracteresTokenAleatorio[rand.Intn(len(caracteresTokenAleatorio))]
+	}
+	return string(b)
 }

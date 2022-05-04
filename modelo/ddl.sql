@@ -37,6 +37,8 @@ CREATE TABLE backend."Usuario" (
 	"ID_dado" int4 NOT NULL,
 	"ID_ficha" int4 NOT NULL,
 	"notificacionesPendientesConEstado" bytea NULL, -- Serializado desde golang
+	"tokenResetPassword" varchar NULL,
+	"ultimaPeticionResetPassword" date NULL,
 	CONSTRAINT "Usuario_email_key" UNIQUE (email),
 	CONSTRAINT "Usuario_pkey" PRIMARY KEY ("nombreUsuario"),
 	CONSTRAINT usuario_un UNIQUE ("nombreUsuario"),

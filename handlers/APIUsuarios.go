@@ -9,8 +9,12 @@ import (
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"github.com/go-chi/chi/v5"
+	"gopkg.in/gomail.v2"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
+	"time"
 )
 
 // EnviarSolicitudAmistad envía una solicitud de amistad entre el usuario que genera
@@ -330,6 +334,74 @@ func ObtenerNotificaciones(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(writer).Encode(notificaciones)
 	escribirHeaderExito(writer)
+}
+
+// ResetearContraseña resetea la contraseña del usuario que tiene el token indicado.
+// Devuelve status 500 en caso de error y status 200 en cualquier otro caso
+//
+// Entrada: formulario con campos "password" y "token"
+//
+// Ruta: /resetearPassword
+// Tipo: POST
+func ResetearContraseña(writer http.ResponseWriter, request *http.Request) {
+	contraseña := request.FormValue("password")
+	token := request.FormValue("token")
+
+	hash, err := hashPassword(contraseña)
+
+	err, usuario, expiracion := dao.ObtenerNombreExpiracionTokenResetPassword(globales.Db, token)
+	if err != nil {
+		devolverError(writer, errors.New("El token que has indicado no existe, ha expirado, o ha ocurrido un error inesperado. Por favor, inténtalo de nuevo más tarde."))
+		return
+	}
+
+	err = dao.ResetearContraseña(globales.Db, usuario, hash)
+	if err != nil || expiracion.Before(time.Now()) {
+		devolverError(writer, errors.New("El token que has indicado no existe, ha expirado, o ha ocurrido un error inesperado. Por favor, inténtalo de nuevo más tarde."))
+		return
+	}
+
+	escribirHeaderExito(writer)
+}
+
+// ObtenerTokenResetPassword envía por email al usuario indicado un link de reset de contraseña, si existe.
+// Devuelve status 500 en caso de error y status 200 en cualquier otro caso
+//
+// Entrada: formulario con campo "usuario"
+//
+// Ruta: /obtenerTokenResetPassword
+// Tipo: POST
+func ObtenerTokenResetPassword(writer http.ResponseWriter, request *http.Request) {
+	usuario := request.FormValue("usuario")
+
+	err, token := dao.CrearTokenResetPassword(globales.Db, usuario)
+	if err != nil {
+		devolverError(writer, errors.New("El nombre de usuario que has indicado no existe, o ha ocurrido un error inesperado. Por favor, inténtalo de nuevo más tarde."))
+		return
+	}
+
+	err, email := dao.ObtenerEmailUsuario(globales.Db, usuario)
+	if err != nil {
+		devolverError(writer, errors.New("El nombre de usuario que has indicado no existe, o ha ocurrido un error inesperado. Por favor, inténtalo de nuevo más tarde."))
+	} else {
+		m := gomail.NewMessage()
+		m.SetHeader("From", os.Getenv(globales.DIRECCION_ENVIO_EMAILS))
+		m.SetHeader("To", email)
+		m.SetHeader("Subject", "¡"+usuario+", resetea tu contraseña aquí!")
+		//m.SetBody("text/html", "<a>"+os.Getenv(globales.NOMBRE_DNS_API)+"/resetearPassword/</a>"+token)
+		m.SetBody("text/html", "Has recibido este email porque has solicitado cambiar tu contraseña."+
+			"La próxima vez que inicies sesión, indique que desea resetear la contraseña e introduzca el siguiente token en el campo en el que se lo indique: "+token)
+
+		puerto, _ := strconv.Atoi(os.Getenv(globales.PUERTO_SMTP))
+		d := gomail.NewDialer(os.Getenv(globales.HOST_SMTP), puerto, os.Getenv(globales.USUARIO_SMTP), os.Getenv(globales.PASS_SMTP))
+
+		// Como no se puede verificar que el destino no existe, los errores al enviar correos se ignoran silenciosamente
+		if err := d.DialAndSend(m); err != nil {
+			log.Println("Error al enviar email de reset de contraseña a", usuario, ":", err)
+		}
+
+		escribirHeaderExito(writer)
+	}
 }
 
 // ModificarBiografia permite al usuario modificar su biografía, especificando una nueva en el campo "biografia" del

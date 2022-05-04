@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+const (
+	LONGITUD_TOKEN_RESET_PASSWORD = 40
+)
+
 // InicializarConexionDb devuelve el objeto de base de datos, en el cual realiza la conexión a la misma
 func InicializarConexionDb(test bool) *sql.DB {
 	//db, err := sql.Open("postgres", "postgres://{user}:{password}@{hostname}:{port}/{database-name}?sslmode=disable")

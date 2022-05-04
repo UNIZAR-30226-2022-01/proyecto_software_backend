@@ -160,6 +160,8 @@ func routerAPI() http.Handler {
 	// Formularios
 	r.Post("/registro", handlers.Registro)
 	r.Post("/login", handlers.Login)
+	r.Post("/resetearPassword/{token}", handlers.ResetearContraseña)
+	r.Post("/obtenerTokenResetPassword", handlers.ObtenerTokenResetPassword)
 
 	// Rutas REST
 	r.Route("/api", func(r chi.Router) {

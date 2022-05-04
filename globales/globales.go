@@ -20,6 +20,14 @@ const (
 	PASSWORD_DB                    = "PASSWORD_DB"
 	CARPETA_FRONTEND               = "web"
 	INTERVALO_HORAS_LIMPIEZA_CACHE = 6
+	DIRECCION_ENVIO_EMAILS         = "DIRECCION_ENVIO_EMAILS"
+	HOST_SMTP                      = "HOST_SMTP"
+	PUERTO_SMTP                    = "PUERTO_SMTP"
+	USUARIO_SMTP                   = "USUARIO_SMTP"
+	PASS_SMTP                      = "PASS_SMTP"
+	NOMBRE_DNS_REACT               = "NOMBRE_DNS_REACT"
+	NOMBRE_DNS_ANGULAR             = "NOMBRE_DNS_ANGULAR"
+	NOMBRE_DNS_API                 = "NOMBRE_DNS_API"
 )
 
 var Db *sql.DB // Base de datos thread safe, a compartir entre los módulos
