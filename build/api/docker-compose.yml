@@ -29,7 +29,6 @@ services:
      - postgres
     env_file:
      - servidor.env
-     - mail.env
 # Declaraciones de volúmenes a usar
 volumes:
     volumen-postgres:
