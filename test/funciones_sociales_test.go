@@ -100,6 +100,13 @@ func TestFuncionesSociales(t *testing.T) {
 		t.Fatal("No se han recuperado todos los usuarios con nombre empezado por Amigo")
 	}
 
+	// Probamos que se recuperen los mismos amigos aunque no coincidan mayúsculas y minúsculas
+	resultadoBusqueda = buscarUsuariosSimilares(cookie, "aMIgo", t)
+	log.Println("amigos:", resultadoBusqueda)
+	if len(amigos) != len(resultadoBusqueda) {
+		t.Fatal("No se han recuperado todos los usuarios con nombre empezado por Amigo al variar mayúsculas y minúsuclas")
+	}
+
 	for i := range amigos {
 		if amigos[i] != resultadoBusqueda[i].Nombre {
 			t.Fatal("No se han recuperado todos los usuarios con nombre empezado por Amigo")

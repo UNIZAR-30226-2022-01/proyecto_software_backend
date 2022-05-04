@@ -215,7 +215,7 @@ func ObtenerAmigos(db *sql.DB, usuario *vo.Usuario) (amigos []vo.Usuario, err er
 func ObtenerUsuariosSimilares(db *sql.DB, nombre string) (usuarios []string, err error) {
 	patron := nombre + "%"
 	rows, err := db.Query(`SELECT backend."Usuario"."nombreUsuario" FROM backend."Usuario" 
-		WHERE "nombreUsuario" LIKE $1 ORDER BY backend."Usuario"."nombreUsuario" ASC `, patron)
+		WHERE "nombreUsuario" ILIKE $1 ORDER BY backend."Usuario"."nombreUsuario" ASC `, patron)
 	if err != nil {
 		return usuarios, err
 	}

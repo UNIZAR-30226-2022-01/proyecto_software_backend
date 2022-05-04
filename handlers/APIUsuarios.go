@@ -87,7 +87,6 @@ func RechazarSolicitudAmistad(writer http.ResponseWriter, request *http.Request)
 func EliminarAmigo(writer http.ResponseWriter, request *http.Request) {
 	nombreAmigo := chi.URLParam(request, "nombre")
 	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
-
 	usuario1 := vo.Usuario{NombreUsuario: nombreUsuario}
 	usuario2 := vo.Usuario{NombreUsuario: nombreAmigo}
 
