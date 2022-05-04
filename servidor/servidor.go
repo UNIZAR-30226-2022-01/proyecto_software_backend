@@ -57,7 +57,7 @@ func IniciarServidor(test bool) {
 		globales.CachePartidas = globales.IniciarAlmacenPartidas()
 		globales.IniciarCanalesEliminacionPartidasDB()
 		dao.MonitorizarCanalBorrado(globales.Db, globales.CanalEliminacionPartidasDB, globales.CanalParadaBorradoPartidasDB, globales.CanalExpulsionUsuariosDB)
-
+		dao.MonitorizarCanalEnvioAlertas(globales.Db, globales.CanalParadaEnvioAlertas, globales.CanalEnvioAlertas)
 		// Registra los tipos a decodificar por gob a partir de interface{}
 		logica_juego.RegistrarAcciones()
 		logica_juego.RegistrarNotificaciones()
@@ -99,6 +99,7 @@ func IniciarServidor(test bool) {
 	if os.Args[1] == "-api" {
 		globales.Db.Close()
 		globales.CanalParadaBorradoPartidasDB <- struct{}{}
+		globales.CanalParadaEnvioAlertas <- struct{}{}
 	}
 
 	os.Exit(0)

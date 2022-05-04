@@ -12,22 +12,23 @@ import (
 )
 
 const (
-	DIRECCION_DB                   = "DIRECCION_DB"
-	DIRECCION_DB_TESTS             = "DIRECCION_DB_TESTS"
-	PUERTO_WEB                     = "PUERTO_WEB"
-	PUERTO_API                     = "PUERTO_API"
-	USUARIO_DB                     = "USUARIO_DB"
-	PASSWORD_DB                    = "PASSWORD_DB"
-	CARPETA_FRONTEND               = "web"
-	INTERVALO_HORAS_LIMPIEZA_CACHE = 6
-	DIRECCION_ENVIO_EMAILS         = "DIRECCION_ENVIO_EMAILS"
-	HOST_SMTP                      = "HOST_SMTP"
-	PUERTO_SMTP                    = "PUERTO_SMTP"
-	USUARIO_SMTP                   = "USUARIO_SMTP"
-	PASS_SMTP                      = "PASS_SMTP"
-	NOMBRE_DNS_REACT               = "NOMBRE_DNS_REACT"
-	NOMBRE_DNS_ANGULAR             = "NOMBRE_DNS_ANGULAR"
-	NOMBRE_DNS_API                 = "NOMBRE_DNS_API"
+	DIRECCION_DB                        = "DIRECCION_DB"
+	DIRECCION_DB_TESTS                  = "DIRECCION_DB_TESTS"
+	PUERTO_WEB                          = "PUERTO_WEB"
+	PUERTO_API                          = "PUERTO_API"
+	USUARIO_DB                          = "USUARIO_DB"
+	PASSWORD_DB                         = "PASSWORD_DB"
+	CARPETA_FRONTEND                    = "web"
+	INTERVALO_HORAS_LIMPIEZA_CACHE      = 6
+	INTERVALO_HORAS_ALERTAS_INACTIVIDAD = 1
+	DIRECCION_ENVIO_EMAILS              = "DIRECCION_ENVIO_EMAILS"
+	HOST_SMTP                           = "HOST_SMTP"
+	PUERTO_SMTP                         = "PUERTO_SMTP"
+	USUARIO_SMTP                        = "USUARIO_SMTP"
+	PASS_SMTP                           = "PASS_SMTP"
+	NOMBRE_DNS_REACT                    = "NOMBRE_DNS_REACT"
+	NOMBRE_DNS_ANGULAR                  = "NOMBRE_DNS_ANGULAR"
+	NOMBRE_DNS_API                      = "NOMBRE_DNS_API"
 )
 
 var Db *sql.DB // Base de datos thread safe, a compartir entre los módulos
@@ -37,6 +38,8 @@ var CachePartidas *AlmacenPartidas
 var CanalEliminacionPartidasDB chan int        // Canal de eliminación de partidas con usuarios inactivos de la base de datos
 var CanalExpulsionUsuariosDB chan string       // Canal de desvinculación de usuarios inactivos de sus partidas
 var CanalParadaBorradoPartidasDB chan struct{} // Canal de parada de la Goroutine de atención a borrado de partidas y usuarios
+var CanalParadaEnvioAlertas chan struct{}
+var CanalEnvioAlertas chan string
 
 type AlmacenPartidas struct {
 	Mtx sync.RWMutex // Mutex 1 Escritor - N lectores
@@ -63,6 +66,15 @@ func IniciarAlmacenPartidas() *AlmacenPartidas {
 		}
 	}()
 
+	// Inicia una Goroutine de envío de alertas por inactividad
+	go func() {
+		for {
+			//time.Sleep(time.Second * 10) // Para pruebas
+			time.Sleep(INTERVALO_HORAS_ALERTAS_INACTIVIDAD * time.Hour)
+			ap.enviarAlertas()
+		}
+	}()
+
 	return &ap
 }
 
@@ -70,16 +82,41 @@ func IniciarCanalesEliminacionPartidasDB() {
 	CanalEliminacionPartidasDB = make(chan int, 25) // Hasta 25 partidas siendo borradas concurrentemente, no se espera un tráfico cercano a este
 	CanalParadaBorradoPartidasDB = make(chan struct{})
 	CanalExpulsionUsuariosDB = make(chan string)
+	CanalParadaEnvioAlertas = make(chan struct{})
+	CanalEnvioAlertas = make(chan string, 25)
+}
+
+func (ap *AlmacenPartidas) enviarAlertas() {
+	ap.Mtx.Lock()
+	defer ap.Mtx.Unlock()
+
+	log.Println("Iniciando envío de alertas...")
+	for _, p := range ap.Partidas {
+		log.Println("ultima accion:", p.Estado.UltimaAccion)
+		//if p.Estado.UltimaAccion.Add(time.Second*5).Before(time.Now()) && !p.Estado.AlertaEnviada { // Para pruebas
+		// Si aún no ha enviado la alerta
+		if p.Estado.UltimaAccion.Add(time.Hour*logica_juego.HORAS_EXPULSION_INACTIVIDAD).Before(time.Now()) && !p.Estado.AlertaEnviada {
+			// Sobreescribe la partida, almacenando que se ha enviado una alerta ya. Evita mandar un correo cada HORAS_EXPULSION_INACTIVIDAD
+			p.Estado.AlertaEnviada = true
+			ap.Partidas[p.IdPartida] = p
+
+			jugadorActual := p.Estado.Jugadores[p.Estado.TurnoJugador]
+
+			log.Println("Enviando alerta a " + jugadorActual + "...")
+
+			CanalEnvioAlertas <- jugadorActual
+		}
+	}
 }
 
 func (ap *AlmacenPartidas) limpiarCache() {
 	ap.Mtx.Lock()
 	defer ap.Mtx.Unlock()
 
-	log.Println("Iniciando limpieza de cache...")
+	log.Println("Iniciando envío de alertas por email...")
 	for i, p := range ap.Partidas {
 		//if p.Estado.UltimaAccion.Add(time.Second * 5).After(time.Now()) { // Para pruebas
-		if p.Estado.UltimaAccion.Add(time.Hour * logica_juego.HORAS_EXPULSION_INACTIVIDAD).After(time.Now()) {
+		if p.Estado.UltimaAccion.Add(time.Hour * logica_juego.HORAS_EXPULSION_INACTIVIDAD).Before(time.Now()) {
 			log.Println("Eliminando a usuario", p.Estado.Jugadores[p.Estado.TurnoJugador], "de partida", i, "por inactividad...")
 			CanalExpulsionUsuariosDB <- p.Estado.Jugadores[p.Estado.TurnoJugador]
 			p.Estado.ExpulsarJugador()
