@@ -452,7 +452,7 @@ func ObtenerEmailUsuario(db *sql.DB, usuario string) (err error, email string) {
 
 // ResetearContraseña cambia el hash de contraseña del usuario indicado por el dado. Devuelve error si no existe u ocurre algún otro error
 func ResetearContraseña(db *sql.DB, usuario string, hashContraseña string) (err error) {
-	_, err = db.Exec(`UPDATE "backend"."Usuario" SET "passwordHash" = $1 WHERE "backend"."Usuario"."nombreUsuario" = $2`, hashContraseña, usuario)
+	_, err = db.Exec(`UPDATE "backend"."Usuario" SET "passwordHash" = $1, "tokenResetPassword"=NULL, "ultimaPeticionResetPassword"=NULL WHERE "backend"."Usuario"."nombreUsuario" = $2`, hashContraseña, usuario)
 
 	return err
 }

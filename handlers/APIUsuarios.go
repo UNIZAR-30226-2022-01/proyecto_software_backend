@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
@@ -394,7 +395,7 @@ func ObtenerTokenResetPassword(writer http.ResponseWriter, request *http.Request
 
 		puerto, _ := strconv.Atoi(os.Getenv(globales.PUERTO_SMTP))
 		d := gomail.NewDialer(os.Getenv(globales.HOST_SMTP), puerto, os.Getenv(globales.USUARIO_SMTP), os.Getenv(globales.PASS_SMTP))
-
+		d.TLSConfig = &tls.Config{InsecureSkipVerify: true} // Evita problemas derivados de no tener certificados en el contenedor de Docker
 		// Como no se puede verificar que el destino no existe, los errores al enviar correos se ignoran silenciosamente
 		if err := d.DialAndSend(m); err != nil {
 			log.Println("Error al enviar email de reset de contraseña a", usuario, ":", err)
