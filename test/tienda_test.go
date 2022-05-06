@@ -18,8 +18,8 @@ func TestTienda(t *testing.T) {
 	var err error
 	cookie := crearUsuario("usuario", t)
 	items := consultarTienda(cookie, t)
-	if len(items) != 8 {
-		t.Fatal("Debería haber 8 objetos disponibles en la tienda")
+	if len(items) != 5 { // Item de debug, dados y avatar por defecto
+		t.Fatal("Debería haber 3 objetos disponibles en la tienda")
 	}
 	t.Log("Se han recuperado los siguientes objetos de la tienda:", items)
 
@@ -35,11 +35,11 @@ func TestTienda(t *testing.T) {
 	t.Log("OK, se ha obtenido el error:", err)
 
 	// Intentamos comprar un objeto con puntos insuficientes, se espera error
-	t.Log("Intentamos comprar un objeto inexistente, se espera error")
+	t.Log("Intentamos comprar con puntos insuficientes, se espera error")
 	dao.RetirarPuntos(globales.Db, &vo.Usuario{NombreUsuario: "usuario"}, 100)
-	err = comprarObjeto(cookie, 5, t)
+	err = comprarObjeto(cookie, 3, t)
 	if err == nil {
-		t.Fatal("Se esperaba error al comprar un objeto inexistente")
+		t.Fatal("Se esperaba error al comprar un objeto con puntos insuficientes")
 	}
 	t.Log("OK, se ha obtenido el error:", err)
 	dao.OtorgarPuntos(globales.Db, &vo.Usuario{NombreUsuario: "usuario"}, 100, true)
@@ -52,24 +52,9 @@ func TestTienda(t *testing.T) {
 	}
 	t.Log("OK, se ha obtenido el error:", err)
 
-	// Comprar objeto correcto
-	t.Log("Intentamos comprar un objeto existente y con suficiente dinero")
-	err = comprarObjeto(cookie, 5, t)
-	if err != nil {
-		t.Fatal("Error al comprar objeto:", err)
-	}
-	t.Log("Se ha comprado el objeto correctamente")
-
-	t.Log("Intentamos comprar un objeto existente y con suficiente dinero")
-	err = comprarObjeto(cookie, 7, t)
-	if err != nil {
-		t.Fatal("Error al comprar objeto:", err)
-	}
-	t.Log("Se ha comprado el objeto correctamente")
-
 	// Intentamos comprar un objeto que ya tenemos, se espera error
 	t.Log("Intentamos comprar un objeto que ya tenemos, se espera error")
-	err = comprarObjeto(cookie, 5, t)
+	err = comprarObjeto(cookie, 1, t)
 	if err == nil {
 		t.Fatal("Se esperaba error al comprar un objeto que ya tenemos")
 	}
@@ -77,57 +62,40 @@ func TestTienda(t *testing.T) {
 
 	items = consultarColeccion(cookie, "usuario", t)
 	if len(items) != 2 {
-		t.Fatal("No se ha consultado correctamente la colección de objetos del jugador")
+		t.Fatal("No se ha consultado correctamente la colección de objetos del jugador:", items)
 	}
 	t.Log("Se han recuperado los siguientes objetos del jugador:", items)
 
+	// Intentamos comprar unos dados
+	t.Log("Intentamos comprar un objeto que ya tenemos, se espera error")
+	err = comprarObjeto(cookie, 3, t)
 	// Intentamos equipar el aspecto de dados comprado
 	t.Log("Intentamos equipar el aspecto de dados comprado")
-	err = modificarAspecto(cookie, 7, t)
+	err = modificarAspecto(cookie, 3, t)
 	if err != nil {
 		t.Fatal("Error al modificar el aspecto:", err)
 	}
 	usuario := obtenerPerfilUsuario(cookie, "usuario", t)
-	if usuario.ID_dado != 7 {
+	if usuario.ID_dado != 3 {
 		t.Fatal("No se ha equipado el dado correctamente")
 	}
 	t.Log("Se ha equipado el dado correctamente")
 
-	// Intentamos equipar el aspecto de fichas comprado
-	t.Log("Intentamos equipar el aspecto de fichas comprado")
-	err = modificarAspecto(cookie, 5, t)
-	if err != nil {
-		t.Fatal("Error al modificar el aspecto:", err)
-	}
-	usuario = obtenerPerfilUsuario(cookie, "usuario", t)
-	if usuario.ID_ficha != 5 {
-		t.Fatal("No se ha equipado el aspecto correctamente")
-	}
-	t.Log("Se ha equipado el aspecto de ficha correctamente")
-
 	// Intentamos equipar un aspecto por defecto
 	t.Log("Intentamos equipar un aspecto por defecto")
-	err = modificarAspecto(cookie, 0, t)
+	err = modificarAspecto(cookie, 1, t)
 	if err != nil {
 		t.Fatal("Error al modificar el aspecto:", err)
 	}
 	usuario = obtenerPerfilUsuario(cookie, "usuario", t)
-	if usuario.ID_ficha != 0 {
+	if usuario.ID_dado != 1 {
 		t.Fatal("No se ha equipado el aspecto correctamente")
 	}
 	t.Log("Se ha equipado el aspecto correctamente")
 
-	// Intentamos equipar un aspecto inexistente, se espera error
-	t.Log("Intentamos equipar un aspecto inexistente, se espera error")
-	err = modificarAspecto(cookie, 200, t)
-	if err == nil {
-		t.Fatal("Se esperaba error al intentar equipar un aspecto inexistente")
-	}
-	t.Log("OK, error obtenido:", err)
-
 	// Intentamos equipar un aspecto que no tiene el jugador, se espera error
 	t.Log("Intentamos equipar un aspecto que no tiene el jugador, se espera error")
-	err = modificarAspecto(cookie, 8, t)
+	err = modificarAspecto(cookie, 4, t)
 	if err == nil {
 		t.Fatal("Se esperaba error al intentar equipar un aspecto que no tiene el jugador")
 	}

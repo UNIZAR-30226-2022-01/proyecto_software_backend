@@ -1,6 +1,6 @@
 CREATE SCHEMA backend AUTHORIZATION postgres;
 
-CREATE TYPE backend.item AS ENUM ('ficha', 'dado', 'avatar');
+CREATE TYPE backend.item AS ENUM ('dado', 'avatar');
 
 CREATE TABLE backend."ItemTienda" (
 	id int4 NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE backend."Usuario" (
 	"partidasTotales" int4 NOT NULL,
 	puntos int4 NOT NULL,
 	"ID_dado" int4 NOT NULL,
-	"ID_ficha" int4 NOT NULL,
+	"ID_avatar" int4 NOT NULL,
 	"notificacionesPendientesConEstado" bytea NULL, -- Serializado desde golang
 	"tokenResetPassword" varchar NULL,
 	"ultimaPeticionResetPassword" date NULL,
@@ -43,7 +43,7 @@ CREATE TABLE backend."Usuario" (
 	CONSTRAINT "Usuario_pkey" PRIMARY KEY ("nombreUsuario"),
 	CONSTRAINT usuario_un UNIQUE ("nombreUsuario"),
 	CONSTRAINT "Usuario_ID_dado_fkey" FOREIGN KEY ("ID_dado") REFERENCES backend."ItemTienda"(id),
-	CONSTRAINT "Usuario_ID_ficha_fkey" FOREIGN KEY ("ID_ficha") REFERENCES backend."ItemTienda"(id)
+	CONSTRAINT "Usuario_ID_avatar_fkey" FOREIGN KEY ("ID_avatar") REFERENCES backend."ItemTienda"(id)
 );
 
 
@@ -77,17 +77,18 @@ CREATE TABLE backend."TieneItems" (
 
 INSERT INTO backend."ItemTienda"
 (id, nombre, descripcion, precio, tipo)
-VALUES(0, 'Fichas por defecto.', 'Fichas por defecto, aburridas.', 0, 'ficha'::backend."item");
+VALUES(0, 'Item por defecto', 'Item por defecto para DDLs de prueba.', 0, 'dado'::backend."item");
 INSERT INTO backend."ItemTienda"
 (id, nombre, descripcion, precio, tipo)
-VALUES(1, 'Dados por defecto.', 'Dados por defecto, aburridos.', 0, 'dado'::backend."item");
+VALUES(1, 'Dados por defecto', 'Dados por defecto, aburridos.', 0, 'dado'::backend."item");
 INSERT INTO backend."ItemTienda"
 (id, nombre, descripcion, precio, tipo)
-VALUES(2, 'Avatar por defecto.', 'Avatar por defecto, aburrido.', 0, 'avatar'::backend."item");
+VALUES(2, 'Avatar por defecto', 'Avatar por defecto, aburrido.', 0, 'avatar'::backend."item");
 
-INSERT INTO backend."ItemTienda" (id, nombre, descripcion, precio, tipo) VALUES
-     (4, 'Fichas rojas', 'Fichas de color rojo', 10, 'ficha'),
-     (5, 'Fichas azules', 'Fichas de color azul', 10, 'ficha'),
-     (6, 'Fichas verdes', 'Fichas de color rojo', 10, 'ficha'),
-     (7, 'Dados plateados', 'Dados de color plateado', 10, 'dado'),
-     (8, 'Dados dorados', 'Dados de color dorado', 10, 'dado');
+INSERT INTO backend."ItemTienda"
+(id, nombre, descripcion, precio, tipo)
+VALUES(3, 'Dados de prueba', 'Dados de prueba.', 50, 'dado'::backend."item");
+
+INSERT INTO backend."ItemTienda"
+(id, nombre, descripcion, precio, tipo)
+VALUES(4, 'Avatar de prueba', 'Avatar de prueb.', 50, 'avatar'::backend."item");

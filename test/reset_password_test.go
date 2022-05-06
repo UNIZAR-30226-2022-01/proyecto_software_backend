@@ -9,7 +9,7 @@ import (
 
 func TestResetContraseña(t *testing.T) {
 	// Se debe ejecutar manualmente, ya que se debe rellenar el email de destino y asegurar que el fichero ../mail.env existe
-	//t.Skip()
+	t.Skip()
 	email := "" // Rellenar con dirección email accesible
 
 	t.Log("Purgando DB...")

@@ -19,7 +19,7 @@ type Usuario struct {
 	PartidasGanadas int
 	PartidasTotales int
 	ID_dado         int
-	ID_ficha        int
+	ID_avatar       int
 }
 
 type Partida struct {
@@ -86,7 +86,7 @@ type ElementoListaUsuarios struct {
 	PartidasTotales int
 	Puntos          int
 	ID_dado         int
-	ID_ficha        int
+	ID_avatar       int
 	EsAmigo         bool
 }
 

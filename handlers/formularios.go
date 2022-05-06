@@ -7,6 +7,7 @@ import (
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"golang.org/x/crypto/bcrypt"
+	"log"
 	"net/http"
 )
 
@@ -37,8 +38,28 @@ func Registro(writer http.ResponseWriter, request *http.Request) {
 		devolverError(writer, errors.New("Se ha producido un error al procesar los datos."))
 		return
 	} else {
-		usuarioVO := vo.Usuario{email, nombre, hash, "", http.Cookie{}, 0, 0, 0, 0, 0}
+		// Inserta el usuario con el dado y avatares por defecto (1, 2 respectivamente)
+		usuarioVO := vo.Usuario{email, nombre, hash, "", http.Cookie{}, 0, 0, 0, 1, 2}
 		err = dao.InsertarUsuario(globales.Db, &usuarioVO)
+		if err != nil {
+			devolverErrorSQL(writer)
+			return
+		}
+
+		// Otorga los dados y avatar por defecto
+		err = dao.ComprarObjeto(globales.Db, nombre, vo.ItemTienda{Id: 1}, true)
+		if err != nil {
+			devolverErrorSQL(writer)
+			log.Println(err)
+			return
+		}
+
+		err = dao.ComprarObjeto(globales.Db, nombre, vo.ItemTienda{Id: 2}, true)
+		if err != nil {
+			devolverErrorSQL(writer)
+			log.Println(err)
+			return
+		}
 
 		if err != nil {
 			devolverErrorSQL(writer)

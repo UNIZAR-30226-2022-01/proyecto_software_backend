@@ -167,7 +167,7 @@ func ObtenerSolicitudesPendientes(writer http.ResponseWriter, request *http.Requ
 // 	   "PartidasTotales": int
 // 	   "Puntos": int
 // 	   "ID_dado": int
-// 	   "ID_ficha": int
+// 	   "ID_avatar": int
 //	   "EsAmigo": bool
 //    }
 //
@@ -462,9 +462,9 @@ func ModificarAspecto(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	switch aspecto.Tipo {
-	case "ficha":
+	case "avatar":
 		// Modificamos el aspecto de las fichas del jugador
-		err = dao.ModificarFichas(globales.Db, &vo.Usuario{NombreUsuario: usuario}, aspecto)
+		err = dao.ModificarAvatar(globales.Db, &vo.Usuario{NombreUsuario: usuario}, aspecto)
 	case "dado":
 		// Modificamos el aspecto de las dados del jugador
 		err = dao.ModificarDados(globales.Db, &vo.Usuario{NombreUsuario: usuario}, aspecto)

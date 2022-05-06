@@ -58,9 +58,9 @@ func InsertarUsuario(db *sql.DB, usuario *vo.Usuario) (err error) {
 	}
 
 	_, err = db.Exec(`INSERT INTO "backend"."Usuario"("email", "nombreUsuario", "passwordHash", 
-		"biografia", "cookieSesion", "puntos", "partidasGanadas", "partidasTotales", "ID_dado", "ID_ficha")
+		"biografia", "cookieSesion", "puntos", "partidasGanadas", "partidasTotales", "ID_dado", "ID_avatar")
 		VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`, usuario.Email, usuario.NombreUsuario, usuario.PasswordHash,
-		usuario.Biografia, b.Bytes(), usuario.Puntos, usuario.PartidasGanadas, usuario.PartidasTotales, usuario.ID_dado, usuario.ID_ficha)
+		usuario.Biografia, b.Bytes(), usuario.Puntos, usuario.PartidasGanadas, usuario.PartidasTotales, usuario.ID_dado, usuario.ID_avatar)
 
 	return err
 }
@@ -71,10 +71,10 @@ func ObtenerUsuario(db *sql.DB, nombreUsuario string) (usuario vo.Usuario, err e
 
 	var bytearray []byte
 	err = db.QueryRow(`SELECT "email", "nombreUsuario", "passwordHash", "biografia", "cookieSesion", 
-		"partidasGanadas", "partidasTotales", "puntos", "ID_dado", "ID_ficha" 
+		"partidasGanadas", "partidasTotales", "puntos", "ID_dado", "ID_avatar" 
 		FROM backend."Usuario" WHERE backend."Usuario"."nombreUsuario" = $1`, nombreUsuario).Scan(
 		&usuario.Email, &usuario.NombreUsuario, &usuario.PasswordHash, &usuario.Biografia, &bytearray,
-		&usuario.PartidasGanadas, &usuario.PartidasTotales, &usuario.Puntos, &usuario.ID_dado, &usuario.ID_ficha)
+		&usuario.PartidasGanadas, &usuario.PartidasTotales, &usuario.Puntos, &usuario.ID_dado, &usuario.ID_avatar)
 	b.Write(bytearray)
 	err = decoder.Decode(&usuario.CookieSesion)
 	return usuario, err
@@ -319,9 +319,9 @@ func ModificarDados(db *sql.DB, usuario *vo.Usuario, dados vo.ItemTienda) error 
 	return err
 }
 
-// ModificarFichas modifica el aspecto de fichas equipado por el usuario
-func ModificarFichas(db *sql.DB, usuario *vo.Usuario, fichas vo.ItemTienda) error {
-	_, err := db.Exec(`UPDATE backend."Usuario" SET "ID_ficha"=$1 WHERE "nombreUsuario"=$2`, fichas.Id, usuario.NombreUsuario)
+// ModificarAvatar modifica el avatar equipado por el usuario
+func ModificarAvatar(db *sql.DB, usuario *vo.Usuario, avatar vo.ItemTienda) error {
+	_, err := db.Exec(`UPDATE backend."Usuario" SET "ID_avatar"=$1 WHERE "nombreUsuario"=$2`, avatar.Id, usuario.NombreUsuario)
 	return err
 }
 
