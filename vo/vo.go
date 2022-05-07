@@ -111,3 +111,20 @@ type ItemTienda struct {
 	Precio      int
 	Tipo        string
 }
+
+type ResumenPartida struct {
+	Jugadores        []string
+	TurnoJugador     string
+	Fase             logica_juego.Fase
+	Terminada        bool
+	EstadosJugadores map[string]ResumenEstadoJugador
+	Mapa             map[logica_juego.NumRegion]logica_juego.EstadoRegion
+}
+
+type ResumenEstadoJugador struct {
+	NumCartas int
+	Cartas    []logica_juego.Carta
+	Tropas    int
+	Expulsado bool
+	Eliminado bool
+}

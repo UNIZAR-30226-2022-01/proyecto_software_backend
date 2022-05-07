@@ -176,6 +176,7 @@ func routerAPI() http.Handler {
 		r.Get("/obtenerPartidas", handlers.ObtenerPartidas)
 		r.Get("/obtenerEstadoPartida", handlers.ObtenerEstadoPartida)
 		r.Get("/obtenerEstadoPartidaCompleto", handlers.ObtenerEstadoPartidaCompleto)
+		r.Get("/resumirPartida", handlers.ResumirPartida)
 		r.Get("/jugandoEnPartida", handlers.JugandoEnPartida)
 		r.Get("/obtenerJugadoresPartida", handlers.ObtenerJugadoresPartida)
 
