@@ -77,7 +77,7 @@ func TestFortificacion(t *testing.T) {
 	numTropasDestinoAntes := partidaCache.Estado.EstadoMapa[logica_juego.Eastern_united_states].NumTropas
 	// Fortificación válida
 	t.Log("Fortificando territorio", logica_juego.Eastern_united_states, "desde", logica_juego.Alaska)
-	fortificarTerritorio(t, cookie, 15, int(logica_juego.Alaska), int(logica_juego.Eastern_united_states))
+	fortificarTerritorio(t, cookie, 10, int(logica_juego.Alaska), int(logica_juego.Eastern_united_states))
 	numTropasOrigenDespues := partidaCache.Estado.EstadoMapa[logica_juego.Alaska].NumTropas
 	numTropasDestinoDespues := partidaCache.Estado.EstadoMapa[logica_juego.Eastern_united_states].NumTropas
 
@@ -94,6 +94,32 @@ func TestFortificacion(t *testing.T) {
 	estado := preguntarEstado(t, cookie)
 	accionFortificar := estado.Acciones[len(estado.Acciones)-1]
 	t.Log("Acción de fortificar:", accionFortificar)
+
+	// Intentamos fortificar por segunda vez
+	t.Log("Fortificando territorio", logica_juego.Eastern_united_states, "desde", logica_juego.Alaska, ",se espera error"+
+		" por fortificar más de una vez por turno")
+	fortificarTerritorioConError(t, cookie, 5, int(logica_juego.Alaska), int(logica_juego.Eastern_united_states))
+
+	// Saltamos el turno para permitir otra fortificación
+	t.Log("Saltando al siguiente turno...")
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.SiguienteJugador()
+	saltarTurnos(t, partidaCache, "usuario1")
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	pasarAFaseFortificar(partidaCache)
+
+	// Probamos a fortificar en el siguiente turno
+	t.Log("Fortificando territorio", logica_juego.Eastern_united_states, "desde", logica_juego.Alaska, ", en el siguiente turno")
+	fortificarTerritorio(t, cookie, 5, int(logica_juego.Alaska), int(logica_juego.Eastern_united_states))
+	t.Log("Se ha fortificado el territorio correctamente")
+
+	// Saltamos el turno para permitir otra fortificación y que el resto de test no fallen por fortificar más de una vez
+	t.Log("Saltando al siguiente turno...")
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	partidaCache.Estado.SiguienteJugador()
+	saltarTurnos(t, partidaCache, "usuario1")
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	pasarAFaseFortificar(partidaCache)
 
 	// Fortificación inválida por regiones desconectadas
 	t.Log("Fortificando territorio", logica_juego.Venezuela, "desde", logica_juego.Alaska)

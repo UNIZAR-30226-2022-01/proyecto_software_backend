@@ -441,6 +441,9 @@ func (e *EstadoPartida) FortificarTerritorio(origen int, destino int, tropas int
 		return errors.New("Solo se puede fortificar durante la fase de fortificación")
 	}
 
+	if e.HaFortificado {
+		return errors.New("No puedes fortificar más de una vez por turno")
+	}
 	// Comprobar pertenencia de territorio de origen y número de tropas válido en el territorio
 	regionOrigen, existe := e.EstadoMapa[NumRegion(origen)]
 	if !existe {
@@ -472,6 +475,9 @@ func (e *EstadoPartida) FortificarTerritorio(origen int, destino int, tropas int
 		// Realizar la fortificación
 		e.EstadoMapa[NumRegion(origen)].NumTropas -= tropas
 		e.EstadoMapa[NumRegion(destino)].NumTropas += tropas
+
+		// Indicamos que ya se ha fortificado en ese turno
+		e.HaFortificado = true
 
 		// Añadir una nueva acción
 		e.Acciones = append(e.Acciones,

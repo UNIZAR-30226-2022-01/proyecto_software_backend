@@ -57,6 +57,7 @@ func TestFuncionesSociales(t *testing.T) {
 
 	// Comprobamos que las amistades pendientes no aparecen como amigos
 	listaAmigos := listarAmigos(cookie, t)
+	t.Log("Lista de amigos, debería estar vacía:", listaAmigos)
 	if len(listaAmigos) > 0 {
 		t.Fatal("Las solicitudes de amistad pendientes no deberían aparecer en la lista de amigos")
 	}
