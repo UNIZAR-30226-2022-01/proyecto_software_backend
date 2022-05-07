@@ -91,7 +91,7 @@ func ComprarObjeto(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	err = dao.ComprarObjeto(globales.Db, usuario, item)
+	err = dao.ComprarObjeto(globales.Db, usuario, item, false)
 	if err == sql.ErrNoRows {
 		devolverErrorSQL(writer)
 		return

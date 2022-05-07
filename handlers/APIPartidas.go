@@ -533,6 +533,254 @@ func ObtenerEstadoPartidaCompleto(writer http.ResponseWriter, request *http.Requ
 	escribirHeaderExito(writer)
 }
 
+// ResumirPartida devuelve un resumen completo de la partida hasta el momento, actualizando el índice de
+// acciones leídas en el proceso para permitir pasar directamente a solicitar acciones.
+//
+// El formato es el siguiente:
+//	{
+//		Jugadores: [string...],
+//		TurnoJugador: string,
+//		Fase: {0..3} (Inicio, refuerzo, ataque y fortificar)
+//		Terminada: bool,
+//		EstadosJugadores: {
+//			string {
+//				NumCartas: int,
+//				Cartas [ // Solo poblado para el usuario que solicita el resumen
+//					{
+//						IdCarta: int
+//						Tipo: {0..2} (Infantería, Caballería, Artillería)
+//						Region: int,
+//						EsComodin: bool
+//					}, ...
+//				],
+//				Tropas: int
+//				Expulsado: bool,
+//         		Eliminado: bool
+//			}
+//		},
+//		Mapa: {
+//			int :{ // Número de región
+//         	Ocupante: string,
+//         	NumTropas: int
+//      },
+//	}
+//
+//
+// Ejemplo:
+//
+// 	{
+//   "Jugadores":[
+//      "jugador1",
+//      "jugador2",
+//      "jugador3",
+//      "jugador4",
+//      "jugador5",
+//      "jugador6"
+//   ],
+//   "TurnoJugador":"jugador1",
+//   "Fase":0,
+//   "Terminada":false,
+//   "EstadosJugadores":{
+//      "jugador1":{
+//         "NumCartas":4,
+//         "Cartas":[
+//            {
+//               "IdCarta":1,
+//               "Tipo":0,
+//               "Region":3,
+//               "EsComodin":true
+//            },
+//            {
+//               "IdCarta":4,
+//               "Tipo":2,
+//               "Region":22,
+//               "EsComodin":false
+//            },
+//            {
+//               "IdCarta":5,
+//               "Tipo":2,
+//               "Region":0,
+//               "EsComodin":false
+//            },
+//            {
+//               "IdCarta":6,
+//               "Tipo":2,
+//               "Region":27,
+//               "EsComodin":false
+//            }
+//         ],
+//         "Tropas":13,
+//         "Expulsado":false,
+//         "Eliminado":false
+//      },
+//      "jugador2":{
+//         "NumCartas":0,
+//         "Cartas":null,
+//         "Tropas":13,
+//         "Expulsado":false,
+//         "Eliminado":false
+//      },
+//      "jugador3":{
+//         "NumCartas":0,
+//         "Cartas":null,
+//         "Tropas":13,
+//         "Expulsado":false,
+//         "Eliminado":false
+//      },
+//      "jugador4":{
+//         "NumCartas":0,
+//         "Cartas":null,
+//         "Tropas":13,
+//         "Expulsado":false,
+//         "Eliminado":false
+//      },
+//      "jugador5":{
+//         "NumCartas":0,
+//         "Cartas":null,
+//         "Tropas":13,
+//         "Expulsado":false,
+//         "Eliminado":false
+//      },
+//      "jugador6":{
+//         "NumCartas":0,
+//         "Cartas":null,
+//         "Tropas":13,
+//         "Expulsado":false,
+//         "Eliminado":false
+//      }
+//   },
+//   "Mapa":{
+//      "0":{
+//         "Ocupante":"jugador3",
+//         "NumTropas":6
+//      },
+//
+//		...
+//
+//      "41":{
+//         "Ocupante":"jugador5",
+//         "NumTropas":3
+//      }
+//   }
+//}
+//
+// Ruta: /api/resumirPartida
+// Tipo: GET
+func ResumirPartida(writer http.ResponseWriter, request *http.Request) {
+	usuario := vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)}
+
+	idPartida, err := dao.PartidaUsuario(globales.Db, &usuario)
+	if err == sql.ErrNoRows {
+		devolverError(writer, errors.New("No estás participando en ninguna partida."))
+		return
+	} else if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	// Se obtiene una copia de la partida
+	partida, existe := globales.CachePartidas.ObtenerPartida(idPartida)
+	if !existe {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	// Se marca que el usuario ha leído hasta el último índice
+	partida.Estado.EstadosJugadores[usuario.NombreUsuario].UltimoIndiceLeido = len(partida.Estado.Acciones) - 1
+
+	// Si ha terminado, o el jugador ha perdido
+	if partida.Estado.Terminada || partida.Estado.HaSidoEliminado(usuario.NombreUsuario) {
+		for i, jugador := range partida.Estado.JugadoresRestantesPorConsultar {
+			// Si aún no había comprobado el estado hasta ahora
+			if jugador == usuario.NombreUsuario {
+				err := terminarPartida(usuario, &partida, i, false)
+				if err != nil {
+					devolverErrorSQL(writer)
+					return // No se procesará el potencial fin de partida o modifica en la BD/cache si hay un error
+				}
+			}
+		}
+	} else if partida.Estado.HaSidoExpulsado(usuario.NombreUsuario) {
+		for i, jugador := range partida.Estado.JugadoresRestantesPorConsultar {
+			// Si aún no había comprobado el estado hasta ahora
+			if jugador == usuario.NombreUsuario {
+				err := terminarPartida(usuario, &partida, i, true)
+				if err != nil {
+					devolverErrorSQL(writer)
+					return // No se procesará el potencial fin de partida o modifica en la BD/cache si hay un error
+				}
+			}
+		}
+	}
+
+	// Si ha terminado y no queda ningún usuario más por consultar su estado, se elimina
+	if partida.Estado.Terminada && (len(partida.Estado.JugadoresRestantesPorConsultar) == 0) {
+		// De la DB
+		globales.CanalEliminacionPartidasDB <- idPartida
+
+		// De la cache
+		globales.CachePartidas.EliminarPartida(vo.Partida{IdPartida: idPartida})
+	} else {
+		// Se sobreescribe en el almacén
+		globales.CachePartidas.AlmacenarPartida(partida)
+
+		// Y se encola un trabajo de serialización de su estado
+		globales.CachePartidas.CanalSerializacion <- partida
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(writer).Encode(resumirPartida(partida, usuario.NombreUsuario))
+	escribirHeaderExito(writer)
+}
+
+func resumirPartida(p vo.Partida, usuario string) (resumen vo.ResumenPartida) {
+	resumen = vo.ResumenPartida{
+		Jugadores:        p.Estado.Jugadores,
+		TurnoJugador:     p.Estado.Jugadores[p.Estado.TurnoJugador],
+		Fase:             p.Estado.Fase,
+		Terminada:        p.Estado.Terminada,
+		EstadosJugadores: obtenerResumenEstadosJugadores(p, usuario),
+		Mapa:             obtenerResumenMapa(p),
+	}
+
+	return resumen
+}
+
+func obtenerResumenEstadosJugadores(p vo.Partida, usuario string) (resumen map[string]vo.ResumenEstadoJugador) {
+	resumen = make(map[string]vo.ResumenEstadoJugador)
+
+	for _, jugador := range p.Estado.Jugadores {
+		var cartas []logica_juego.Carta
+
+		// Solo se devuelven las cartas del jugador que solicita el resumen
+		if usuario == jugador {
+			cartas = p.Estado.EstadosJugadores[jugador].Cartas
+		}
+
+		resumenJugador := vo.ResumenEstadoJugador{
+			NumCartas: len(p.Estado.EstadosJugadores[jugador].Cartas),
+			Cartas:    cartas,
+			Tropas:    p.Estado.EstadosJugadores[jugador].Tropas,
+			Expulsado: p.Estado.HaSidoExpulsado(jugador),
+			Eliminado: p.Estado.HaSidoEliminado(jugador),
+		}
+
+		resumen[jugador] = resumenJugador
+	}
+
+	return resumen
+}
+
+func obtenerResumenMapa(p vo.Partida) (resumen map[logica_juego.NumRegion]logica_juego.EstadoRegion) {
+	resumen = make(map[logica_juego.NumRegion]logica_juego.EstadoRegion)
+
+	for i := logica_juego.Eastern_australia; i <= logica_juego.Alberta; i++ {
+		resumen[i] = *p.Estado.EstadoMapa[i]
+	}
+
+	return resumen
+}
+
 // JugandoEnPartida devuelve verdad si el jugador está participando en una partida, o falso en caso contrario.
 // El formato es un booleano codificado en JSON de la siguiente forma:
 // true

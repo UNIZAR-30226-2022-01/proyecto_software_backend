@@ -15,7 +15,7 @@ func TestRanking(t *testing.T) {
 
 	// Añadimos usuarios con distintos números de victorias
 	_, err := globales.Db.Exec(`INSERT INTO backend."Usuario" (email, "nombreUsuario", "passwordHash", biografia, "cookieSesion",
-                               "partidasGanadas", "partidasTotales", puntos, "ID_dado", "ID_ficha") VALUES 
+                               "partidasGanadas", "partidasTotales", puntos, "ID_dado", "ID_avatar") VALUES 
                                ('email1', 'juan', 'password', 'biografia', 'cookie', 15, 20, 100, 0, 0),
                                ('email2', 'pedro', 'password', 'biografia', 'cookie', 10, 12, 100, 0, 0),
                                ('email3', 'fran', 'password', 'biografia', 'cookie', 30, 35, 100, 0, 0),

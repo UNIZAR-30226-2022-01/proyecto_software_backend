@@ -57,7 +57,7 @@ func IniciarServidor(test bool) {
 		globales.CachePartidas = globales.IniciarAlmacenPartidas()
 		globales.IniciarCanalesEliminacionPartidasDB()
 		dao.MonitorizarCanalBorrado(globales.Db, globales.CanalEliminacionPartidasDB, globales.CanalParadaBorradoPartidasDB, globales.CanalExpulsionUsuariosDB)
-
+		dao.MonitorizarCanalEnvioAlertas(globales.Db, globales.CanalParadaEnvioAlertas, globales.CanalEnvioAlertas)
 		// Registra los tipos a decodificar por gob a partir de interface{}
 		logica_juego.RegistrarAcciones()
 		logica_juego.RegistrarNotificaciones()
@@ -99,6 +99,7 @@ func IniciarServidor(test bool) {
 	if os.Args[1] == "-api" {
 		globales.Db.Close()
 		globales.CanalParadaBorradoPartidasDB <- struct{}{}
+		globales.CanalParadaEnvioAlertas <- struct{}{}
 	}
 
 	os.Exit(0)
@@ -160,6 +161,8 @@ func routerAPI() http.Handler {
 	// Formularios
 	r.Post("/registro", handlers.Registro)
 	r.Post("/login", handlers.Login)
+	r.Post("/resetearPassword", handlers.ResetearContraseña)
+	r.Post("/obtenerTokenResetPassword", handlers.ObtenerTokenResetPassword)
 
 	// Rutas REST
 	r.Route("/api", func(r chi.Router) {
@@ -173,6 +176,7 @@ func routerAPI() http.Handler {
 		r.Get("/obtenerPartidas", handlers.ObtenerPartidas)
 		r.Get("/obtenerEstadoPartida", handlers.ObtenerEstadoPartida)
 		r.Get("/obtenerEstadoPartidaCompleto", handlers.ObtenerEstadoPartidaCompleto)
+		r.Get("/resumirPartida", handlers.ResumirPartida)
 		r.Get("/jugandoEnPartida", handlers.JugandoEnPartida)
 		r.Get("/obtenerJugadoresPartida", handlers.ObtenerJugadoresPartida)
 

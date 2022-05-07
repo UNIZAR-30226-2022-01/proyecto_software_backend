@@ -19,7 +19,7 @@ type Usuario struct {
 	PartidasGanadas int
 	PartidasTotales int
 	ID_dado         int
-	ID_ficha        int
+	ID_avatar       int
 }
 
 type Partida struct {
@@ -86,7 +86,7 @@ type ElementoListaUsuarios struct {
 	PartidasTotales int
 	Puntos          int
 	ID_dado         int
-	ID_ficha        int
+	ID_avatar       int
 	EsAmigo         bool
 }
 
@@ -110,4 +110,21 @@ type ItemTienda struct {
 	Descripcion string
 	Precio      int
 	Tipo        string
+}
+
+type ResumenPartida struct {
+	Jugadores        []string
+	TurnoJugador     string
+	Fase             logica_juego.Fase
+	Terminada        bool
+	EstadosJugadores map[string]ResumenEstadoJugador
+	Mapa             map[logica_juego.NumRegion]logica_juego.EstadoRegion
+}
+
+type ResumenEstadoJugador struct {
+	NumCartas int
+	Cartas    []logica_juego.Carta
+	Tropas    int
+	Expulsado bool
+	Eliminado bool
 }

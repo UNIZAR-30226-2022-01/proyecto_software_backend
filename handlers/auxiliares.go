@@ -150,7 +150,7 @@ func transformaAElementoListaUsuarios(usuario vo.Usuario) vo.ElementoListaUsuari
 		PartidasTotales: usuario.PartidasTotales,
 		Puntos:          usuario.Puntos,
 		ID_dado:         usuario.ID_dado,
-		ID_ficha:        usuario.ID_ficha,
+		ID_avatar:       usuario.ID_avatar,
 		EsAmigo:         false,
 	}
 }

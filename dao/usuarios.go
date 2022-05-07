@@ -7,7 +7,10 @@ import (
 	"errors"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
+	"math/rand"
 	"net/http"
+	"sync"
+	"time"
 )
 
 // ConsultarCookie devuelve una cookie del usuario dado, buscando por su nombre. En caso de fallo o no
@@ -55,9 +58,9 @@ func InsertarUsuario(db *sql.DB, usuario *vo.Usuario) (err error) {
 	}
 
 	_, err = db.Exec(`INSERT INTO "backend"."Usuario"("email", "nombreUsuario", "passwordHash", 
-		"biografia", "cookieSesion", "puntos", "partidasGanadas", "partidasTotales", "ID_dado", "ID_ficha")
+		"biografia", "cookieSesion", "puntos", "partidasGanadas", "partidasTotales", "ID_dado", "ID_avatar")
 		VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`, usuario.Email, usuario.NombreUsuario, usuario.PasswordHash,
-		usuario.Biografia, b.Bytes(), usuario.Puntos, usuario.PartidasGanadas, usuario.PartidasTotales, usuario.ID_dado, usuario.ID_ficha)
+		usuario.Biografia, b.Bytes(), usuario.Puntos, usuario.PartidasGanadas, usuario.PartidasTotales, usuario.ID_dado, usuario.ID_avatar)
 
 	return err
 }
@@ -68,10 +71,10 @@ func ObtenerUsuario(db *sql.DB, nombreUsuario string) (usuario vo.Usuario, err e
 
 	var bytearray []byte
 	err = db.QueryRow(`SELECT "email", "nombreUsuario", "passwordHash", "biografia", "cookieSesion", 
-		"partidasGanadas", "partidasTotales", "puntos", "ID_dado", "ID_ficha" 
+		"partidasGanadas", "partidasTotales", "puntos", "ID_dado", "ID_avatar" 
 		FROM backend."Usuario" WHERE backend."Usuario"."nombreUsuario" = $1`, nombreUsuario).Scan(
 		&usuario.Email, &usuario.NombreUsuario, &usuario.PasswordHash, &usuario.Biografia, &bytearray,
-		&usuario.PartidasGanadas, &usuario.PartidasTotales, &usuario.Puntos, &usuario.ID_dado, &usuario.ID_ficha)
+		&usuario.PartidasGanadas, &usuario.PartidasTotales, &usuario.Puntos, &usuario.ID_dado, &usuario.ID_avatar)
 	b.Write(bytearray)
 	err = decoder.Decode(&usuario.CookieSesion)
 	return usuario, err
@@ -317,9 +320,9 @@ func ModificarDados(db *sql.DB, usuario *vo.Usuario, dados vo.ItemTienda) error 
 	return err
 }
 
-// ModificarFichas modifica el aspecto de fichas equipado por el usuario
-func ModificarFichas(db *sql.DB, usuario *vo.Usuario, fichas vo.ItemTienda) error {
-	_, err := db.Exec(`UPDATE backend."Usuario" SET "ID_ficha"=$1 WHERE "nombreUsuario"=$2`, fichas.Id, usuario.NombreUsuario)
+// ModificarAvatar modifica el avatar equipado por el usuario
+func ModificarAvatar(db *sql.DB, usuario *vo.Usuario, avatar vo.ItemTienda) error {
+	_, err := db.Exec(`UPDATE backend."Usuario" SET "ID_avatar"=$1 WHERE "nombreUsuario"=$2`, avatar.Id, usuario.NombreUsuario)
 	return err
 }
 
@@ -397,4 +400,77 @@ func almacenarNotificacionesConEstado(db *sql.DB, usuario *vo.Usuario, notificac
 	_, err = db.Exec(`UPDATE "backend"."Usuario" SET "notificacionesPendientesConEstado" = $1 WHERE "backend"."Usuario"."nombreUsuario" = $2`, b.Bytes(), usuario.NombreUsuario)
 
 	return err
+}
+
+// ObtenerNombreExpiracionTokenResetPassword devuelve el nombre del usuario que tenga el token indicado junto a la expiración del token,
+// o un error si el usuario no existe u ocurre algún otro error
+func ObtenerNombreExpiracionTokenResetPassword(db *sql.DB, token string) (err error, usuario string, expiracion time.Time) {
+	// Puede no tener ningún token, y por tanto ser un NULL
+	var bufferNombre sql.NullString
+	var bufferExpiracion sql.NullTime
+
+	err = db.QueryRow(`SELECT "nombreUsuario", "ultimaPeticionResetPassword" FROM backend."Usuario" WHERE "tokenResetPassword"=$1`, token).Scan(&bufferNombre, &bufferExpiracion)
+	if err != nil {
+		return err, usuario, expiracion
+	}
+
+	if bufferNombre.Valid && bufferExpiracion.Valid { // No eran NULL
+		usuario = bufferNombre.String
+		expiracion = bufferExpiracion.Time
+	} else {
+		err = errors.New("")
+	}
+
+	return err, usuario, expiracion
+}
+
+// ObtenerToken devuelve el token de reset de contraseña dado un usuario. A utilizar solo para debugging y tests de integración.
+func ObtenerToken(db *sql.DB, usuario string) string {
+	var bufferToken sql.NullString
+	_ = db.QueryRow(`SELECT "tokenResetPassword" FROM backend."Usuario" WHERE "nombreUsuario"=$1`, usuario).Scan(&bufferToken)
+
+	return bufferToken.String
+}
+
+// CrearTokenResetPassword almacena y devuelve un token de reset de contraseña para el usuario indicado,
+// o devuelve un error si el usuario no existe u ocurre algún otro error
+func CrearTokenResetPassword(db *sql.DB, usuario string) (err error, token string) {
+	token = crearTokenAleatorio()
+	fechaExpiracion := time.Now().Add(2 * 24 * time.Hour) // Tiempo de expiración de 2 dias
+
+	_, err = db.Exec(`UPDATE "backend"."Usuario" SET "tokenResetPassword" = $1, "ultimaPeticionResetPassword" = $2 WHERE "backend"."Usuario"."nombreUsuario" = $3`,
+		token, fechaExpiracion, usuario)
+
+	return err, token
+}
+
+// ObtenerEmailUsuario devuelve el email de un usuario dado, o devuelve un error si el usuario no existe u ocurre algún otro error
+func ObtenerEmailUsuario(db *sql.DB, usuario string) (err error, email string) {
+	err = db.QueryRow(`SELECT "email" FROM backend."Usuario" WHERE "nombreUsuario"=$1`, usuario).Scan(&email)
+
+	return err, email
+}
+
+// ResetearContraseña cambia el hash de contraseña del usuario indicado por el dado. Devuelve error si no existe u ocurre algún otro error
+func ResetearContraseña(db *sql.DB, usuario string, hashContraseña string) (err error) {
+	_, err = db.Exec(`UPDATE "backend"."Usuario" SET "passwordHash" = $1, "tokenResetPassword"=NULL, "ultimaPeticionResetPassword"=NULL WHERE "backend"."Usuario"."nombreUsuario" = $2`, hashContraseña, usuario)
+
+	return err
+}
+
+var onlyOnce sync.Once
+
+// Adaptado de https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
+func crearTokenAleatorio() string {
+	onlyOnce.Do(func() {
+		rand.Seed(time.Now().UnixNano())
+	})
+
+	var caracteresTokenAleatorio = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789")
+
+	b := make([]rune, LONGITUD_TOKEN_RESET_PASSWORD)
+	for i := range b {
+		b[i] = caracteresTokenAleatorio[rand.Intn(len(caracteresTokenAleatorio))]
+	}
+	return string(b)
 }

@@ -66,7 +66,8 @@ func ObtenerObjeto(db *sql.DB, idItem int) (vo.ItemTienda, error) {
 // Para ello, se especificará como parámetro el identificador del objeto que desea comprar. La compra se realizará
 // siempre que dicho objeto exista, no sea uno de los objetos iniciales, el jugador tenga los puntos suficientes para
 // comprarlo y el jugador no lo haya comprado ya.
-func ComprarObjeto(db *sql.DB, usuario string, item vo.ItemTienda) error {
+// Si se indica que se está creando el usuario, se permite comprar objetos iniciales
+func ComprarObjeto(db *sql.DB, usuario string, item vo.ItemTienda, creacion bool) error {
 	// Comprobar que el objeto existe
 	var existe bool
 	err := db.QueryRow(`SELECT EXISTS(SELECT * FROM backend."ItemTienda" WHERE id = $1)`, item.Id).Scan(&existe)
@@ -79,7 +80,7 @@ func ComprarObjeto(db *sql.DB, usuario string, item vo.ItemTienda) error {
 	}
 
 	// Comprobar que no es un objeto inicial 0, 1 o 2
-	if item.Id <= 2 {
+	if item.Id <= 2 && !creacion {
 		return errors.New("No puedes comprar uno de los objetos iniciales")
 	}
 

@@ -76,6 +76,9 @@ type EstadoPartida struct {
 	// Timestamp de la última acción realizada en el juego por el usuario del turno actual, para
 	// tratar la eliminación de usuarios inactivos
 	UltimaAccion time.Time
+
+	// Flag de si se ha enviado una alerta por inactividad al jugador actual
+	AlertaEnviada bool
 }
 
 func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
@@ -103,6 +106,7 @@ func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
 		Terminada:                      false,
 		JugadoresRestantesPorConsultar: crearSliceJugadores(jugadores),
 		UltimaAccion:                   time.Now(),
+		AlertaEnviada:                  false,
 	}
 
 	return e
@@ -193,6 +197,8 @@ func (e *EstadoPartida) SiguienteJugador() {
 
 	// Refresca el timestamp
 	e.UltimaAccion = time.Now()
+
+	e.AlertaEnviada = false
 }
 
 // AsignarTropasRefuerzo otorga un número de ejércitos al jugador que comienza un turno, dependiendo del número de territorios
@@ -402,6 +408,8 @@ func (e *EstadoPartida) FinDeFase(jugador string) error {
 
 	// Refresca el timestamp
 	e.UltimaAccion = time.Now()
+
+	e.AlertaEnviada = false
 
 	return nil
 }
