@@ -28,6 +28,11 @@ func EnviarSolicitudAmistad(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuarioReceptor := chi.URLParam(request, "nombre")
 	nombreUsuarioEmisor := middleware.ObtenerUsuarioCookie(request)
 
+	if nombreUsuarioEmisor == nombreUsuarioReceptor {
+		devolverError(writer, errors.New("No puedes enviarte una solicitud de amistad a ti mismo"))
+		return
+	}
+
 	usuarioEmisor := vo.Usuario{"", nombreUsuarioEmisor, "", "", http.Cookie{}, 0, 0, 0, 0, 0}
 	usuarioReceptor := vo.Usuario{"", nombreUsuarioReceptor, "", "", http.Cookie{}, 0, 0, 0, 0, 0}
 

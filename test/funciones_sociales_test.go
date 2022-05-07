@@ -10,7 +10,7 @@ import (
 // un nombre
 func TestFuncionesSociales(t *testing.T) {
 	t.Log("Purgando DB...")
-	purgarDB()
+	//purgarDB()
 
 	cookie := crearUsuario("usuario", t)
 	amigos := []string{"Amigo1", "Amigo2", "Amigo3", "Amigo4", "Amigo5"}
@@ -18,6 +18,9 @@ func TestFuncionesSociales(t *testing.T) {
 	for i, a := range amigos {
 		cookiesAmigos[i] = crearUsuario(a, t)
 	}
+
+	// Intento solicitarme amistad a mí mismo, se espera error
+	solicitarAmistadConError(cookie, t, "usuario")
 
 	// Prueba para la consulta de amigos pendientes
 	// El resto de usuarios solicitan amistad al primer usuario
