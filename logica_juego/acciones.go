@@ -157,7 +157,8 @@ func NewAccionReforzar(jugador string, territorioReforzado NumRegion, tropasRefu
 //  	"Destino": 3,
 //  	"TropasPerdidasAtacante": 15,
 //  	"TropasPerdidasDefensor": 5,
-//  	"NumDadosAtaque": 3,
+//  	"DadosAtacante": {3, 4, 6},
+//  	"DadosDefensor": {2, 2, 5},
 //  	"JugadorAtacante": "usuario1",
 //  	"JugadorDefensor": "usuario2"
 //    }
@@ -167,19 +168,21 @@ type AccionAtaque struct {
 	Destino                NumRegion // ID de región atacada
 	TropasPerdidasAtacante int       // Tropas perdidas por el atacante
 	TropasPerdidasDefensor int       // Tropas perdidas por el defensor
-	NumDadosAtaque         int       // Número de dados lanzados por el atacante
+	DadosAtacante          []int     // Resultados de los dados lanzados por el atacante, ordenados de menor a mayor valor
+	DadosDefensor          []int     // Resultados de los dados lanzados por el defensor, ordenados de menor a mayor valor
 	JugadorAtacante        string    // Nombre del atacante
 	JugadorDefensor        string    // Nombre del defensor
 }
 
-func NewAccionAtaque(origen NumRegion, destino NumRegion, tropasPerdidasAtacante int, tropasPerdidasDefensor int, numDadosAtaque int, jugadorAtacante string, jugadorDefensor string) AccionAtaque {
+func NewAccionAtaque(origen NumRegion, destino NumRegion, tropasPerdidasAtacante int, tropasPerdidasDefensor int, dadosAtacante []int, dadosDefensor []int, jugadorAtacante string, jugadorDefensor string) AccionAtaque {
 	return AccionAtaque{
 		IDAccion:               int(IDAccionAtaque),
 		Origen:                 origen,
 		Destino:                destino,
 		TropasPerdidasAtacante: tropasPerdidasAtacante,
 		TropasPerdidasDefensor: tropasPerdidasDefensor,
-		NumDadosAtaque:         numDadosAtaque,
+		DadosAtacante:          dadosAtacante,
+		DadosDefensor:          dadosDefensor,
 		JugadorAtacante:        jugadorAtacante,
 		JugadorDefensor:        jugadorDefensor}
 }

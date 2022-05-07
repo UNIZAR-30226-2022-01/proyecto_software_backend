@@ -18,7 +18,7 @@ import (
 // atacante perderá un ejército. En caso de que ambos jugadores hayan lanzado más de un dado, se repetirá el mismo proceso
 // comparando el valor del segundo dado más alto de cada uno
 //
-// No se puede atacar en los siguientes casos: no es el turno deñ jugador, no es la fase de ataque, el jugador tiene más de
+// No se puede atacar en los siguientes casos: no es el turno del jugador, no es la fase de ataque, el jugador tiene más de
 // 4 cartas, hay algún territorio sin ocupar, el territorio atacado no es adyacente, el territorio atacado no es de un rival,
 // el número de dados no está entre 1 y 3 o el número de ejércitos no supera el número de dados.
 func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador string) error {
@@ -115,7 +115,7 @@ func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador 
 
 	// Añadimos la acción correspondiente al ataque
 	e.Acciones = append(e.Acciones, NewAccionAtaque(origen, destino, tropasPerdidasAtacante, tropasPerdidasDefensor,
-		numDados, atacante, defensor))
+		dadosAtacante, dadosDefensor, atacante, defensor))
 
 	// Se emite después del ataque
 	if emitirAccionJugadorEliminado {

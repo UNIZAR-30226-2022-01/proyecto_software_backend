@@ -9,7 +9,7 @@ import (
 )
 
 func TestGenerarPartidaDebug(t *testing.T) {
-	//t.Skip("Se ha saltado la generación de ficheros DDL")
+	t.Skip("Se ha saltado la generación de ficheros DDL")
 	purgarDB()
 	// Creamos 6 usuarios, de nombre "jugadorx" y misma contraseña
 	jugadores := []string{"jugador1", "jugador2", "jugador3", "jugador4", "jugador5", "jugador6"}
@@ -56,7 +56,7 @@ func TestGenerarPartidaDebug(t *testing.T) {
 		logica_juego.NewAccionInicioTurno("jugador1", 3, 5, 2),
 		logica_juego.NewAccionCambioCartas(1, true, []logica_juego.NumRegion{logica_juego.Afghanistan, logica_juego.Alberta}, false),
 		logica_juego.NewAccionReforzar("jugador1", logica_juego.Central_america, 3),
-		logica_juego.NewAccionAtaque(logica_juego.Congo, logica_juego.South_africa, 3, 4, 3, "jugador1", "usuario2"),
+		logica_juego.NewAccionAtaque(logica_juego.Congo, logica_juego.South_africa, 3, 4, []int{2, 3, 5}, []int{4, 5, 6}, "jugador1", "usuario2"),
 		logica_juego.NewAccionOcupar(logica_juego.Great_britain, logica_juego.Northern_europe, 2, 7, "jugador1", "jugador2"),
 		logica_juego.NewAccionFortificar(logica_juego.China, logica_juego.Alaska, 9, 12, "jugador4"),
 		logica_juego.NewAccionObtenerCarta(logica_juego.Carta{IdCarta: 2, Tipo: logica_juego.Artilleria, Region: logica_juego.Northern_europe, EsComodin: false}, "jugador2"),
@@ -75,7 +75,7 @@ func TestGenerarPartidaDebug(t *testing.T) {
 
 func TestGenerarDDL(t *testing.T) {
 	// Comentar la línea 12 para modificar la DB de forma que contenga los datos necesarios para la creación de los ddl
-	t.Skip("Se ha saltado la generación de ficheros DDL")
+	//t.Skip("Se ha saltado la generación de ficheros DDL")
 
 	t.Log("Purgando DB...")
 	purgarDB()

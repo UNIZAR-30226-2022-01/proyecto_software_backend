@@ -118,7 +118,7 @@ func TestAtaqueUnitario(t *testing.T) {
 		t.Fatal("La última acción no es un ataque:", ultimaAccion)
 	}
 
-	if ultimoAtaque.NumDadosAtaque != 3 {
+	if len(ultimoAtaque.DadosAtacante) != 3 {
 		t.Fatal("El número de dados lanzados no es correcto")
 	}
 	if ultimoAtaque.TropasPerdidasDefensor+ultimoAtaque.TropasPerdidasAtacante != 2 {
@@ -130,7 +130,7 @@ func TestAtaqueUnitario(t *testing.T) {
 
 	t.Log("Se ha realizado correctamente el ataque desde", ultimoAtaque.Origen, "hasta", ultimoAtaque.Destino)
 	t.Log("El jugador atacante", ultimoAtaque.JugadorAtacante, "ha utilizado",
-		ultimoAtaque.NumDadosAtaque, "dados y ha perdido", ultimoAtaque.TropasPerdidasAtacante, "tropas")
+		len(ultimoAtaque.DadosAtacante), "dados y ha perdido", ultimoAtaque.TropasPerdidasAtacante, "tropas")
 	t.Log("El defensor", ultimoAtaque.JugadorDefensor, "ha perdido", ultimoAtaque.TropasPerdidasDefensor, "tropas")
 
 	// Comprobamos el fin del ataque en caso de que el defensor se quede sin tropas
