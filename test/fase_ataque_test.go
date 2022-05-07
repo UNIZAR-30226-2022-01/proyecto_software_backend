@@ -41,18 +41,6 @@ func TestAtaqueUnitario(t *testing.T) {
 	}
 	t.Log("OK, se ha obtenido el error:", err)
 
-	// Intento atacar con 5 o más cartas
-	partida.Fase = logica_juego.Ataque
-	partida.EstadosJugadores["Jugador1"].Cartas = []logica_juego.Carta{{IdCarta: 1}, {IdCarta: 1}, {IdCarta: 1},
-		{IdCarta: 1}, {IdCarta: 1}, {IdCarta: 1}}
-	t.Log("Intentamos atacar con más de 4 cartas, se espera error")
-	err = partida.Ataque(logica_juego.Venezuela, logica_juego.Brazil, 3, "Jugador1")
-	if err == nil {
-		t.Fatal("Se esperaba error al atacar con más de 4 cartas")
-	}
-	t.Log("OK, se ha obtenido el error:", err)
-	partida.EstadosJugadores["Jugador1"].Cartas = nil
-
 	// Intento atacar con un territorio sin ocupar
 	partida.HayTerritorioDesocupado = true
 	t.Log("Intentamos atacar con algún territorio desocupado, se espera error")
@@ -105,6 +93,8 @@ func TestAtaqueUnitario(t *testing.T) {
 	t.Log("OK, se ha obtenido el error:", err)
 
 	// Probamos ataques correctos
+	partida.TurnoJugador = 0
+	partida.Fase = logica_juego.Ataque
 	regionOrigen.NumTropas = 10
 	t.Log("Intentamos realizar un ataque correcto")
 	err = partida.Ataque(logica_juego.Venezuela, logica_juego.Brazil, 3, "Jugador1")
