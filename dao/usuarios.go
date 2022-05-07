@@ -182,7 +182,8 @@ func PartidaUsuario(db *sql.DB, usuario *vo.Usuario) (idPartida int, err error) 
 func ObtenerAmigos(db *sql.DB, usuario *vo.Usuario) (amigos []vo.Usuario, err error) {
 	rows, err := db.Query(`SELECT backend."EsAmigo"."nombreUsuario1", backend."EsAmigo"."nombreUsuario2"
 									FROM backend."EsAmigo" 
-									WHERE $1 in (backend."EsAmigo"."nombreUsuario1", backend."EsAmigo"."nombreUsuario2" )`, usuario.NombreUsuario)
+									WHERE $1 in (backend."EsAmigo"."nombreUsuario1", backend."EsAmigo"."nombreUsuario2")
+									AND NOT pendiente`, usuario.NombreUsuario)
 	defer rows.Close()
 	if err != nil {
 		return amigos, err

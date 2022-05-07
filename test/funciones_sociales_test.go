@@ -55,6 +55,12 @@ func TestFuncionesSociales(t *testing.T) {
 		solicitarAmistad(cookie, t, a)
 	}
 
+	// Comprobamos que las amistades pendientes no aparecen como amigos
+	listaAmigos := listarAmigos(cookie, t)
+	if len(listaAmigos) > 0 {
+		t.Fatal("Las solicitudes de amistad pendientes no deberían aparecer en la lista de amigos")
+	}
+
 	// Cada uno acepta la solicitud
 	for _, c := range cookiesAmigos[:len(cookiesAmigos)-1] {
 		aceptarSolicitudDeAmistad(c, t, "usuario")
@@ -151,7 +157,7 @@ func TestFuncionesSociales(t *testing.T) {
 	t.Log("Intentamos borrar un amigo")
 	eliminarAmigo(cookie, "Amigo5", t)
 
-	listaAmigos := listarAmigos(cookie, t)
+	listaAmigos = listarAmigos(cookie, t)
 	if len(listaAmigos) != 4 {
 		t.Fatal("No se ha borrado el amigo correctamente")
 	}
