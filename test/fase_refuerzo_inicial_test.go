@@ -195,15 +195,30 @@ func TestFaseRefuerzoInicial(t *testing.T) {
 	t.Log("fase:", partidaCache.Estado.Fase)
 	t.Log("turno:", partidaCache.Estado.Jugadores[partidaCache.Estado.TurnoJugador])
 
-	if partidaCache.Estado.Fase != logica_juego.Ataque {
-		t.Log("Se debería de haber pasado a la fase de ataque para el último jugador, tras reforzar todos")
+	if partidaCache.Estado.Fase != logica_juego.Refuerzo {
+		t.Log("Se debería de haber pasado a la fase de refuerzo para un nuevo jugador, tras reforzar todos")
 	}
 
+	for i := logica_juego.Eastern_australia; i <= logica_juego.Alberta; i++ {
+		if partidaCache.Estado.EstadoMapa[i].Ocupante == "usuario1" {
+			reforzarTerritorio(t, cookie, int(i), partidaCache.Estado.EstadosJugadores["usuario1"].Tropas)
+			break
+		}
+	}
+
+	err = saltarFase(cookie, t)
+	if err != nil {
+		t.Fatal("Error al saltar de fase:", err)
+	}
+
+	if partidaCache.Estado.Fase != logica_juego.Ataque {
+		t.Log("Se debería de haber pasado a la fase de refuerzo para un nuevo jugador, tras reforzar todos")
+	}
 	t.Log("Intentamos finalizar el ataque con territorios vacíos, se espera error")
 	partidaCache = comprobarPartidaEnCurso(t, 1)
 	partidaCache.Estado.EstadoMapa[logica_juego.Egypt].Ocupante = ""
 	globales.CachePartidas.AlmacenarPartida(partidaCache)
-	err = saltarFase(cookie6, t)
+	err = saltarFase(cookie, t)
 	if err == nil {
 		t.Fatal("Se esperaba error al saltar el ataque con territorios vacíos")
 	}
@@ -212,12 +227,12 @@ func TestFaseRefuerzoInicial(t *testing.T) {
 	/////
 
 	partidaCache = comprobarPartidaEnCurso(t, 1)
-	partidaCache.Estado.EstadoMapa[logica_juego.Egypt].Ocupante = "Jugador1"
+	partidaCache.Estado.EstadoMapa[logica_juego.Egypt].Ocupante = "jugador1"
 	globales.CachePartidas.AlmacenarPartida(partidaCache)
 
 	// Cambio de fase correcto
 	t.Log("Intentamos cambiar de fase, de ataque a fortificación")
-	err = saltarFase(cookie6, t)
+	err = saltarFase(cookie, t)
 	if err != nil {
 		t.Fatal("Error al saltar de fase:", err)
 	}
@@ -225,7 +240,7 @@ func TestFaseRefuerzoInicial(t *testing.T) {
 
 	// Cambio de fase correcto
 	t.Log("Intentamos cambiar de fase, de fortificación a refuerzo, cediendo el turno")
-	err = saltarFase(cookie6, t)
+	err = saltarFase(cookie, t)
 	if err != nil {
 		t.Fatal("Error al saltar de fase:", err)
 	}

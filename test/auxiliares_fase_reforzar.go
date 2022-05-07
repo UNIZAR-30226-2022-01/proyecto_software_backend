@@ -52,7 +52,9 @@ func reforzarTerritorio(t *testing.T, cookie *http.Cookie, numRegion int, numTro
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatal("Obtenido código de error no 200 al reforzar territorio:", resp.StatusCode)
+		body, _ := ioutil.ReadAll(resp.Body)
+		bodyString := string(body)
+		t.Fatal("Obtenido código de error no 200 al reforzar territorio:", resp.StatusCode, bodyString)
 	}
 
 }

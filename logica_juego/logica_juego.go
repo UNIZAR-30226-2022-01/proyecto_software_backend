@@ -346,7 +346,7 @@ func (e *EstadoPartida) FinDeFase(jugador string) error {
 			return errors.New("Estás obligado a cambiar cartas hasta tener menos de 5")
 		}
 		if estadoJugador.Tropas > 0 {
-			return errors.New("Estás obligado a asignar todas tus tropas para cambiar de fase")
+			return errors.New("Estás obligado a asignar todas tus tropas para cambiar de fase, te quedan " + strconv.Itoa(estadoJugador.Tropas) + "tropas")
 		}
 		// Se comprueba si la fase ha finalizado (no le quedan tropas a ningún jugador)
 		todosSinTropas := true
@@ -359,26 +359,24 @@ func (e *EstadoPartida) FinDeFase(jugador string) error {
 			}
 		}
 
-		if todosSinTropas {
-			// Pasamos a fase de ataque
-			e.Fase = Ataque
-			e.Acciones = append(e.Acciones, NewAccionCambioFase(Ataque, jugador))
-		} else {
-			// Se mantiene en la fase de inicio para el siguiente jugador
-			e.SiguienteJugador()
-		}
+		if todosSinTropas { // Se pasa al siguiente jugador, que empezará en fase de Refuerzo
+			e.Fase = Fortificar // Se finge que se ha pasado desde fortificar (o cualquier otra excepto Inicio)
+		} //Si no, se mantiene en la fase de inicio para el siguiente jugador
+
+		e.SiguienteJugador()
 
 	case Refuerzo:
 		if len(estadoJugador.Cartas) > 4 {
 			return errors.New("Estás obligado a cambiar cartas hasta tener menos de 5")
 		}
 		if estadoJugador.Tropas > 0 {
-			return errors.New("Estás obligado a asignar todas tus tropas para cambiar de fase")
+			return errors.New("Estás obligado a asignar todas tus tropas para cambiar de fase, te quedan " + strconv.Itoa(estadoJugador.Tropas) + "tropas")
 		}
 
 		// Pasamos a fase de ataque
 		e.Fase = Ataque
 		e.Acciones = append(e.Acciones, NewAccionCambioFase(Ataque, jugador))
+
 	case Ataque:
 		for _, region := range e.EstadoMapa {
 			if region.Ocupante == "" {
@@ -389,6 +387,7 @@ func (e *EstadoPartida) FinDeFase(jugador string) error {
 		// Pasamos a la fase de fortificación
 		e.Fase = Fortificar
 		e.Acciones = append(e.Acciones, NewAccionCambioFase(Fortificar, jugador))
+
 	case Fortificar:
 		// El jugador roba una carta si ha conquistado algún territorio y no ha robado ya
 		if e.HaConquistado && !e.HaRecibidoCarta {

@@ -74,8 +74,7 @@ func TestGenerarPartidaDebug(t *testing.T) {
 }
 
 func TestGenerarDDL(t *testing.T) {
-	// Comentar la línea 12 para modificar la DB de forma que contenga los datos necesarios para la creación de los ddl
-	//t.Skip("Se ha saltado la generación de ficheros DDL")
+	t.Skip("Se ha saltado la generación de ficheros DDL")
 
 	t.Log("Purgando DB...")
 	purgarDB()
@@ -131,45 +130,50 @@ func TestGenerarDDL(t *testing.T) {
 		}
 	}
 
-	// Comienza la fase de ataque
+	// Comienza la fase de refuerzo
 	partidaCache = comprobarPartidaEnCurso(t, 1)
-	if partidaCache.Estado.Fase != logica_juego.Ataque {
-		t.Fatal("No se ha pasado a la fase de ataque correctamente")
+	if partidaCache.Estado.Fase != logica_juego.Refuerzo {
+		t.Fatal("No se ha pasado a la fase de refuerzo correctamente")
 	}
-	t.Log("Se ha pasado a la fase de ataque correctamente")
-	if partidaCache.Estado.TurnoJugador != 5 {
-		t.Fatal("No es el turno del jugador6")
+	t.Log("Se ha pasado a la fase de refuerzo correctamente")
+	if partidaCache.Estado.TurnoJugador != 0 {
+		t.Fatal("No es el turno del jugador1")
 	}
 	t.Log("Es el turno del jugador", jugadores[partidaCache.Estado.TurnoJugador])
 
-	time.Sleep(5 * time.Second)
-	// Breakpoint aquí para obtener el ddl de la fase de ataque
+	// Breakpoint aquí para obtener el ddl de la fase de refuerzo
 
-	// Pasamos a la fase de fortificación
-	err = saltarFase(cookies[5], t)
+	for i := logica_juego.Eastern_australia; i <= logica_juego.Alberta; i++ {
+		if partidaCache.Estado.EstadoMapa[i].Ocupante == "jugador1" {
+			reforzarTerritorio(t, cookies[0], int(i), 3)
+			break
+		}
+	}
+
+	// Pasamos a la fase de ataque
+	err = saltarFase(cookies[0], t)
 	if err != nil {
 		t.Fatal("Error al saltar fase:", err)
 	}
 
 	partidaCache = comprobarPartidaEnCurso(t, 1)
-	if partidaCache.Estado.Fase != logica_juego.Fortificar {
-		t.Fatal("No se ha pasado a la fase de fortificación correctamente")
+	if partidaCache.Estado.Fase != logica_juego.Ataque {
+		t.Fatal("No se ha pasado a la fase de ataque correctamente")
 	}
-	t.Log("Se ha pasado a la fase de fortificación correctamente")
+	t.Log("Se ha pasado a la fase de ataque correctamente")
 	t.Log("Es el turno del jugador", jugadores[partidaCache.Estado.TurnoJugador])
 
-	time.Sleep(5 * time.Second)
-	// Breakpoint aquí para obtener el ddl de la fase de fortificación
+	// Breakpoint aquí para obtener el ddl de la fase de ataque
 
-	// Pasamos a la fase de refuerzo
-	err = saltarFase(cookies[5], t)
+	// Pasamos a la fase de fortificación
+	err = saltarFase(cookies[0], t)
 	if err != nil {
 		t.Fatal("Error al saltar fase:", err)
 	}
 	// Turno del jugador1
 
 	partidaCache = comprobarPartidaEnCurso(t, 1)
-	if partidaCache.Estado.Fase != logica_juego.Refuerzo {
+	if partidaCache.Estado.Fase != logica_juego.Fortificar {
 		t.Fatal("No se ha pasado a la fase de fortificación correctamente")
 	}
 	t.Log("Se ha pasado a la fase de fortificación correctamente")
@@ -185,8 +189,7 @@ func TestGenerarDDL(t *testing.T) {
 	partidaCache = comprobarPartidaEnCurso(t, 1)
 	invarianteNumeroDeCartas(partidaCache.Estado, *partidaCache.Estado.EstadosJugadores[jugadores[0]], t)
 
-	// Breakpoint aquí para obtener el ddl de la fase de refuerzo
-	time.Sleep(5 * time.Second)
+	// Breakpoint aquí para obtener el ddl de la fase de fortificación
 }
 
 func TestComprobarDDL(t *testing.T) {
