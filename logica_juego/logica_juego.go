@@ -380,10 +380,6 @@ func (e *EstadoPartida) FinDeFase(jugador string) error {
 		e.Fase = Ataque
 		e.Acciones = append(e.Acciones, NewAccionCambioFase(Ataque, jugador))
 	case Ataque:
-		if len(estadoJugador.Cartas) > 4 {
-			return errors.New("Estás obligado a cambiar cartas hasta tener menos de 5")
-		}
-
 		for _, region := range e.EstadoMapa {
 			if region.Ocupante == "" {
 				return errors.New("No puedes finalizar la fase de ataque dejando territorios desocupados")

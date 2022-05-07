@@ -458,19 +458,6 @@ func TestIntegracionAtaqueOcupar(t *testing.T) {
 	}
 	t.Log("OK, se ha recibido el error:", err)
 
-	// Intento atacar con más de 5, se espera error
-	partidaCache = comprobarPartidaEnCurso(t, 1)
-	partidaCache.Estado.EstadosJugadores["usuario1"].Cartas = []logica_juego.Carta{{IdCarta: 1}, {IdCarta: 2},
-		{IdCarta: 3}, {IdCarta: 4}, {IdCarta: 5}}
-	globales.CachePartidas.AlmacenarPartida(partidaCache)
-
-	t.Log("Intento atacar con más de 5 cartas, se espera error")
-	err = atacar(logica_juego.Argentina, logica_juego.Brazil, 1, cookie, t)
-	if err == nil {
-		t.Fatal("Se esperaba error al atacar con más de 5 cartas")
-	}
-	t.Log("OK, se ha recibido el error:", err)
-
 	partidaCache = comprobarPartidaEnCurso(t, 1)
 	partidaCache.Estado.EstadosJugadores["usuario1"].Cartas = nil
 	globales.CachePartidas.AlmacenarPartida(partidaCache)

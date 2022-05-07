@@ -215,10 +215,6 @@ func TestFaseRefuerzoInicial(t *testing.T) {
 	partidaCache.Estado.EstadoMapa[logica_juego.Egypt].Ocupante = "Jugador1"
 	globales.CachePartidas.AlmacenarPartida(partidaCache)
 
-	// Intentamos cambiar de fase con más de cuatro cartas, se espera error
-	t.Log("Intentamos cambiar de ataque a fortificación con más de 4 cartas, se espera error")
-	partidaCache, err = cambioDeFaseConDemasiadasCartas(t, partidaCache, err, cookie6, "usuario6")
-
 	// Cambio de fase correcto
 	t.Log("Intentamos cambiar de fase, de ataque a fortificación")
 	err = saltarFase(cookie6, t)

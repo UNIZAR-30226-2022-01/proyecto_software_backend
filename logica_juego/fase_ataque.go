@@ -2,7 +2,6 @@ package logica_juego
 
 import (
 	"errors"
-	"log"
 	"math/rand"
 	"sort"
 	"time"
@@ -34,14 +33,10 @@ func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador 
 	if e.Fase != Ataque {
 		return errors.New("Solo puedes atacar durante la fase de ataque")
 	}
-	if len(e.EstadosJugadores[jugador].Cartas) >= 5 {
-		return errors.New("Estás obligado a cambiar cartas si tienes 5 o más")
-	}
 	if e.HayTerritorioDesocupado {
 		return errors.New("No puedes atacar si hay algún territorio sin ocupar")
 	}
 	if jugador != atacante {
-		log.Println("DEVUELVO ERROR TERRITORIO PROPIO")
 		return errors.New("Solo puedes atacar desde un territorio que ocupas")
 	}
 	if !Conectadas(origen, destino) {

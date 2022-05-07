@@ -69,6 +69,7 @@ func TestBaraja(t *testing.T) {
 
 	// Prueba de canjes
 	// Cambiamos 3 cartas de infantería
+
 	estadoPartida.Fase = logica_juego.Refuerzo
 	t.Log("Cambiando 3 cartas de infanteria")
 	cambiarCartas(t, estadoJugador, &estadoPartida, 0, 1, 2, 1)

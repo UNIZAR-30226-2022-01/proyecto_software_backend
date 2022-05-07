@@ -114,9 +114,8 @@ func (e *EstadoPartida) CambiarCartas(jugador string, ID_carta1, ID_carta2, ID_c
 		return errors.New("Se ha solicitado una acción fuera de turno, el jugador en este turno es " + e.ObtenerJugadorTurno())
 	}
 
-	if e.Fase == Fortificar || (e.Fase == Ataque && len(estado.Cartas) < 5) {
-		return errors.New("Solo se pueden cambiar cartas durante el refuerzo o el ataque," +
-			" en caso de tener más de 5 tras derrotar a un rival")
+	if e.Fase != Refuerzo {
+		return errors.New("Solo se pueden cambiar cartas durante la fase de refuerzo")
 	}
 
 	if !existeCarta(ID_carta1, estado.Cartas) || !existeCarta(ID_carta2, estado.Cartas) ||
