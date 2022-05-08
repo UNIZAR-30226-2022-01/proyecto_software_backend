@@ -15,15 +15,15 @@ func TestRanking(t *testing.T) {
 
 	// Añadimos usuarios con distintos números de victorias
 	_, err := globales.Db.Exec(`INSERT INTO backend."Usuario" (email, "nombreUsuario", "passwordHash", biografia, "cookieSesion",
-                               "partidasGanadas", "partidasTotales", puntos, "ID_dado", "ID_avatar") VALUES 
-                               ('email1', 'juan', 'password', 'biografia', 'cookie', 15, 20, 100, 0, 0),
-                               ('email2', 'pedro', 'password', 'biografia', 'cookie', 10, 12, 100, 0, 0),
-                               ('email3', 'fran', 'password', 'biografia', 'cookie', 30, 35, 100, 0, 0),
-                               ('email4', 'luis', 'password', 'biografia', 'cookie', 5, 10, 100, 0, 0),
-                               ('email5', 'susana', 'password', 'biografia', 'cookie', 6, 15, 100, 0, 0),
-                               ('email6', 'daniel', 'password', 'biografia', 'cookie', 15, 20, 100, 0, 0),
-                               ('email7', 'usuario1', 'password', 'biografia', 'cookie', 17, 20, 100, 0, 0),
-                               ('email8', 'usuario2', 'password', 'biografia', 'cookie', 29, 50, 100, 0, 0);`)
+                               "partidasGanadas", "partidasTotales", puntos, "ID_avatar", "ID_dado") VALUES 
+                               ('email1', 'juan', 'password', 'biografia', 'cookie', 15, 20, 100, 1, 9),
+                               ('email2', 'pedro', 'password', 'biografia', 'cookie', 10, 12, 100, 1, 9),
+                               ('email3', 'fran', 'password', 'biografia', 'cookie', 30, 35, 100, 1, 9),
+                               ('email4', 'luis', 'password', 'biografia', 'cookie', 5, 10, 100, 1, 9),
+                               ('email5', 'susana', 'password', 'biografia', 'cookie', 6, 15, 100, 1, 9),
+                               ('email6', 'daniel', 'password', 'biografia', 'cookie', 15, 20, 100, 1, 9),
+                               ('email7', 'usuario1', 'password', 'biografia', 'cookie', 17, 20, 100, 1, 9),
+                               ('email8', 'usuario2', 'password', 'biografia', 'cookie', 29, 50, 100, 1, 9);`)
 	if err != nil {
 		t.Fatal("Error al crear los usuarios:", err)
 	}

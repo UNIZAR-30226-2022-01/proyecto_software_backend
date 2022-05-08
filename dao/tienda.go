@@ -49,6 +49,20 @@ func ConsultarColeccion(db *sql.DB, usuario string) (items []vo.ItemTienda, err 
 	return items, nil
 }
 
+// ObtenerIDAvatar devuelve el ID de item del avatar equipado para el usuario dado
+func ObtenerIDAvatar(db *sql.DB, usuario string) (id int, err error) {
+	err = db.QueryRow(`SELECT "ID_avatar" FROM backend."Usuario" WHERE "nombreUsuario" = $1`, usuario).Scan(&id)
+
+	return id, err
+}
+
+// ObtenerIDDado devuelve el ID de item de los dados equipados para el usuario dado
+func ObtenerIDDado(db *sql.DB, usuario string) (id int, err error) {
+	err = db.QueryRow(`SELECT "ID_dado" FROM backend."Usuario" WHERE "nombreUsuario" = $1`, usuario).Scan(&id)
+
+	return id, err
+}
+
 // ObtenerObjeto recupera un objeto de la tienda de la base de datos a partir de su identificador
 func ObtenerObjeto(db *sql.DB, idItem int) (vo.ItemTienda, error) {
 	var item vo.ItemTienda
@@ -79,8 +93,8 @@ func ComprarObjeto(db *sql.DB, usuario string, item vo.ItemTienda, creacion bool
 		return errors.New("El objeto no existe")
 	}
 
-	// Comprobar que no es un objeto inicial 0, 1 o 2
-	if item.Id <= 2 && !creacion {
+	// Comprobar que no es un objeto inicial
+	if item.Precio == 0 && !creacion {
 		return errors.New("No puedes comprar uno de los objetos iniciales")
 	}
 

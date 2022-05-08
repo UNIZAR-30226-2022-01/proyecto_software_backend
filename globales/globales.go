@@ -29,6 +29,12 @@ const (
 	NOMBRE_DNS_REACT                    = "NOMBRE_DNS_REACT"
 	NOMBRE_DNS_ANGULAR                  = "NOMBRE_DNS_ANGULAR"
 	NOMBRE_DNS_API                      = "NOMBRE_DNS_API"
+	RUTA_AVATARES                       = "assets/avatares/"
+	RUTA_DADOS                          = "assets/dados/"
+	FORMATO_ASSETS                      = ".jpg"
+
+	ID_AVATAR_POR_DEFECTO = 1
+	ID_DADOS_POR_DEFECTO  = 9
 )
 
 var Db *sql.DB // Base de datos thread safe, a compartir entre los módulos

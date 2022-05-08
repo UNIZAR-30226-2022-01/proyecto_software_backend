@@ -8,6 +8,8 @@ import (
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware"
 	"github.com/go-chi/chi/v5"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -65,6 +67,72 @@ func ConsultarColeccion(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(writer).Encode(objetos)
 	escribirHeaderExito(writer)
+}
+
+// ObtenerAvatar devuelve una imagen codificada como octet-stream para el avatar
+// del usuario indicado.
+//
+// Devuelve un error 500 en caso de que el usuario no exista u ocurra cualquier otro error
+//
+// Ruta: /api/obtenerAvatar/{usuario}
+// Tipo: GET
+func ObtenerAvatar(writer http.ResponseWriter, request *http.Request) {
+	usuario := chi.URLParam(request, "usuario")
+	idAvatar, err := dao.ObtenerIDAvatar(globales.Db, usuario)
+	if err != nil {
+		log.Println("error al obtener id:", err)
+		devolverErrorSQL(writer)
+		return
+	}
+
+	bytes, err := ioutil.ReadFile(globales.RUTA_AVATARES + strconv.Itoa(idAvatar) + globales.FORMATO_ASSETS)
+	if err != nil {
+		log.Println("error al cargar img:", err)
+		devolverErrorSQL(writer)
+		return
+	}
+
+	writer.Header().Set("Content-Type", "application/octet-stream")
+	_, err = writer.Write(bytes)
+	if err != nil {
+		log.Println("error al escribir img:", err)
+		devolverErrorSQL(writer)
+	} else {
+		escribirHeaderExito(writer)
+	}
+}
+
+// ObtenerDados devuelve una imagen codificada como octet-stream para la cara indicada de los dados
+// equipados por el usuario que lo solicita. La cara debe ser un valor entre 1 y 6, correspondiente
+// al valor de los dados
+//
+// Devuelve un error 500 en caso de que la cara sea inválida u ocurra cualquier otro error
+//
+// Ruta: /api/obtenerDados/{cara}
+// Tipo: GET
+func ObtenerDados(writer http.ResponseWriter, request *http.Request) {
+	usuario := middleware.ObtenerUsuarioCookie(request)
+	cara := chi.URLParam(request, "cara")
+	idDados, err := dao.ObtenerIDDado(globales.Db, usuario)
+
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	bytes, err := ioutil.ReadFile(globales.RUTA_DADOS + strconv.Itoa(idDados) + cara + globales.FORMATO_ASSETS)
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	writer.Header().Set("Content-Type", "application/octet-stream")
+	_, err = writer.Write(bytes)
+	if err != nil {
+		devolverErrorSQL(writer)
+	} else {
+		escribirHeaderExito(writer)
+	}
 }
 
 // ComprarObjeto permite al jugador comprar un objeto de la tienda siempre y cuando tenga los puntos necesarios.

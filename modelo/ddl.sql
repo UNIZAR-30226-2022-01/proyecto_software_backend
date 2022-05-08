@@ -77,18 +77,38 @@ CREATE TABLE backend."TieneItems" (
 
 INSERT INTO backend."ItemTienda"
 (id, nombre, descripcion, precio, tipo)
-VALUES(0, 'Item por defecto', 'Item por defecto para DDLs de prueba.', 0, 'dado'::backend."item");
-INSERT INTO backend."ItemTienda"
-(id, nombre, descripcion, precio, tipo)
-VALUES(1, 'Dados por defecto', 'Dados por defecto, aburridos.', 0, 'dado'::backend."item");
-INSERT INTO backend."ItemTienda"
-(id, nombre, descripcion, precio, tipo)
-VALUES(2, 'Avatar por defecto', 'Avatar por defecto, aburrido.', 0, 'avatar'::backend."item");
+VALUES(1, 'Avatar de mapache', 'Avatar de un mapache, con mucho estilo.', 0, 'avatar'::backend."item");
 
 INSERT INTO backend."ItemTienda"
 (id, nombre, descripcion, precio, tipo)
-VALUES(3, 'Dados de prueba', 'Dados de prueba.', 50, 'dado'::backend."item");
+VALUES(2, 'Avatar de jirafa', 'Avatar de una jirafa, para estar a la altura de tus contrincantes.', 10, 'avatar'::backend."item");
 
 INSERT INTO backend."ItemTienda"
 (id, nombre, descripcion, precio, tipo)
-VALUES(4, 'Avatar de prueba', 'Avatar de prueb.', 50, 'avatar'::backend."item");
+VALUES(3, 'Avatar de gallina', 'Avatar de una gallina, ¿serás capaz de evitar rendirte?.', 15, 'avatar'::backend."item");
+
+INSERT INTO backend."ItemTienda"
+(id, nombre, descripcion, precio, tipo)
+VALUES(4, 'Avatar de oveja', 'Avatar de una oveja. Es simplemente una oveja, no sé que esperas que aparezca en la descripción.', 25, 'avatar'::backend."item");
+
+INSERT INTO backend."ItemTienda"
+(id, nombre, descripcion, precio, tipo)
+VALUES(5, 'Avatar de shiba inu', 'Avatar de un shiba inu. Wow, such avatar, very expensive.', 100, 'avatar'::backend."item");
+
+INSERT INTO backend."ItemTienda"
+(id, nombre, descripcion, precio, tipo)
+VALUES(6, 'Avatar de panda rojo', 'Avatar de un panda rojo, para matar de ternura a tus contrincantes.', 125, 'avatar'::backend."item");
+
+INSERT INTO backend."ItemTienda"
+(id, nombre, descripcion, precio, tipo)
+VALUES(7, 'Avatar de fénec', 'Avatar de un fénec, para oír los movimiento de tus contrincantes a kilómetros.', 150, 'avatar'::backend."item");
+
+INSERT INTO backend."ItemTienda"
+(id, nombre, descripcion, precio, tipo)
+VALUES(8, 'Avatar de quokka', 'Avatar de un quokka, para siempre sonreir ante cualquier adversidad.', 125, 'avatar'::backend."item");
+
+
+
+INSERT INTO backend."ItemTienda"
+(id, nombre, descripcion, precio, tipo)
+VALUES(9, 'Dados por defecto', 'Dados de prueba.', 0, 'dado'::backend."item");

@@ -47,14 +47,14 @@ func Registro(writer http.ResponseWriter, request *http.Request) {
 		}
 
 		// Otorga los dados y avatar por defecto
-		err = dao.ComprarObjeto(globales.Db, nombre, vo.ItemTienda{Id: 1}, true)
+		err = dao.ComprarObjeto(globales.Db, nombre, vo.ItemTienda{Id: globales.ID_AVATAR_POR_DEFECTO}, true)
 		if err != nil {
 			devolverErrorSQL(writer)
 			log.Println(err)
 			return
 		}
 
-		err = dao.ComprarObjeto(globales.Db, nombre, vo.ItemTienda{Id: 2}, true)
+		err = dao.ComprarObjeto(globales.Db, nombre, vo.ItemTienda{Id: globales.ID_DADOS_POR_DEFECTO}, true)
 		if err != nil {
 			devolverErrorSQL(writer)
 			log.Println(err)
