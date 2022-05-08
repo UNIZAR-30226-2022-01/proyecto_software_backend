@@ -185,6 +185,29 @@ func abandonarLobby(cookie *http.Cookie, t *testing.T) {
 	}
 }
 
+func abandonarPartida(cookie *http.Cookie, t *testing.T) {
+	// O usar cookie jar de https://stackoverflow.com/questions/12756782/go-http-post-and-use-cookies
+	client := &http.Client{}
+
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/abandonarPartida", nil)
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // Para indicar que el formulario "va en la url", porque campos.Encode() hace eso
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		t.Fatal("Error en POST de abandonar partida:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al abandonar una partida:", resp.StatusCode)
+	}
+}
+
 func unirseAPartida(cookie *http.Cookie, t *testing.T, id int) {
 	client := &http.Client{}
 

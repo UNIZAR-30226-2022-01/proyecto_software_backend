@@ -112,9 +112,9 @@ func CrearEstadoPartida(jugadores []string) (e EstadoPartida) {
 	return e
 }
 
-// ExpulsarJugador contabiliza un jugador como expulsado (derrotado), añade una acción de expulsión y
-// pasa al siguiente jugador si es posible o para la Goroutine de expulsión si no quedan jugadores
-func (e *EstadoPartida) ExpulsarJugador() {
+// ExpulsarJugadorActual contabiliza el jugador del turno actual (derrotado), añade una acción de expulsión y
+// pasa al siguiente jugador si es posible
+func (e *EstadoPartida) ExpulsarJugadorActual() {
 	jugador := e.Jugadores[e.TurnoJugador]
 
 	e.JugadoresActivos[e.obtenerTurnoJugador(jugador)] = false
@@ -131,6 +131,30 @@ func (e *EstadoPartida) ExpulsarJugador() {
 	if jugadoresActivos > 0 {
 		e.SiguienteJugador()
 	} else {
+		// Todos los jugadores han sido derrotados o expulsados, se para la Goroutine y espera
+		// a que consulten el estado
+		e.Terminada = true
+		e.JugadoresRestantesPorConsultar = nil
+	}
+}
+
+// ExpulsarJugador contabiliza un jugador dado como expulsado (derrotado), añade una acción de expulsión y
+// pasa al siguiente jugador si era el actual y es posible
+func (e *EstadoPartida) ExpulsarJugador(expulsado string) {
+	e.JugadoresActivos[e.obtenerTurnoJugador(expulsado)] = false
+
+	e.Acciones = append(e.Acciones, NewAccionJugadorExpulsado(expulsado))
+
+	jugadoresActivos := 0
+	for _, act := range e.JugadoresActivos {
+		if act {
+			jugadoresActivos += 1
+		}
+	}
+
+	if jugadoresActivos > 0 && e.Jugadores[e.TurnoJugador] == expulsado { // Era el jugador del turno actual
+		e.SiguienteJugador()
+	} else if jugadoresActivos == 0 {
 		// Todos los jugadores han sido derrotados o expulsados, se para la Goroutine y espera
 		// a que consulten el estado
 		e.Terminada = true

@@ -119,7 +119,7 @@ func (ap *AlmacenPartidas) limpiarCache() {
 		if p.Estado.UltimaAccion.Add(time.Hour * logica_juego.HORAS_EXPULSION_INACTIVIDAD).Before(time.Now()) {
 			log.Println("Eliminando a usuario", p.Estado.Jugadores[p.Estado.TurnoJugador], "de partida", i, "por inactividad...")
 			CanalExpulsionUsuariosDB <- p.Estado.Jugadores[p.Estado.TurnoJugador]
-			p.Estado.ExpulsarJugador()
+			p.Estado.ExpulsarJugadorActual()
 
 			ap.Partidas[p.IdPartida] = p
 		}
