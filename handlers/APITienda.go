@@ -181,6 +181,56 @@ func ObtenerDados(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
+func ObtenerDadoPorID(writer http.ResponseWriter, request *http.Request) {
+	id := chi.URLParam(request, "id")
+
+	bytes, err := ioutil.ReadFile(globales.RUTA_DADOS + id + "5" + globales.FORMATO_ASSETS)
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	writer.Header().Set("Content-Type", "application/octet-stream")
+	_, err = writer.Write(bytes)
+}
+
+func ObtenerItem(writer http.ResponseWriter, request *http.Request) {
+	var bytes []byte
+	idParam := chi.URLParam(request, "id")
+
+	id, err := strconv.Atoi(idParam)
+
+	if err != nil {
+		devolverError(writer, errors.New("El id de ítem debe ser un número entero"))
+		return
+	}
+
+	item, err := dao.ObtenerObjeto(globales.Db, id)
+	if err != nil {
+		devolverError(writer, errors.New("El id de ítem no existe"))
+		return
+	}
+
+	if item.Tipo == globales.TIPO_AVATAR {
+		bytes, err = ioutil.ReadFile(globales.RUTA_AVATARES + strconv.Itoa(item.Id) + globales.FORMATO_ASSETS)
+		if err != nil {
+			log.Println("error al cargar img:", err)
+			devolverErrorSQL(writer)
+			return
+		}
+	} else if item.Tipo == globales.TIPO_DADO {
+		bytes, err = ioutil.ReadFile(globales.RUTA_DADOS + strconv.Itoa(item.Id) + "5" + globales.FORMATO_ASSETS)
+		if err != nil {
+			log.Println("error al cargar img:", err)
+			devolverErrorSQL(writer)
+			return
+		}
+	}
+
+	writer.Header().Set("Content-Type", "application/octet-stream")
+	_, err = writer.Write(bytes)
+}
+
 // ComprarObjeto permite al jugador comprar un objeto de la tienda siempre y cuando tenga los puntos necesarios.
 // Para ello, especificará como parte de la URL el identificador del objeto que desea comprar. La compra se realizará
 // siempre que dicho objeto exista, no sea uno de los objetos iniciales, el jugador tenga los puntos suficientes para
