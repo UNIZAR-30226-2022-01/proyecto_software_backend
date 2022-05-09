@@ -110,6 +110,7 @@ type ItemTienda struct {
 	Descripcion string
 	Precio      int
 	Tipo        string
+	Imagen      []byte // Blob
 }
 
 type ResumenPartida struct {

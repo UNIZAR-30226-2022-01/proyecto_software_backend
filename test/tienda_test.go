@@ -21,7 +21,6 @@ func TestTienda(t *testing.T) {
 	if len(items) < 9 {
 		t.Fatal("Debería haber al menos 9 objetos disponibles en la tienda")
 	}
-	t.Log("Se han recuperado los siguientes objetos de la tienda:", items)
 
 	// Le damos puntos al usuario de forma artificial para que pueda comprar
 	dao.OtorgarPuntos(globales.Db, &vo.Usuario{NombreUsuario: "usuario"}, 100, true)
@@ -69,7 +68,6 @@ func TestTienda(t *testing.T) {
 	if len(items) != 3 {
 		t.Fatal("No se ha consultado correctamente la colección de objetos del jugador:", items)
 	}
-	t.Log("Se han recuperado los siguientes objetos del jugador:", items)
 
 	// Intentamos equipar un aspecto
 	t.Log("Intentamos equipar un aspecto por defecto")

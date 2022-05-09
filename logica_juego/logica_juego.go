@@ -370,7 +370,7 @@ func (e *EstadoPartida) FinDeFase(jugador string) error {
 			return errors.New("Estás obligado a cambiar cartas hasta tener menos de 5")
 		}
 		if estadoJugador.Tropas > 0 {
-			return errors.New("Estás obligado a asignar todas tus tropas para cambiar de fase, te quedan " + strconv.Itoa(estadoJugador.Tropas) + "tropas")
+			return errors.New("Estás obligado a asignar todas tus tropas para cambiar de fase, te quedan " + strconv.Itoa(estadoJugador.Tropas) + " tropas")
 		}
 		// Se comprueba si la fase ha finalizado (no le quedan tropas a ningún jugador)
 		todosSinTropas := true
@@ -394,7 +394,7 @@ func (e *EstadoPartida) FinDeFase(jugador string) error {
 			return errors.New("Estás obligado a cambiar cartas hasta tener menos de 5")
 		}
 		if estadoJugador.Tropas > 0 {
-			return errors.New("Estás obligado a asignar todas tus tropas para cambiar de fase, te quedan " + strconv.Itoa(estadoJugador.Tropas) + "tropas")
+			return errors.New("Estás obligado a asignar todas tus tropas para cambiar de fase, te quedan " + strconv.Itoa(estadoJugador.Tropas) + " tropas")
 		}
 
 		// Pasamos a fase de ataque

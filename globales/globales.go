@@ -35,6 +35,8 @@ const (
 
 	ID_AVATAR_POR_DEFECTO = 1
 	ID_DADOS_POR_DEFECTO  = 9
+	TIPO_AVATAR           = "avatar"
+	TIPO_DADO             = "dado"
 )
 
 var Db *sql.DB // Base de datos thread safe, a compartir entre los módulos

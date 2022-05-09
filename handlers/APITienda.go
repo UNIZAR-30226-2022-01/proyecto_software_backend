@@ -21,7 +21,8 @@ import (
 // 	  Nombre: 		string
 // 	  Descripcion: 	string
 // 	  Precio: 		int
-// 	  Tipo: 		string
+// 	  Tipo: 		string ({"avatar", "dado"})
+//	  Imagen:		string (blob)
 //	  }, {...}, ...
 // ]
 //
@@ -36,6 +37,28 @@ func ConsultarTienda(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	// Se cargan las imágenes de los objetos
+	var bytes []byte
+	for i, objeto := range objetos {
+		if objeto.Tipo == globales.TIPO_AVATAR {
+			bytes, err = ioutil.ReadFile(globales.RUTA_AVATARES + strconv.Itoa(objeto.Id) + globales.FORMATO_ASSETS)
+			if err != nil {
+				log.Println("error al cargar img:", err)
+				devolverErrorSQL(writer)
+				return
+			}
+		} else if objeto.Tipo == globales.TIPO_DADO {
+			bytes, err = ioutil.ReadFile(globales.RUTA_DADOS + strconv.Itoa(objeto.Id) + "5" + globales.FORMATO_ASSETS)
+			if err != nil {
+				log.Println("error al cargar img:", err)
+				devolverErrorSQL(writer)
+				return
+			}
+		}
+
+		objetos[i].Imagen = bytes
+	}
+
 	writer.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(writer).Encode(objetos)
 	escribirHeaderExito(writer)
@@ -48,7 +71,8 @@ func ConsultarTienda(writer http.ResponseWriter, request *http.Request) {
 // 	  Nombre: 		string
 // 	  Descripcion: 	string
 // 	  Precio: 		int
-// 	  Tipo: 		string
+// 	  Tipo: 		string ({"avatar", "dado"})
+//	  Imagen:		string (blob)
 //	  }, {...}, ...
 // ]
 //
@@ -62,6 +86,28 @@ func ConsultarColeccion(writer http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		devolverErrorSQL(writer)
 		return
+	}
+
+	// Se cargan las imágenes de los objetos
+	var bytes []byte
+	for i, objeto := range objetos {
+		if objeto.Tipo == globales.TIPO_AVATAR {
+			bytes, err = ioutil.ReadFile(globales.RUTA_AVATARES + strconv.Itoa(objeto.Id) + globales.FORMATO_ASSETS)
+			if err != nil {
+				log.Println("error al cargar img:", err)
+				devolverErrorSQL(writer)
+				return
+			}
+		} else if objeto.Tipo == globales.TIPO_DADO {
+			bytes, err = ioutil.ReadFile(globales.RUTA_DADOS + strconv.Itoa(objeto.Id) + "5" + globales.FORMATO_ASSETS)
+			if err != nil {
+				log.Println("error al cargar img:", err)
+				devolverErrorSQL(writer)
+				return
+			}
+		}
+
+		objetos[i].Imagen = bytes
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
