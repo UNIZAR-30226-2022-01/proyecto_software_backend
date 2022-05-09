@@ -181,19 +181,6 @@ func ObtenerDados(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func ObtenerDadoPorID(writer http.ResponseWriter, request *http.Request) {
-	id := chi.URLParam(request, "id")
-
-	bytes, err := ioutil.ReadFile(globales.RUTA_DADOS + id + "5" + globales.FORMATO_ASSETS)
-	if err != nil {
-		devolverErrorSQL(writer)
-		return
-	}
-
-	writer.Header().Set("Content-Type", "application/octet-stream")
-	_, err = writer.Write(bytes)
-}
-
 func ObtenerItem(writer http.ResponseWriter, request *http.Request) {
 	var bytes []byte
 	idParam := chi.URLParam(request, "id")
