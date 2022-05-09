@@ -181,7 +181,13 @@ func ObtenerDados(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func ObtenerItem(writer http.ResponseWriter, request *http.Request) {
+// ObtenerImagenItem devuelve la imagen de un ítem, dado su ID, codificado como blob (octet-stream)
+//
+// Devuelve un error 500 en caso de que el ID sea inválido u ocurra cualquier otro error
+//
+// Ruta: /api/obtenerImagenItem/{id}
+// Tipo: GET
+func ObtenerImagenItem(writer http.ResponseWriter, request *http.Request) {
 	var bytes []byte
 	idParam := chi.URLParam(request, "id")
 

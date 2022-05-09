@@ -201,7 +201,7 @@ func routerAPI() http.Handler {
 		r.Get("/consultarColeccion/{usuario}", handlers.ConsultarColeccion)
 		r.Get("/obtenerFotoPerfil/{usuario}", handlers.ObtenerAvatar)
 		r.Get("/obtenerDados/{cara}", handlers.ObtenerDados)
-		r.Get("/obtenerImagenItem/{id}", handlers.ObtenerItem)
+		r.Get("/obtenerImagenItem/{id}", handlers.ObtenerImagenItem)
 		r.Get("/ranking", handlers.ObtenerRanking)
 		r.Get("/eliminarAmigo/{nombre}", handlers.EliminarAmigo)
 		r.Post("/aceptarSolicitudAmistad/{nombre}", handlers.AceptarSolicitudAmistad)
