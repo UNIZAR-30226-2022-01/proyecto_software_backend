@@ -149,15 +149,15 @@ func ObtenerAvatar(writer http.ResponseWriter, request *http.Request) {
 }
 
 // ObtenerDados devuelve una imagen codificada como octet-stream para la cara indicada de los dados
-// equipados por el usuario que lo solicita. La cara debe ser un valor entre 1 y 6, correspondiente
-// al valor de los dados
+// equipados del usuario indicado. La cara debe ser un valor entre 1 y 6, correspondiente
+// al valor de los dados.
 //
-// Devuelve un error 500 en caso de que la cara sea inválida u ocurra cualquier otro error
+// Devuelve un error 500 en caso de que la cara sea inválida, el usuario no exista u ocurra cualquier otro error.
 //
-// Ruta: /api/obtenerDados/{cara}
+// Ruta: /api/obtenerDados/{usuario}/{cara}
 // Tipo: GET
 func ObtenerDados(writer http.ResponseWriter, request *http.Request) {
-	usuario := middleware.ObtenerUsuarioCookie(request)
+	usuario := chi.URLParam(request, "usuario")
 	cara := chi.URLParam(request, "cara")
 	idDados, err := dao.ObtenerIDDado(globales.Db, usuario)
 
