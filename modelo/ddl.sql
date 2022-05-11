@@ -85,7 +85,7 @@ VALUES(2, 'Avatar de jirafa', 'Avatar de una jirafa, para estar a la altura de t
 
 INSERT INTO backend."ItemTienda"
 (id, nombre, descripcion, precio, tipo)
-VALUES(3, 'Avatar de gallina', 'Avatar de una gallina, ¿serás capaz de evitar rendirte?.', 15, 'avatar'::backend."item");
+VALUES(3, 'Avatar de gallina', 'Avatar de una gallina, ¿serás capaz de evitar rendirte?', 15, 'avatar'::backend."item");
 
 INSERT INTO backend."ItemTienda"
 (id, nombre, descripcion, precio, tipo)
