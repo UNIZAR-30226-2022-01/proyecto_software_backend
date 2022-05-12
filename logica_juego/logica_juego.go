@@ -602,3 +602,9 @@ func AñadirASubGrafo(region NumRegion, subgrafo *simple.UndirectedGraph) {
 func (e *EstadoJugador) eliminarDeSubgrafo(region NumRegion, subgrafo *simple.UndirectedGraph) {
 	subgrafo.RemoveNode(int64(region)) // TODO: no tiene tratamiento de errores, es una no-op si no existe, encerrar en búsqueda
 }
+
+// EnviarMensaje encola una acción en la lista de acciones de la partida, que representa el envío de un mensaje por parte
+// de "jugador", con el contenido "mensaje"
+func (e *EstadoPartida) EnviarMensaje(jugador, mensaje string) {
+	e.Acciones = append(e.Acciones, NewAccionMensaje(jugador, mensaje))
+}
