@@ -10,7 +10,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -115,4 +117,27 @@ func buscarEnLista(regiones []logica_juego.NumRegion, region logica_juego.NumReg
 	}
 
 	return false
+}
+
+func enviarMensaje(cookie *http.Cookie, mensaje string, t *testing.T) {
+	campos := url.Values{
+		"mensaje": {mensaje},
+	}
+	client := &http.Client{}
+
+	req, err := http.NewRequest("POST", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/enviarMensaje", strings.NewReader(campos.Encode()))
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+	req.AddCookie(cookie)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // Para indicar que el formulario "va en la url", porque campos.Encode() hace eso
+	resp, err := client.Do(req)
+
+	if err != nil {
+		t.Fatal("Error en POST de enviar mensaje:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Obtenido código de error no 200 al enviar mensaje:", resp.StatusCode)
+	}
 }

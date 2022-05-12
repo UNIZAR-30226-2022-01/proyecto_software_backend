@@ -342,7 +342,7 @@ func NewAccionPartidaFinalizada(jugadorGanador string) AccionPartidaFinalizada {
 //
 // Ejemplo en JSON:
 //    {
-//		"IDAccion": 11,
+//		"IDAccion": 12,
 // 		"JugadorGanador": "mapachin"	// Jugador que envía el mensaje
 //		"Mensaje": "Bien jugado			// Contenido del mensaje
 //    }
@@ -376,6 +376,7 @@ func RegistrarAcciones() {
 	gob.Register(AccionJugadorEliminado{})
 	gob.Register(AccionJugadorExpulsado{})
 	gob.Register(AccionPartidaFinalizada{})
+	gob.Register(AccionMensaje{})
 
 	gob.Register(struct{}{}) // Placeholder de acciones no implementadas
 }

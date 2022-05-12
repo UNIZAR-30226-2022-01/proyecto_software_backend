@@ -923,7 +923,7 @@ func terminarPartida(usuario vo.Usuario, partida *vo.Partida, i int, expulsadoPo
 func EnviarMensaje(writer http.ResponseWriter, request *http.Request) {
 	usuario := middleware.ObtenerUsuarioCookie(request)
 	mensaje := request.FormValue("mensaje")
-
+	log.Println("Mensaje a enviar:", mensaje)
 	idPartida, err := dao.ObtenerIDPartida(globales.Db, usuario)
 	if err != nil {
 		devolverError(writer, errors.New("No estás participando en ninguna partida"))

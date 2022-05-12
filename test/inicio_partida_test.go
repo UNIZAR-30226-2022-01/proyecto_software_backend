@@ -107,4 +107,23 @@ func TestInicioPartida(t *testing.T) {
 	if jugandoEnPartida(cookie7, t) {
 		t.Fatal("A \"usuario7\" se le indica como jugando en una partida al preguntarlo")
 	}
+
+	// Enviar un mensaje
+	t.Log("Enviando un mensaje al resto de usuarios")
+	enviarMensaje(cookie, "Hola mundo", t)
+	accionesCompl = preguntarEstadoCompleto(t, cookie)
+	ultimaAccion := accionesCompl.Acciones[len(accionesCompl.Acciones)-1]
+	t.Log(ultimaAccion)
+
+	accionMensaje := ultimaAccion.(map[string]interface{})
+	idAccion := accionMensaje["IDAccion"].(float64)
+	if int(idAccion) != int(logica_juego.IDAccionMensaje) {
+		t.Fatal("La última acción no es un mensaje")
+	}
+
+	if accionMensaje["Mensaje"] != "Hola mundo" {
+		t.Fatal("El mensaje enviado no es correcto")
+	}
+
+	t.Log("Se ha enviado el mensaje correctamente")
 }
