@@ -120,7 +120,7 @@ func ConsultarColeccion(writer http.ResponseWriter, request *http.Request) {
 //
 // Devuelve un error 500 en caso de que el usuario no exista u ocurra cualquier otro error
 //
-// Ruta: /api/obtenerAvatar/{usuario}
+// Ruta: /api/obtenerFotoPerfil/{usuario}
 // Tipo: GET
 func ObtenerAvatar(writer http.ResponseWriter, request *http.Request) {
 	usuario := chi.URLParam(request, "usuario")
