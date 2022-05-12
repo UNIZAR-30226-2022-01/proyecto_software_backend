@@ -38,8 +38,8 @@ func Registro(writer http.ResponseWriter, request *http.Request) {
 		devolverError(writer, errors.New("Se ha producido un error al procesar los datos."))
 		return
 	} else {
-		// Inserta el usuario con el dado y avatares por defecto (1, 2 respectivamente)
-		usuarioVO := vo.Usuario{email, nombre, hash, "", http.Cookie{}, 0, 0, 0, 1, 2}
+		// Inserta el usuario con el dado y avatares por defecto (9, 1 respectivamente)
+		usuarioVO := vo.Usuario{email, nombre, hash, "", http.Cookie{}, 0, 0, 0, 9, 1}
 		err = dao.InsertarUsuario(globales.Db, &usuarioVO)
 		if err != nil {
 			devolverErrorSQL(writer)

@@ -913,3 +913,29 @@ func terminarPartida(usuario vo.Usuario, partida *vo.Partida, i int, expulsadoPo
 
 	return err
 }
+
+// EnviarMensaje permite al usuario enviar un mensaje al resto de jugadores de la partida. Para ello, deberá especificar
+// su contenido en el campo "mensaje" del formulario. En caso de que el jugador no esté en una partida, devolverá status
+// 500. En el caso contrario, la llamada devolverá siempre status 200.
+//
+// Ruta: /api/enviarMensaje
+// Tipo: POST
+func EnviarMensaje(writer http.ResponseWriter, request *http.Request) {
+	usuario := middleware.ObtenerUsuarioCookie(request)
+	mensaje := request.FormValue("mensaje")
+	log.Println("Mensaje a enviar:", mensaje)
+	idPartida, err := dao.ObtenerIDPartida(globales.Db, usuario)
+	if err != nil {
+		devolverError(writer, errors.New("No estás participando en ninguna partida"))
+		return
+	}
+
+	partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
+	partida.Estado.EnviarMensaje(usuario, mensaje)
+	// Se sobreescribe en el almacén
+	globales.CachePartidas.AlmacenarPartida(partida)
+
+	// Y se encola un trabajo de serialización de su estado
+	globales.CachePartidas.CanalSerializacion <- partida
+	escribirHeaderExito(writer)
+}

@@ -15,6 +15,7 @@ const (
 	IDAccionJugadorEliminado
 	IDAccionJugadorExpulsado
 	IDAccionPartidaFinalizada
+	IDAccionMensaje
 )
 
 // AccionRecibirRegion corresponde a la asignación automática de un territorio a
@@ -337,6 +338,28 @@ func NewAccionPartidaFinalizada(jugadorGanador string) AccionPartidaFinalizada {
 		JugadorGanador: jugadorGanador}
 }
 
+// AccionMensaje representa un mensaje enviado por un jugador a través del chat de la partida.
+//
+// Ejemplo en JSON:
+//    {
+//		"IDAccion": 12,
+// 		"JugadorGanador": "mapachin"	// Jugador que envía el mensaje
+//		"Mensaje": "Bien jugado			// Contenido del mensaje
+//    }
+type AccionMensaje struct {
+	IDAccion      int
+	JugadorEmisor string
+	Mensaje       string
+}
+
+func NewAccionMensaje(jugadorEmisor string, mensaje string) AccionMensaje {
+	return AccionMensaje{
+		IDAccion:      int(IDAccionMensaje),
+		JugadorEmisor: jugadorEmisor,
+		Mensaje:       mensaje,
+	}
+}
+
 // RegistrarAcciones registra las acciones en gob, para poder serializarlas y deserializarlas desde un array
 // polimórfico (interface{})
 func RegistrarAcciones() {
@@ -353,6 +376,7 @@ func RegistrarAcciones() {
 	gob.Register(AccionJugadorEliminado{})
 	gob.Register(AccionJugadorExpulsado{})
 	gob.Register(AccionPartidaFinalizada{})
+	gob.Register(AccionMensaje{})
 
 	gob.Register(struct{}{}) // Placeholder de acciones no implementadas
 }

@@ -29,7 +29,7 @@ type Partida struct {
 	EnCurso            bool
 	MaxNumeroJugadores int
 
-	// TODO: representar chat de la partida
+	// TODO: eliminar campo Mensajes de partida de dao y modelo de datos
 	Mensajes []Mensaje
 	Estado   logica_juego.EstadoPartida
 }
