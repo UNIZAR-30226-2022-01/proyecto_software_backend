@@ -112,3 +112,19 @@ VALUES(8, 'Avatar de quokka', 'Avatar de un quokka, para siempre sonreir ante cu
 INSERT INTO backend."ItemTienda"
 (id, nombre, descripcion, precio, tipo)
 VALUES(9, 'Dados por defecto', 'Dados de prueba.', 0, 'dado'::backend."item");
+
+INSERT INTO backend."ItemTienda"
+(id, nombre, descripcion, precio, tipo)
+VALUES(10, 'Dados azules', 'Unos dados azules, ligeramente exclusivos.', 10, 'dado'::backend."item");
+
+INSERT INTO backend."ItemTienda"
+(id, nombre, descripcion, precio, tipo)
+VALUES(11, 'Dados rojos', 'Unos dados rojos, algo más exclusivos.', 15, 'dado'::backend."item");
+
+INSERT INTO backend."ItemTienda"
+(id, nombre, descripcion, precio, tipo)
+VALUES(12, 'Dados verdes', 'Unos dados verdes, moderadamente exclusivos.', 25, 'dado'::backend."item");
+
+INSERT INTO backend."ItemTienda"
+(id, nombre, descripcion, precio, tipo)
+VALUES(13, 'Dados amarillos especiales', 'Unos dados amarillos especiales, reservados para los mejores jugadores.', 50, 'dado'::backend."item");
