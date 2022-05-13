@@ -41,14 +41,14 @@ func ConsultarTienda(writer http.ResponseWriter, request *http.Request) {
 	var bytes []byte
 	for i, objeto := range objetos {
 		if objeto.Tipo == globales.TIPO_AVATAR {
-			bytes, err = ioutil.ReadFile(globales.RUTA_AVATARES + strconv.Itoa(objeto.Id) + globales.FORMATO_ASSETS)
+			bytes, err = ioutil.ReadFile(globales.RUTA_AVATARES + strconv.Itoa(objeto.Id) + globales.FORMATO_AVATARES)
 			if err != nil {
 				log.Println("error al cargar img:", err)
 				devolverErrorSQL(writer)
 				return
 			}
 		} else if objeto.Tipo == globales.TIPO_DADO {
-			bytes, err = ioutil.ReadFile(globales.RUTA_DADOS + strconv.Itoa(objeto.Id) + "5" + globales.FORMATO_ASSETS)
+			bytes, err = ioutil.ReadFile(globales.RUTA_DADOS + strconv.Itoa(objeto.Id) + "5" + globales.FORMATO_DADOS)
 			if err != nil {
 				log.Println("error al cargar img:", err)
 				devolverErrorSQL(writer)
@@ -92,14 +92,14 @@ func ConsultarColeccion(writer http.ResponseWriter, request *http.Request) {
 	var bytes []byte
 	for i, objeto := range objetos {
 		if objeto.Tipo == globales.TIPO_AVATAR {
-			bytes, err = ioutil.ReadFile(globales.RUTA_AVATARES + strconv.Itoa(objeto.Id) + globales.FORMATO_ASSETS)
+			bytes, err = ioutil.ReadFile(globales.RUTA_AVATARES + strconv.Itoa(objeto.Id) + globales.FORMATO_AVATARES)
 			if err != nil {
 				log.Println("error al cargar img:", err)
 				devolverErrorSQL(writer)
 				return
 			}
 		} else if objeto.Tipo == globales.TIPO_DADO {
-			bytes, err = ioutil.ReadFile(globales.RUTA_DADOS + strconv.Itoa(objeto.Id) + "5" + globales.FORMATO_ASSETS)
+			bytes, err = ioutil.ReadFile(globales.RUTA_DADOS + strconv.Itoa(objeto.Id) + "5" + globales.FORMATO_DADOS)
 			if err != nil {
 				log.Println("error al cargar img:", err)
 				devolverErrorSQL(writer)
@@ -131,7 +131,7 @@ func ObtenerAvatar(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	bytes, err := ioutil.ReadFile(globales.RUTA_AVATARES + strconv.Itoa(idAvatar) + globales.FORMATO_ASSETS)
+	bytes, err := ioutil.ReadFile(globales.RUTA_AVATARES + strconv.Itoa(idAvatar) + globales.FORMATO_AVATARES)
 	if err != nil {
 		log.Println("error al cargar img:", err)
 		devolverErrorSQL(writer)
@@ -166,7 +166,7 @@ func ObtenerDados(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	bytes, err := ioutil.ReadFile(globales.RUTA_DADOS + strconv.Itoa(idDados) + cara + globales.FORMATO_ASSETS)
+	bytes, err := ioutil.ReadFile(globales.RUTA_DADOS + strconv.Itoa(idDados) + cara + globales.FORMATO_DADOS)
 	if err != nil {
 		devolverErrorSQL(writer)
 		return
@@ -205,14 +205,14 @@ func ObtenerImagenItem(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	if item.Tipo == globales.TIPO_AVATAR {
-		bytes, err = ioutil.ReadFile(globales.RUTA_AVATARES + strconv.Itoa(item.Id) + globales.FORMATO_ASSETS)
+		bytes, err = ioutil.ReadFile(globales.RUTA_AVATARES + strconv.Itoa(item.Id) + globales.FORMATO_AVATARES)
 		if err != nil {
 			log.Println("error al cargar img:", err)
 			devolverErrorSQL(writer)
 			return
 		}
 	} else if item.Tipo == globales.TIPO_DADO {
-		bytes, err = ioutil.ReadFile(globales.RUTA_DADOS + strconv.Itoa(item.Id) + "5" + globales.FORMATO_ASSETS)
+		bytes, err = ioutil.ReadFile(globales.RUTA_DADOS + strconv.Itoa(item.Id) + "5" + globales.FORMATO_DADOS)
 		if err != nil {
 			log.Println("error al cargar img:", err)
 			devolverErrorSQL(writer)

@@ -31,7 +31,8 @@ const (
 	NOMBRE_DNS_API                      = "NOMBRE_DNS_API"
 	RUTA_AVATARES                       = "assets/avatares/"
 	RUTA_DADOS                          = "assets/dados/"
-	FORMATO_ASSETS                      = ".jpg"
+	FORMATO_AVATARES                    = ".jpg"
+	FORMATO_DADOS                       = ".png"
 
 	ID_AVATAR_POR_DEFECTO = 1
 	ID_DADOS_POR_DEFECTO  = 9
