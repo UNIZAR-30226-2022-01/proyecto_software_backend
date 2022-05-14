@@ -110,15 +110,17 @@ func NewAccionInicioTurno(jugador string, tropasObtenidas int, razonNumeroTerrit
 //    }
 type AccionCambioCartas struct {
 	IDAccion                       int         // 3
+	Jugador                        string      // Jugador que realizó el cambio de cartas
 	NumTropasObtenidas             int         // Tropas obtenidas por el cambio
 	BonificacionObtenida           bool        // Flag de si se ha recibido una bonificación de territorio de una de las cartas usadas
 	RegionesQueOtorganBonificacion []NumRegion // ID de región que ha otorgado la bonificación, si se ha obtenido
 	ObligadoAHacerCambios          bool        // Flag de si el usuario ha sido obligado a hacer el cambio, por tener más de 5 cartas
 }
 
-func NewAccionCambioCartas(numTropasObtenidas int, bonificacionObtenida bool, regionesQueOtorganBonificacion []NumRegion, obligadoAHacerCambios bool) AccionCambioCartas {
+func NewAccionCambioCartas(numTropasObtenidas int, jugador string, bonificacionObtenida bool, regionesQueOtorganBonificacion []NumRegion, obligadoAHacerCambios bool) AccionCambioCartas {
 	return AccionCambioCartas{
 		IDAccion:                       int(IDAccionCambioCartas),
+		Jugador:                        jugador,
 		NumTropasObtenidas:             numTropasObtenidas,
 		BonificacionObtenida:           bonificacionObtenida,
 		RegionesQueOtorganBonificacion: regionesQueOtorganBonificacion,

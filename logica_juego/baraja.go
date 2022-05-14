@@ -163,7 +163,7 @@ func (e *EstadoPartida) CambiarCartas(jugador string, ID_carta1, ID_carta2, ID_c
 		}
 	}
 
-	e.Acciones = append(e.Acciones, NewAccionCambioCartas(numTropas, hayBonificacion, regionesConBonus, numeroCartasInicial >= 5))
+	e.Acciones = append(e.Acciones, NewAccionCambioCartas(numTropas, jugador, hayBonificacion, regionesConBonus, numeroCartasInicial >= 5))
 	return nil
 }
 
