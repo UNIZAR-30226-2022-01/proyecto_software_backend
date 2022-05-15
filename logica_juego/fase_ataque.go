@@ -77,6 +77,7 @@ func (e *EstadoPartida) Ataque(origen, destino NumRegion, numDados int, jugador 
 			tropasPerdidasDefensor++
 			if regionDestino.NumTropas == 0 {
 				// Región conquistada
+				e.HaConquistado = true
 				e.HayTerritorioDesocupado = true
 				regionDestino.Ocupante = ""
 

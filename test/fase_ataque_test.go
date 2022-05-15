@@ -549,7 +549,7 @@ func TestIntegracionAtaqueOcupar(t *testing.T) {
 	t.Log("OK, se ha ocupado el territorio correctamente")
 
 	// Cambio de fase tras la ocupación
-	// Intento cambiar de fase sin ocupar
+	// Intento cambiar de fase tras ocupar
 	t.Log("Intento cambiar de fase tras ocupar")
 	err = saltarFase(cookie, t)
 	if err != nil {
@@ -561,4 +561,24 @@ func TestIntegracionAtaqueOcupar(t *testing.T) {
 	}
 	t.Log("OK, se ha cambiado de fase correctamente")
 
+	// Cambio de turno y espero a recibir una carta
+	t.Log("Finalizo el turno")
+	err = saltarFase(cookie, t)
+	if err != nil {
+		t.Fatal("Error obtenido al cambiar de fase:", err)
+	}
+
+	// Comprobamos que la antepenúltima acción sea la carta
+	// Acciones: ..., recibir carta, cambio de fase y cambio de turno
+	t.Log("Comprobamos si el jugador ha recibido una carta por conquistar")
+	partidaCache = comprobarPartidaEnCurso(t, 1)
+	acciones := partidaCache.Estado.Acciones
+	accionRecibirCarta, ok := acciones[len(acciones)-3].(logica_juego.AccionObtenerCarta)
+	if !ok {
+		t.Fatal("El jugador no ha recibido una carta tras conquistar el territorio")
+	}
+	if accionRecibirCarta.Jugador != "usuario1" {
+		t.Fatal("La carta no se ha otorgado al jugador correspondiente")
+	}
+	t.Log("OK, se ha introducio la siguiente accion de recibir carta", accionRecibirCarta)
 }
