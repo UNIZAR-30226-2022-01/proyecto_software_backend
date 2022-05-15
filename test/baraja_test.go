@@ -197,6 +197,11 @@ func TestBaraja(t *testing.T) {
 		t.Fatal("No se ha obtenido bonificación por territorio al cambiar las cartas")
 	}
 
+	// Comprobar que es el jugador el que realiza el cambio de cartas
+	if accionCambio.Jugador != "Jugador1" {
+		t.Fatal("El jugador del último cambio de cartas no es el correcto")
+	}
+
 	t.Log("El último cambio de cartas fue:", accionCambio)
 
 	// Probar cambios de cartas de número > 6

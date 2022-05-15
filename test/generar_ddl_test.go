@@ -54,7 +54,7 @@ func TestGenerarPartidaDebug(t *testing.T) {
 		logica_juego.NewAccionRecibirRegion(1, 15, 3, "jugador1"),
 		logica_juego.NewAccionCambioFase(1, "jugador1"),
 		logica_juego.NewAccionInicioTurno("jugador1", 3, 5, 2),
-		logica_juego.NewAccionCambioCartas(1, true, []logica_juego.NumRegion{logica_juego.Afghanistan, logica_juego.Alberta}, false),
+		logica_juego.NewAccionCambioCartas(1, "jugador1", true, []logica_juego.NumRegion{logica_juego.Afghanistan, logica_juego.Alberta}, false),
 		logica_juego.NewAccionReforzar("jugador1", logica_juego.Central_america, 3),
 		logica_juego.NewAccionAtaque(logica_juego.Congo, logica_juego.South_africa, 3, 4, []int{2, 3, 5}, []int{4, 5, 6}, "jugador1", "usuario2"),
 		logica_juego.NewAccionOcupar(logica_juego.Great_britain, logica_juego.Northern_europe, 2, 7, "jugador1", "jugador2"),
