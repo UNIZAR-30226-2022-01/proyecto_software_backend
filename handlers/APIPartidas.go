@@ -768,13 +768,26 @@ func ResumirPartida(writer http.ResponseWriter, request *http.Request) {
 }
 
 func resumirPartida(p vo.Partida, usuario string) (resumen vo.ResumenPartida) {
+	var idTerritorioDesocupado logica_juego.NumRegion
+	if p.Estado.HayTerritorioDesocupado {
+		for i := logica_juego.Eastern_australia; i <= logica_juego.Alberta; i++ {
+			if p.Estado.EstadoMapa[i].Ocupante == "" {
+				idTerritorioDesocupado = i
+				break
+			}
+		}
+	}
+
 	resumen = vo.ResumenPartida{
-		Jugadores:        p.Estado.Jugadores,
-		TurnoJugador:     p.Estado.Jugadores[p.Estado.TurnoJugador],
-		Fase:             p.Estado.Fase,
-		Terminada:        p.Estado.Terminada,
-		EstadosJugadores: obtenerResumenEstadosJugadores(p, usuario),
-		Mapa:             obtenerResumenMapa(p),
+		Jugadores:                  p.Estado.Jugadores,
+		TurnoJugador:               p.Estado.Jugadores[p.Estado.TurnoJugador],
+		Fase:                       p.Estado.Fase,
+		Terminada:                  p.Estado.Terminada,
+		EstadosJugadores:           obtenerResumenEstadosJugadores(p, usuario),
+		Mapa:                       obtenerResumenMapa(p),
+		OcupacionPendiente:         p.Estado.HayTerritorioDesocupado,
+		TerritorioOcupacionOrigen:  p.Estado.RegionUltimoAtaque,
+		TerritorioOcupacionDestino: idTerritorioDesocupado,
 	}
 
 	return resumen

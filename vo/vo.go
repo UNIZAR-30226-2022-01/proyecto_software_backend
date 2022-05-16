@@ -114,12 +114,15 @@ type ItemTienda struct {
 }
 
 type ResumenPartida struct {
-	Jugadores        []string
-	TurnoJugador     string
-	Fase             logica_juego.Fase
-	Terminada        bool
-	EstadosJugadores map[string]ResumenEstadoJugador
-	Mapa             map[logica_juego.NumRegion]logica_juego.EstadoRegion
+	Jugadores                  []string
+	TurnoJugador               string
+	Fase                       logica_juego.Fase
+	Terminada                  bool
+	EstadosJugadores           map[string]ResumenEstadoJugador
+	Mapa                       map[logica_juego.NumRegion]logica_juego.EstadoRegion
+	OcupacionPendiente         bool
+	TerritorioOcupacionOrigen  logica_juego.NumRegion
+	TerritorioOcupacionDestino logica_juego.NumRegion
 }
 
 type ResumenEstadoJugador struct {
