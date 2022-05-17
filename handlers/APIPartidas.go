@@ -591,12 +591,15 @@ func ObtenerEstadoPartidaCompleto(writer http.ResponseWriter, request *http.Requ
 //				Expulsado: bool,
 //         		Eliminado: bool
 //			}
-//		},
-//		Mapa: {
+//	   },
+//	   Mapa: {
 //			int :{ // Número de región
 //         	Ocupante: string,
 //         	NumTropas: int
-//      },
+//     },
+//	  OcupacionPendiente: bool,			// true si el jugador del turno tiene una ocupación pendiente
+//	  TerritorioOcupacionOrigen: int, 	// Número de región desde la que se ocupa
+//	  TerritorioOcupacionDestino: int, 	// Número de región que se ocupa
 //	}
 //
 //
@@ -695,7 +698,10 @@ func ObtenerEstadoPartidaCompleto(writer http.ResponseWriter, request *http.Requ
 //         "Ocupante":"jugador5",
 //         "NumTropas":3
 //      }
-//   }
+//   },
+//	 "OcupacionPendiente": true,
+//	 "TerritorioOcupacionOrigen": 2,
+//	 "TerritorioOcupacionDestino": 5
 //}
 //
 // Ruta: /api/resumirPartida
