@@ -105,15 +105,17 @@ func (ap *AlmacenPartidas) enviarAlertas() {
 		//if p.Estado.UltimaAccion.Add(time.Second*5).Before(time.Now()) && !p.Estado.AlertaEnviada { // Para pruebas
 		// Si aún no ha enviado la alerta
 		if p.Estado.UltimaAccion.Add(time.Hour*logica_juego.HORAS_EXPULSION_INACTIVIDAD).Before(time.Now()) && !p.Estado.AlertaEnviada {
-			// Sobreescribe la partida, almacenando que se ha enviado una alerta ya. Evita mandar un correo cada HORAS_EXPULSION_INACTIVIDAD
-			p.Estado.AlertaEnviada = true
-			ap.Partidas[p.IdPartida] = p
+			if len(p.Estado.Jugadores) != 0 {
+				// Sobreescribe la partida, almacenando que se ha enviado una alerta ya. Evita mandar un correo cada HORAS_EXPULSION_INACTIVIDAD
+				p.Estado.AlertaEnviada = true
+				ap.Partidas[p.IdPartida] = p
 
-			jugadorActual := p.Estado.Jugadores[p.Estado.TurnoJugador]
+				jugadorActual := p.Estado.Jugadores[p.Estado.TurnoJugador]
 
-			log.Println("Enviando alerta a " + jugadorActual + "...")
+				log.Println("Enviando alerta a " + jugadorActual + "...")
 
-			CanalEnvioAlertas <- jugadorActual
+				CanalEnvioAlertas <- jugadorActual
+			} // Else: No ha empezado aún, está en el lobby
 		}
 	}
 }
@@ -124,22 +126,23 @@ func (ap *AlmacenPartidas) limpiarCache() {
 
 	log.Println("Iniciando envío de alertas por email...")
 	for i, p := range ap.Partidas {
-		//if p.Estado.UltimaAccion.Add(time.Second * 5).After(time.Now()) { // Para pruebas
-		if p.Estado.UltimaAccion.Add(time.Hour * logica_juego.HORAS_EXPULSION_INACTIVIDAD).Before(time.Now()) {
-			log.Println("Eliminando a usuario", p.Estado.Jugadores[p.Estado.TurnoJugador], "de partida", i, "por inactividad...")
-			CanalExpulsionUsuariosDB <- p.Estado.Jugadores[p.Estado.TurnoJugador]
-			p.Estado.ExpulsarJugadorActual()
+		if len(p.Estado.Jugadores) != 0 {
+			if p.Estado.UltimaAccion.Add(time.Hour * logica_juego.HORAS_EXPULSION_INACTIVIDAD).Before(time.Now()) {
+				log.Println("Eliminando a usuario", p.Estado.Jugadores[p.Estado.TurnoJugador], "de partida", i, "por inactividad...")
+				CanalExpulsionUsuariosDB <- p.Estado.Jugadores[p.Estado.TurnoJugador]
+				p.Estado.ExpulsarJugadorActual()
 
-			ap.Partidas[p.IdPartida] = p
-		}
+				ap.Partidas[p.IdPartida] = p
+			}
 
-		if p.Estado.TerminadaPorExpulsiones() {
-			log.Println("Borrando partida", p, "por estar todos los jugadores expulsados...")
-			// La borra de la base de datos
-			CanalEliminacionPartidasDB <- i
-			// Y de la cache
-			delete(ap.Partidas, p.IdPartida)
-		}
+			if p.Estado.TerminadaPorExpulsiones() {
+				log.Println("Borrando partida", p, "por estar todos los jugadores expulsados...")
+				// La borra de la base de datos
+				CanalEliminacionPartidasDB <- i
+				// Y de la cache
+				delete(ap.Partidas, p.IdPartida)
+			}
+		} // Else: No ha empezado aún, está en el lobby
 	}
 }
 
