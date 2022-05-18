@@ -147,3 +147,34 @@ func obtenerNotificaciones(t *testing.T, cookie *http.Cookie) (notificaciones []
 
 	return notificaciones
 }
+
+func obtenerNumNotificaciones(t *testing.T, cookie *http.Cookie) (num int) {
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", "http://localhost:"+os.Getenv(globales.PUERTO_API)+"/api/obtenerNumeroNotificaciones", nil)
+	if err != nil {
+		t.Fatal("Error al construir request:", err)
+	}
+
+	req.AddCookie(cookie)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // Para indicar que el formulario "va en la url", porque campos.Encode() hace eso
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		t.Fatal("Error en GET de obtener notificaciones:", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := ioutil.ReadAll(resp.Body)
+		t.Fatal("Obtenido código de error no 200 al obtener número de notificaciones:", resp.StatusCode, string(body))
+	} else {
+		//body, _ := ioutil.ReadAll(resp.Body)
+		//bodyString := string(body)
+		//t.Log("Respuesta al obtener notificaciones:", bodyString)
+
+		err = json.NewDecoder(resp.Body).Decode(&num)
+	}
+
+	return num
+}

@@ -290,7 +290,7 @@ func ObtenerRanking(writer http.ResponseWriter, request *http.Request) {
 //
 // La lista de notificaciones y su formato en JSON están disponibles en el módulo de logica_juego, en notificaciones.go
 //
-// Ruta: /api/obtenerNotificaciones/
+// Ruta: /api/obtenerNotificaciones
 // Tipo: GET
 func ObtenerNotificaciones(writer http.ResponseWriter, request *http.Request) {
 	var notificaciones []interface{}
@@ -327,7 +327,7 @@ func ObtenerNotificaciones(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	// Añade las notificaciones con estado almacenadas en la base de datos
-	err, notificacionesConEstado := dao.ObtenerNotificacionesConEstado(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario})
+	err, notificacionesConEstado := dao.ObtenerNotificacionesConEstado(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario}, true)
 	if err != nil {
 		devolverErrorSQL(writer)
 		return
@@ -339,6 +339,55 @@ func ObtenerNotificaciones(writer http.ResponseWriter, request *http.Request) {
 
 	writer.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(writer).Encode(notificaciones)
+	escribirHeaderExito(writer)
+}
+
+// ObtenerNumeroNotificaciones devuelve el número de notificaciones que se van a recibir en
+// ObtenerNotificaciones, sin consumirlas.
+//
+// El formato de la respuesta JSON es el siguiente:
+//	int
+//
+// Ruta: /api/obtenerNumeroNotificaciones
+// Tipo: GET
+func ObtenerNumeroNotificaciones(writer http.ResponseWriter, request *http.Request) {
+	contador := 0
+
+	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
+
+	usuariosPendientes, err := dao.ConsultarSolicitudesPendientes(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario})
+	contador += len(usuariosPendientes)
+
+	enPartida, err := dao.UsuarioEnPartida(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario})
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	if enPartida {
+		idPartida, err := dao.PartidaUsuario(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario})
+		if err != nil {
+			devolverErrorSQL(writer)
+			return
+		}
+
+		partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
+		if partida.Estado.Jugadores[partida.Estado.TurnoJugador] == nombreUsuario {
+			contador += 1
+		}
+	}
+
+	// Añade las notificaciones con estado almacenadas en la base de datos
+	err, notificacionesConEstado := dao.ObtenerNotificacionesConEstado(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario}, false)
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	contador += len(notificacionesConEstado)
+
+	writer.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(writer).Encode(contador)
 	escribirHeaderExito(writer)
 }
 

@@ -194,6 +194,7 @@ func routerAPI() http.Handler {
 
 		// Usuarios
 		r.Get("/obtenerNotificaciones", handlers.ObtenerNotificaciones)
+		r.Get("/obtenerNumeroNotificaciones", handlers.ObtenerNumeroNotificaciones)
 		r.Get("/listarAmigos", handlers.ListarAmigos)
 		r.Get("/obtenerPerfil/{nombre}", handlers.ObtenerPerfilUsuario)
 		r.Get("/obtenerUsuariosSimilares/{patron}", handlers.ObtenerUsuariosSimilares)

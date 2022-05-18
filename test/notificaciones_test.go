@@ -32,11 +32,17 @@ func TestNotificaciones(t *testing.T) {
 	unirseAPartida(cookie6, t, 1)
 
 	partidaCache := comprobarPartidaEnCurso(t, 1)
-
-	saltarTurnos(t, partidaCache, "usuario1")
+	saltarTurnos(t, partidaCache, "usuario2")
 	notificaciones := obtenerNotificaciones(t, cookie)
 
-	if len(notificaciones) != 1 {
+	if obtenerNumNotificaciones(t, cookie) != 0 {
+		t.Fatal("Se esperaba no obtener notificaciones, obtenido:", notificaciones)
+	}
+
+	saltarTurnos(t, partidaCache, "usuario1")
+	notificaciones = obtenerNotificaciones(t, cookie)
+
+	if obtenerNumNotificaciones(t, cookie) != 1 {
 		t.Fatal("Se esperaba una notificación de turno, obtenido:", notificaciones)
 	} else {
 		t.Log("Notificaciones tras tener turno pendiente:", notificaciones)

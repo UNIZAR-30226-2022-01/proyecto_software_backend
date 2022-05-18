@@ -352,7 +352,7 @@ func Ranking(db *sql.DB) (ranking []vo.ElementoRankingUsuarios, err error) {
 // AlmacenarNotificacionConEstado guarda una notificación dependiente del estado del juego para el usuario dado.
 // Se borrará junto al resto al ser consultadas en grupo
 func AlmacenarNotificacionConEstado(db *sql.DB, usuario *vo.Usuario, notificacion interface{}) (err error) {
-	err, notificaciones := ObtenerNotificacionesConEstado(db, usuario)
+	err, notificaciones := ObtenerNotificacionesConEstado(db, usuario, true)
 	if err != nil {
 		return err
 	}
@@ -364,8 +364,8 @@ func AlmacenarNotificacionConEstado(db *sql.DB, usuario *vo.Usuario, notificacio
 }
 
 // ObtenerNotificacionesConEstado devuelve un slice de notificaciones con estado almacenadas para el usuario.
-// Todas las notificaciones se borrarán una vez consultadas
-func ObtenerNotificacionesConEstado(db *sql.DB, usuario *vo.Usuario) (err error, notificaciones []interface{}) {
+// Todas las notificaciones se borrarán una vez consultadas si se indica
+func ObtenerNotificacionesConEstado(db *sql.DB, usuario *vo.Usuario, borrar bool) (err error, notificaciones []interface{}) {
 	var b bytes.Buffer
 	decoder := gob.NewDecoder(&b)
 
@@ -383,7 +383,9 @@ func ObtenerNotificacionesConEstado(db *sql.DB, usuario *vo.Usuario) (err error,
 	}
 
 	// Borra las notificaciones con estado, ya que ya se han consultado
-	_, err = db.Exec(`UPDATE backend."Usuario" SET "notificacionesPendientesConEstado" = NULL WHERE "nombreUsuario"=$1`, usuario.NombreUsuario)
+	if borrar {
+		_, err = db.Exec(`UPDATE backend."Usuario" SET "notificacionesPendientesConEstado" = NULL WHERE "nombreUsuario"=$1`, usuario.NombreUsuario)
+	}
 
 	return err, notificaciones
 }
