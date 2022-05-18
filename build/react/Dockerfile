@@ -7,5 +7,5 @@ COPY ./web /go/web
 
 EXPOSE 443                
 
-ENTRYPOINT ["/backend", "-web"]
+ENTRYPOINT ["/go/backend", "-web"]
 #CMD ["/backend"]
