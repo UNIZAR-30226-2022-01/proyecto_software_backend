@@ -377,7 +377,8 @@ func (e *EstadoPartida) FinDeFase(jugador string) error {
 		for _, jugador := range e.Jugadores {
 			estadoJugador := e.EstadosJugadores[jugador]
 
-			if estadoJugador.Tropas != 0 {
+			// Si aún tiene tropas y no ha sido expulsado ni eliminado, se sigue en fase de inicio
+			if estadoJugador.Tropas != 0 && !e.HaSidoExpulsado(jugador) && !e.HaSidoEliminado(jugador) {
 				todosSinTropas = false
 				break
 			}
