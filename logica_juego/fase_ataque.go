@@ -146,9 +146,6 @@ func (e *EstadoPartida) Ocupar(territorio NumRegion, numEjercitos int, jugador s
 	if e.Fase != Ataque {
 		return errors.New("No puedes ocupar fuera de la fase de ataque")
 	}
-	if len(e.EstadosJugadores[jugador].Cartas) > 4 {
-		return errors.New("No puedes ocupar un territorio si tienes más de 4 cartas")
-	}
 	if !e.HayTerritorioDesocupado {
 		return errors.New("No se puede ocupar si no hay territorios desocupados")
 	}
