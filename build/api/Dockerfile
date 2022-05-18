@@ -1,12 +1,11 @@
 # syntax=docker/dockerfile:1
-FROM scratch
+FROM golang:alpine
 
 # Copia todos los ficheros
 COPY ./backend /     
 COPY ./assets /assets
 
-# 80 para producción
-EXPOSE 8090                 
+EXPOSE 443              
 
 ENTRYPOINT ["/backend", "-api"]
 #CMD ["/backend"]

@@ -11,6 +11,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -99,7 +100,7 @@ func GenerarCookieUsuario(writer *http.ResponseWriter, nombreUsuario string) (er
 	if !strings.Contains(nombreUsuario, "|") {
 		valorCookie := nombreUsuario + string(SEPARADOR_VALOR_COOKIE_USUARIO) + RandStringRunes()
 
-		cookie := http.Cookie{Name: NOMBRE_COOKIE_USUARIO, Value: valorCookie, Expires: expiracion}
+		cookie := http.Cookie{Name: NOMBRE_COOKIE_USUARIO, Value: valorCookie, Expires: expiracion, Domain: os.Getenv(globales.NOMBRE_DNS_GLOBAL)}
 		http.SetCookie(*writer, &cookie)
 		// TODO: Por refinar una vez realizadas las pruebas de despliegue en un dominio real
 		//cookie.SameSite = 4 // None

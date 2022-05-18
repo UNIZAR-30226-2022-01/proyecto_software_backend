@@ -29,6 +29,8 @@ const (
 	NOMBRE_DNS_REACT                    = "NOMBRE_DNS_REACT"
 	NOMBRE_DNS_ANGULAR                  = "NOMBRE_DNS_ANGULAR"
 	NOMBRE_DNS_API                      = "NOMBRE_DNS_API"
+	NOMBRE_DNS_GLOBAL                   = "NOMBRE_DNS_GLOBAL"
+	RUTA_CACHE_CERTIFICADOS             = "/cache_certificados"
 	RUTA_AVATARES                       = "assets/avatares/"
 	RUTA_DADOS                          = "assets/dados/"
 	FORMATO_AVATARES                    = ".jpg"

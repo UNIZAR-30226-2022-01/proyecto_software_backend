@@ -3,11 +3,14 @@
 package servidor
 
 import (
+	"crypto/tls"
+	"fmt"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/handlers"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
+	"golang.org/x/crypto/acme/autocert"
 
 	"context"
 	middlewarePropio "github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware" // Middleware a utilizar escrito por nosotros
@@ -26,6 +29,20 @@ import (
 )
 
 func IniciarServidor(test bool) {
+	// Inicializa el gestor de certificados
+	// Tiene como dominios permitidos el global y los subdominios de la API, angular y react, y pedirá los certificados a
+	// Let's Encrypt dinámicamente dependiendo de la petición
+	//
+	// Los certificados se cachearán en el directorio indicado
+	certManager := autocert.Manager{
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist(os.Getenv(globales.NOMBRE_DNS_GLOBAL), os.Getenv(globales.NOMBRE_DNS_API), os.Getenv(globales.NOMBRE_DNS_ANGULAR), os.Getenv(globales.NOMBRE_DNS_REACT)),
+		Cache:      autocert.DirCache(globales.RUTA_CACHE_CERTIFICADOS),
+	}
+
+	tlsConfig := certManager.TLSConfig()
+	tlsConfig.GetCertificate = getSelfSignedOrLetsEncryptCert(&certManager)
+
 	var server *http.Server
 	if len(os.Args) < 2 && !test {
 		log.Println("Uso:\n\t ./ejecutable -web : Servir contenido web \n\t ./ejecutable -api : Servir API")
@@ -34,10 +51,14 @@ func IniciarServidor(test bool) {
 		// Instancia un servidor HTTP con el router programado indicado
 		if os.Args[len(os.Args)-1] == "-web" {
 			log.Println("Escuchando por el puerto", os.Getenv(globales.PUERTO_WEB))
-			server = &http.Server{Addr: ":" + os.Getenv(globales.PUERTO_WEB), Handler: routerWeb()}
+			server = &http.Server{Addr: ":" + os.Getenv(globales.PUERTO_WEB),
+				Handler:   routerWeb(),
+				TLSConfig: tlsConfig}
 		} else if os.Args[len(os.Args)-1] == "-api" || test {
 			log.Println("Escuchando por el puerto", os.Getenv(globales.PUERTO_API))
-			server = &http.Server{Addr: ":" + os.Getenv(globales.PUERTO_API), Handler: routerAPI()}
+			server = &http.Server{Addr: ":" + os.Getenv(globales.PUERTO_API),
+				Handler:   routerAPI(),
+				TLSConfig: tlsConfig}
 
 			// El objeto de base de datos es seguro para uso concurrente y controla su
 			// propio pool de conexiones independientemente.
@@ -87,7 +108,7 @@ func IniciarServidor(test bool) {
 		}
 	}
 
-	err := server.ListenAndServe()
+	err := server.ListenAndServeTLS("", "") // Sin rutas de certificados, los obtiene el gestor de TLS
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
@@ -252,4 +273,28 @@ func fileServer(r chi.Router, path string, root http.FileSystem) {
 		fs := http.StripPrefix(pathPrefix, http.FileServer(root))
 		fs.ServeHTTP(w, r)
 	})
+}
+
+// Función de obtención de certificados dinámica para el gestor TLS
+//
+// Intenta obtener certificados para localhost autofirmados si existen (para debugging), o los solicita a Let's Encrypt en otro caso
+//
+// Adaptada de https://marcofranssen.nl/build-a-go-webserver-on-http-2-using-letsencrypt
+func getSelfSignedOrLetsEncryptCert(certManager *autocert.Manager) func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	return func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+		dirCache, ok := certManager.Cache.(autocert.DirCache)
+		if !ok {
+			dirCache = "certs"
+		}
+
+		keyFile := filepath.Join(string(dirCache), hello.ServerName+".key")
+		crtFile := filepath.Join(string(dirCache), hello.ServerName+".crt")
+		certificate, err := tls.LoadX509KeyPair(crtFile, keyFile)
+		if err != nil {
+			fmt.Printf("%s\nObteniendo certificados de Let's Encrypt...\n", err)
+			return certManager.GetCertificate(hello)
+		}
+		fmt.Println("Cargando certificados autofirmados.")
+		return &certificate, err
+	}
 }
