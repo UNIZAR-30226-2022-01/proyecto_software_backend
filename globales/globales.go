@@ -18,7 +18,7 @@ const (
 	PUERTO_API                          = "PUERTO_API"
 	USUARIO_DB                          = "USUARIO_DB"
 	PASSWORD_DB                         = "PASSWORD_DB"
-	CARPETA_FRONTEND                    = "web"
+	CARPETA_FRONTEND                    = "/go/web"
 	INTERVALO_HORAS_LIMPIEZA_CACHE      = 6
 	INTERVALO_HORAS_ALERTAS_INACTIVIDAD = 1
 	DIRECCION_ENVIO_EMAILS              = "DIRECCION_ENVIO_EMAILS"
@@ -30,9 +30,9 @@ const (
 	NOMBRE_DNS_ANGULAR                  = "NOMBRE_DNS_ANGULAR"
 	NOMBRE_DNS_API                      = "NOMBRE_DNS_API"
 	NOMBRE_DNS_GLOBAL                   = "NOMBRE_DNS_GLOBAL"
-	RUTA_CACHE_CERTIFICADOS             = "/cache_certificados"
-	RUTA_AVATARES                       = "assets/avatares/"
-	RUTA_DADOS                          = "assets/dados/"
+	RUTA_CACHE_CERTIFICADOS             = "/go/cache_certificados"
+	RUTA_AVATARES                       = "/go/assets/avatares/"
+	RUTA_DADOS                          = "/go/assets/dados/"
 	FORMATO_AVATARES                    = ".jpg"
 	FORMATO_DADOS                       = ".png"
 

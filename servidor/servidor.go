@@ -3,17 +3,16 @@
 package servidor
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/handlers"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
+	middlewarePropio "github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware" // Middleware a utilizar escrito por nosotros
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"golang.org/x/crypto/acme/autocert"
-
-	"context"
-	middlewarePropio "github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware" // Middleware a utilizar escrito por nosotros
 	"log"
 	"net/http"
 	"os"
@@ -39,6 +38,12 @@ func IniciarServidor(test bool) {
 		HostPolicy: autocert.HostWhitelist(os.Getenv(globales.NOMBRE_DNS_GLOBAL), os.Getenv(globales.NOMBRE_DNS_API), os.Getenv(globales.NOMBRE_DNS_ANGULAR), os.Getenv(globales.NOMBRE_DNS_REACT)),
 		Cache:      autocert.DirCache(globales.RUTA_CACHE_CERTIFICADOS),
 	}
+
+	log.Println("Configurado certificado TLS para:")
+	log.Println(os.Getenv(globales.NOMBRE_DNS_GLOBAL))
+	log.Println(os.Getenv(globales.NOMBRE_DNS_API))
+	log.Println(os.Getenv(globales.NOMBRE_DNS_ANGULAR))
+	log.Println(os.Getenv(globales.NOMBRE_DNS_REACT))
 
 	tlsConfig := certManager.TLSConfig()
 	tlsConfig.GetCertificate = getSelfSignedOrLetsEncryptCert(&certManager)
@@ -168,7 +173,6 @@ func routerAPI() http.Handler {
 
 	// Para debugging
 	r.Use(middleware.Logger)
-	// TODO: Por refinar opciones CORS
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"https://*", "http://*"},
 		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
@@ -244,10 +248,11 @@ func routerWeb() http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
-	workDir, _ := os.Getwd()
 	// Carpeta del sistema de ficheros que se va a servir, restringida a ella y sus
 	// subdirectorios
-	filesDir := http.Dir(filepath.Join(workDir, globales.CARPETA_FRONTEND))
+	filesDir := http.Dir(globales.CARPETA_FRONTEND)
+	log.Println("Sirviendo contenido web desde", globales.CARPETA_FRONTEND)
+
 	fileServer(r, "/", filesDir)
 
 	return r

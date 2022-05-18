@@ -2,10 +2,10 @@
 FROM golang:alpine
 
 # Copia todos los ficheros
-COPY ./backend /     
-COPY ./assets /assets
+COPY ./backend /go
+COPY ./assets /go/assets
 
 EXPOSE 443              
 
-ENTRYPOINT ["/backend", "-api"]
+ENTRYPOINT ["/go/backend", "-api"]
 #CMD ["/backend"]
