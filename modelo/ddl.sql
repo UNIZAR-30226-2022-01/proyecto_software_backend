@@ -111,7 +111,7 @@ VALUES(8, 'Avatar de quokka', 'Avatar de un quokka, para siempre sonreir ante cu
 
 INSERT INTO backend."ItemTienda"
 (id, nombre, descripcion, precio, tipo)
-VALUES(9, 'Dados por defecto', 'Dados de prueba.', 0, 'dado'::backend."item");
+VALUES(9, 'Dados por defecto', 'Dados por defecto, un poco aburridos.', 0, 'dado'::backend."item");
 
 INSERT INTO backend."ItemTienda"
 (id, nombre, descripcion, precio, tipo)
