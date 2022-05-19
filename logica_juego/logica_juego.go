@@ -130,6 +130,12 @@ func (e *EstadoPartida) ExpulsarJugadorActual() {
 
 	if jugadoresActivos > 0 {
 		e.SiguienteJugador()
+		if jugadoresActivos == 1 { // Únicamente queda un jugador, se da la partida como finalizada
+			e.Acciones = append(e.Acciones, NewAccionPartidaFinalizada(e.Jugadores[e.TurnoJugador]))
+
+			// Y se marca como terminada, para borrarla tras ser consultada por todos los jugadores
+			e.Terminada = true
+		}
 	} else {
 		// Todos los jugadores han sido derrotados o expulsados, se para la Goroutine y espera
 		// a que consulten el estado
@@ -154,6 +160,17 @@ func (e *EstadoPartida) ExpulsarJugador(expulsado string) {
 
 	if jugadoresActivos > 0 && e.Jugadores[e.TurnoJugador] == expulsado { // Era el jugador del turno actual
 		e.SiguienteJugador()
+		if jugadoresActivos == 1 { // Únicamente queda un jugador, se da la partida como finalizada
+			e.Acciones = append(e.Acciones, NewAccionPartidaFinalizada(e.Jugadores[e.TurnoJugador]))
+
+			// Y se marca como terminada, para borrarla tras ser consultada por todos los jugadores
+			e.Terminada = true
+		}
+	} else if jugadoresActivos == 1 {
+		e.Acciones = append(e.Acciones, NewAccionPartidaFinalizada(e.Jugadores[e.TurnoJugador]))
+
+		// Y se marca como terminada, para borrarla tras ser consultada por todos los jugadores
+		e.Terminada = true
 	} else if jugadoresActivos == 0 {
 		// Todos los jugadores han sido derrotados o expulsados, se para la Goroutine y espera
 		// a que consulten el estado
