@@ -339,13 +339,15 @@ func ObtenerNotificaciones(writer http.ResponseWriter, request *http.Request) {
 		}
 
 		partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
-		if partida.Estado.Jugadores[partida.Estado.TurnoJugador] == nombreUsuario {
-			turnoPrevio := partida.Estado.TurnoJugador - 1
-			if turnoPrevio == -1 {
-				turnoPrevio = len(partida.Estado.Jugadores) - 1
-			}
+		if len(partida.Estado.Jugadores) > 0 { // Está empezada
+			if partida.Estado.Jugadores[partida.Estado.TurnoJugador] == nombreUsuario {
+				turnoPrevio := partida.Estado.TurnoJugador - 1
+				if turnoPrevio == -1 {
+					turnoPrevio = len(partida.Estado.Jugadores) - 1
+				}
 
-			notificaciones = append(notificaciones, logica_juego.NewNotificacionTurno(partida.Estado.Jugadores[turnoPrevio]))
+				notificaciones = append(notificaciones, logica_juego.NewNotificacionTurno(partida.Estado.Jugadores[turnoPrevio]))
+			}
 		}
 	}
 
@@ -395,8 +397,10 @@ func ObtenerNumeroNotificaciones(writer http.ResponseWriter, request *http.Reque
 		}
 
 		partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
-		if partida.Estado.Jugadores[partida.Estado.TurnoJugador] == nombreUsuario {
-			contador += 1
+		if len(partida.Estado.Jugadores) > 0 { // Está empezada
+			if partida.Estado.Jugadores[partida.Estado.TurnoJugador] == nombreUsuario {
+				contador += 1
+			}
 		}
 	}
 
