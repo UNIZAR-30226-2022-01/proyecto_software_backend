@@ -303,6 +303,12 @@ func ModificarBiografia(db *sql.DB, usuario *vo.Usuario, biografia string) error
 	return err
 }
 
+// ModificarEmail actualiza el email del usuario
+func ModificarEmail(db *sql.DB, usuario *vo.Usuario, email string) error {
+	_, err := db.Exec(`UPDATE backend."Usuario" SET email=$1 WHERE "nombreUsuario"=$2`, email, usuario.NombreUsuario)
+	return err
+}
+
 // TieneObjeto devuelve true si y solo si el objeto "item" está en la colección de objetos de "usuario"
 func TieneObjeto(db *sql.DB, usuario *vo.Usuario, item vo.ItemTienda) (existe bool, err error) {
 	err = db.QueryRow(`SELECT EXISTS(SELECT * FROM backend."TieneItems" WHERE "ID_item" = $1 AND "nombreUsuario" = $2)`,

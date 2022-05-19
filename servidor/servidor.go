@@ -211,6 +211,9 @@ func routerAPI() http.Handler {
 		r.Post("/enviarSolicitudAmistad/{nombre}", handlers.EnviarSolicitudAmistad)
 		r.Post("/comprarObjeto/{id_objeto}", handlers.ComprarObjeto)
 		r.Post("/modificarBiografia", handlers.ModificarBiografia)
+		r.Post("/modificarEmail", handlers.ModificarEmail)
+		r.Post("/modificarEmailYBiografia", handlers.ModificarEmailYBiografia)
+		r.Post("/resetearPasswordEnLogin", handlers.ResetearContraseñaLogin)
 		r.Post("/modificarAspecto/{id_aspecto}", handlers.ModificarAspecto)
 
 	})
