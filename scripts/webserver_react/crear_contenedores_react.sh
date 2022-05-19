@@ -18,6 +18,8 @@ mv backend ./build/react
 # Copia ficheros de variables de entorno
 cp envfiles/dns.env ./build/react
 cp envfiles/servidor.env ./build/react
+cp envfiles/clave_tls.key ./build/react
+cp envfiles/cert_tls.pem ./build/react
 
 cd ./build/react
 
@@ -26,3 +28,5 @@ sudo docker-compose up --detach
 rm ./backend
 rm -r ./web/
 rm -r *.env
+rm -r *.pem
+rm -r *.key

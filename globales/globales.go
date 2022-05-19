@@ -33,6 +33,8 @@ const (
 	RUTA_CACHE_CERTIFICADOS             = "/go/cache_certificados"
 	RUTA_AVATARES                       = "/go/assets/avatares/"
 	RUTA_DADOS                          = "/go/assets/dados/"
+	RUTA_CERT_TLS                       = "/go/cert_tls.pem"
+	RUTA_CLAVE_TLS                      = "/go/clave_tls.key"
 	FORMATO_AVATARES                    = ".jpg"
 	FORMATO_DADOS                       = ".png"
 

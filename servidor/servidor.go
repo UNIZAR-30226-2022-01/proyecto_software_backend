@@ -4,8 +4,6 @@ package servidor
 
 import (
 	"context"
-	"crypto/tls"
-	"fmt"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/handlers"
@@ -17,7 +15,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -46,7 +43,6 @@ func IniciarServidor(test bool) {
 	log.Println(os.Getenv(globales.NOMBRE_DNS_REACT))
 
 	tlsConfig := certManager.TLSConfig()
-	tlsConfig.GetCertificate = getSelfSignedOrLetsEncryptCert(&certManager)
 
 	var server *http.Server
 	if len(os.Args) < 2 && !test {
@@ -113,7 +109,7 @@ func IniciarServidor(test bool) {
 		}
 	}
 
-	err := server.ListenAndServeTLS("", "") // Sin rutas de certificados, los obtiene el gestor de TLS
+	err := server.ListenAndServeTLS(globales.RUTA_CERT_TLS, globales.RUTA_CLAVE_TLS)
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
@@ -278,28 +274,4 @@ func fileServer(r chi.Router, path string, root http.FileSystem) {
 		fs := http.StripPrefix(pathPrefix, http.FileServer(root))
 		fs.ServeHTTP(w, r)
 	})
-}
-
-// Función de obtención de certificados dinámica para el gestor TLS
-//
-// Intenta obtener certificados para localhost autofirmados si existen (para debugging), o los solicita a Let's Encrypt en otro caso
-//
-// Adaptada de https://marcofranssen.nl/build-a-go-webserver-on-http-2-using-letsencrypt
-func getSelfSignedOrLetsEncryptCert(certManager *autocert.Manager) func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-	return func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-		dirCache, ok := certManager.Cache.(autocert.DirCache)
-		if !ok {
-			dirCache = "certs"
-		}
-
-		keyFile := filepath.Join(string(dirCache), hello.ServerName+".key")
-		crtFile := filepath.Join(string(dirCache), hello.ServerName+".crt")
-		certificate, err := tls.LoadX509KeyPair(crtFile, keyFile)
-		if err != nil {
-			fmt.Printf("%s\nObteniendo certificados de Let's Encrypt...\n", err)
-			return certManager.GetCertificate(hello)
-		}
-		fmt.Println("Cargando certificados autofirmados.")
-		return &certificate, err
-	}
 }

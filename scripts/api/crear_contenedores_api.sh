@@ -12,6 +12,8 @@ cp envfiles/postgres.env ./build/api
 cp envfiles/dns.env ./build/api
 cp envfiles/mail.env ./build/api
 cp envfiles/servidor.env ./build/api
+cp envfiles/clave_tls.key ./build/api
+cp envfiles/cert_tls.pem ./build/api
 
 # Copia los assets
 cp -r assets ./build/api
@@ -26,3 +28,5 @@ sudo docker-compose up --detach
 rm ./backend
 rm -r ./assets
 rm -r *.env
+rm -r *.pem
+rm -r *.key

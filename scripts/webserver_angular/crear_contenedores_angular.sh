@@ -20,6 +20,8 @@ mv backend ./build/angular
 # Copia ficheros de variables de entorno
 cp envfiles/dns.env ./build/angular
 cp envfiles/servidor.env ./build/angular
+cp envfiles/clave_tls.key ./build/angular
+cp envfiles/cert_tls.pem ./build/angular
 
 cd ./build/angular
 
@@ -28,3 +30,5 @@ sudo docker-compose up --detach
 rm ./backend
 rm -r ./web/
 rm -r *.env
+rm -r *.pem
+rm -r *.key
