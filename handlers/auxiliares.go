@@ -143,14 +143,45 @@ func escribirHeaderExito(writer http.ResponseWriter) {
 
 func transformaAElementoListaUsuarios(usuario vo.Usuario) vo.ElementoListaUsuarios {
 	return vo.ElementoListaUsuarios{
-		NombreUsuario:   usuario.NombreUsuario,
-		Email:           usuario.Email,
-		Biografia:       usuario.Biografia,
-		PartidasGanadas: usuario.PartidasGanadas,
-		PartidasTotales: usuario.PartidasTotales,
-		Puntos:          usuario.Puntos,
-		ID_dado:         usuario.ID_dado,
-		ID_avatar:       usuario.ID_avatar,
-		EsAmigo:         false,
+		NombreUsuario:      usuario.NombreUsuario,
+		Email:              usuario.Email,
+		Biografia:          usuario.Biografia,
+		PartidasGanadas:    usuario.PartidasGanadas,
+		PartidasTotales:    usuario.PartidasTotales,
+		Puntos:             usuario.Puntos,
+		ID_dado:            usuario.ID_dado,
+		ID_avatar:          usuario.ID_avatar,
+		EsAmigo:            false,
+		SolicitudRecibida:  false,
+		SolicitudPendiente: false,
 	}
+}
+
+// comprobarEstadoSolicitud devuelve dos booleanos, el primero de ellos valdrá true si el usuario1 ha recibido
+// una solicitud de amistad del usuario2, y esta está pendiente. El segundo valdrá true si el usuario1 ha enviado una
+// solicitud de amistad al usuario2, y esta está pendiente.
+func comprobarEstadoSolicitud(usuario1 string, usuario2 string) (solicitudRecibida, solicitudPendiente bool) {
+	solicitudRecibida = false
+	solicitudPendiente = false
+
+	// Se comprueba si hemos recibido una solicitud del usuario
+	pendientes, _ := dao.ConsultarSolicitudesPendientes(globales.Db, &vo.Usuario{NombreUsuario: usuario1})
+
+	for _, user := range pendientes {
+		if user == usuario2 {
+			solicitudRecibida = true
+			break
+		}
+	}
+
+	// Se comprueba si hemos enviado una solicitud al usuario
+	pendientesUsuario, _ := dao.ConsultarSolicitudesPendientes(globales.Db, &vo.Usuario{NombreUsuario: usuario2})
+
+	for _, p := range pendientesUsuario {
+		if p == usuario1 {
+			solicitudPendiente = true
+			break
+		}
+	}
+	return solicitudRecibida, solicitudPendiente
 }

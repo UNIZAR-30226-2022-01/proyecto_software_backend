@@ -174,6 +174,8 @@ func ObtenerSolicitudesPendientes(writer http.ResponseWriter, request *http.Requ
 // 	   "ID_dado": int
 // 	   "ID_avatar": int
 //	   "EsAmigo": bool
+//	   "SolicitudRecibida": bool
+//	   "SolicitudPendiente": bool
 //    }
 //
 // Ruta: /api/obtenerPerfil/{nombre}
@@ -185,14 +187,22 @@ func ObtenerPerfilUsuario(writer http.ResponseWriter, request *http.Request) {
 		devolverErrorSQL(writer)
 		return
 	}
+
 	envioUsuario := transformaAElementoListaUsuarios(usuario)
 	// Se comprueba si es amigo del usuario solicitante o no
-	amigos, err := dao.ObtenerAmigos(globales.Db, &vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)})
+	usuarioSolicitante := middleware.ObtenerUsuarioCookie(request)
+	amigos, err := dao.ObtenerAmigos(globales.Db, &vo.Usuario{NombreUsuario: usuarioSolicitante})
 	for _, amigo := range amigos {
 		if amigo.NombreUsuario == nombreUsuario {
 			envioUsuario.EsAmigo = true
 			break
 		}
+	}
+
+	// Si no son amigos, comprobamos si la solicitud de amistad está pendiente
+	if !envioUsuario.EsAmigo {
+		envioUsuario.SolicitudRecibida, envioUsuario.SolicitudPendiente =
+			comprobarEstadoSolicitud(usuarioSolicitante, nombreUsuario)
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
@@ -210,11 +220,15 @@ func ObtenerPerfilUsuario(writer http.ResponseWriter, request *http.Request) {
 //    [
 //        {
 //            "Nombre": string,
-//            "EsAmigo": bool
+//            "EsAmigo": bool,
+//			  "SolicitudRecibida": bool,
+//		 	  "SolicitudPendiente": bool
 //        },
 //        {
 //            "Nombre": string,
-//            "EsAmigo": bool
+//            "EsAmigo": bool,
+//			  "SolicitudRecibida": bool,
+//		 	  "SolicitudPendiente": bool
 //        },
 //		  ...
 //    ]
@@ -243,7 +257,16 @@ func ObtenerUsuariosSimilares(writer http.ResponseWriter, request *http.Request)
 				amigos = append(amigos[:i], amigos[i+1:]...) // Lo elimina de la lista, no hay que comprobarlo de nuevo
 			}
 		}
-		envioUsuarios = append(envioUsuarios, vo.ElementoListaUsuariosSimilares{Nombre: usuario, EsAmigo: esAmigo})
+
+		// Si no son amigos, comprobamos solicitudes de amistad pendientes
+		solicitudRecibida := false
+		solicitudPendiente := false
+		if !esAmigo {
+			solicitudRecibida, solicitudPendiente = comprobarEstadoSolicitud(nombreUsuario, usuario)
+		}
+
+		envioUsuarios = append(envioUsuarios, vo.ElementoListaUsuariosSimilares{Nombre: usuario, EsAmigo: esAmigo,
+			SolicitudRecibida: solicitudRecibida, SolicitudPendiente: solicitudPendiente})
 	}
 
 	writer.Header().Set("Content-Type", "application/json")

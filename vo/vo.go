@@ -74,20 +74,24 @@ type ElementoListaPartidas struct {
 }
 
 type ElementoListaUsuariosSimilares struct {
-	Nombre  string
-	EsAmigo bool
+	Nombre             string
+	EsAmigo            bool
+	SolicitudRecibida  bool
+	SolicitudPendiente bool
 }
 
 type ElementoListaUsuarios struct {
-	Email           string
-	NombreUsuario   string
-	Biografia       string
-	PartidasGanadas int
-	PartidasTotales int
-	Puntos          int
-	ID_dado         int
-	ID_avatar       int
-	EsAmigo         bool
+	Email              string
+	NombreUsuario      string
+	Biografia          string
+	PartidasGanadas    int
+	PartidasTotales    int
+	Puntos             int
+	ID_dado            int
+	ID_avatar          int
+	EsAmigo            bool
+	SolicitudRecibida  bool
+	SolicitudPendiente bool
 }
 
 type ElementoRankingUsuarios struct {
