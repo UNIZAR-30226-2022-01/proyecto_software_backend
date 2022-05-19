@@ -10,11 +10,13 @@ import (
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/gomail.v2"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -504,6 +506,109 @@ func ModificarBiografia(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	escribirHeaderExito(writer)
+}
+
+// ModificarEmail permite al usuario modificar su email, especificando una nueva en el campo "email" del
+// formulario enviado.
+//
+// Devuelve status 500 en caso de error y 200 en caso contrario
+//
+// Ruta: /api/modificarEmail
+// Tipo: Post
+func ModificarEmail(writer http.ResponseWriter, request *http.Request) {
+	usuario := middleware.ObtenerUsuarioCookie(request)
+	email := request.FormValue("email")
+
+	if len(email) == 0 {
+		devolverError(writer, errors.New("El email no puede ser vacío"))
+		return
+	} else if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
+		devolverError(writer, errors.New("El email debe ser válido"))
+		return
+	}
+
+	err := dao.ModificarEmail(globales.Db, &vo.Usuario{NombreUsuario: usuario}, email)
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	escribirHeaderExito(writer)
+}
+
+// ModificarEmailYBiografia permite al usuario modificar su email y su biografía al mismo tiempo,
+// especificando los nuevos en los campos "email" y "biografia" del formulario enviado.
+//
+// Devuelve status 500 en caso de error y 200 en caso contrario
+//
+// Ruta: /api/modificarEmailYBiografia
+// Tipo: Post
+func ModificarEmailYBiografia(writer http.ResponseWriter, request *http.Request) {
+	usuario := middleware.ObtenerUsuarioCookie(request)
+	biografia := request.FormValue("biografia")
+	email := request.FormValue("email")
+
+	if len(email) == 0 {
+		devolverError(writer, errors.New("El email no puede ser vacío"))
+		return
+	} else if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
+		devolverError(writer, errors.New("El email debe ser válido"))
+		return
+	}
+
+	err := dao.ModificarBiografia(globales.Db, &vo.Usuario{NombreUsuario: usuario}, biografia)
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	err = dao.ModificarEmail(globales.Db, &vo.Usuario{NombreUsuario: usuario}, email)
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	escribirHeaderExito(writer)
+}
+
+// ResetearContraseñaLogin permite al usuario cambiar su contraseña mientras está conectado (y por tanto proporciona una
+// cookie válida), especificando su contraseña actual en el campo "passwordActual" y la contraseña nueva en el campo
+// "passwordNueva" del formulario
+//
+//
+//
+// Devuelve status 500 en caso de error y 200 en caso contrario
+//
+// Ruta: /api/resetearPasswordEnLogin
+// Tipo: Post
+func ResetearContraseñaLogin(writer http.ResponseWriter, request *http.Request) {
+	usuario := middleware.ObtenerUsuarioCookie(request)
+	passwordActual := request.FormValue("passwordActual")
+	passwordNueva := request.FormValue("passwordNueva")
+
+	usuarioVO := vo.Usuario{NombreUsuario: usuario}
+	hashDB, err := dao.ConsultarPasswordHash(globales.Db, &usuarioVO)
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	existe := bcrypt.CompareHashAndPassword([]byte(hashDB), []byte(passwordActual))
+	if existe != nil {
+		devolverError(writer, errors.New("La contraseña o nombre de usuario introducidos son incorrectos"))
+	} else {
+		hash, err := hashPassword(passwordNueva)
+		if err != nil {
+			devolverErrorSQL(writer)
+			return
+		}
+
+		err = dao.ResetearContraseña(globales.Db, usuario, hash)
+		if err != nil {
+			devolverErrorSQL(writer)
+			return
+		}
+	}
 }
 
 // ModificarAspecto permite al usuario equipar un aspecto que haya comprado previamente. Para ello, especificará
