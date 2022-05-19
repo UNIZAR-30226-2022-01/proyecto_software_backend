@@ -43,6 +43,33 @@ func TestFuncionesSociales(t *testing.T) {
 		}
 	}
 
+	// Consultamos el perfil, comprobando que la solicitud esta pendiente
+	t.Log("Comprobamos que la solicitud pendiente aparezca correctamente al consultar el perfil")
+	perfil := obtenerPerfilUsuario(cookie, amigos[0], t)
+	if !perfil.SolicitudRecibida {
+		t.Fatal("Al consultar el perfil la solicitud no aparece como recibida")
+	}
+
+	// Comprobamos al revés
+	perfil = obtenerPerfilUsuario(cookiesAmigos[0], "usuario", t)
+	if !perfil.SolicitudPendiente {
+		t.Fatal("Al consultar el perfil la solicitud no aparece como pendiente")
+	}
+
+	// Comprobamos lo mismo, desde la búsqueda de usuarios similares
+	t.Log("Comprobamos que la solicitud pendiente aparezca correctamente al buscar usuarios")
+	resultadoBusqueda := buscarUsuariosSimilares(cookie, "Amigo", t)
+	res := resultadoBusqueda[0]
+	if !res.SolicitudRecibida {
+		t.Fatal("Al buscar usuarios la solicitud no aparece como recibida")
+	}
+
+	resultadoBusqueda = buscarUsuariosSimilares(cookiesAmigos[0], "usuario", t)
+	res = resultadoBusqueda[0]
+	if !res.SolicitudPendiente {
+		t.Fatal("Al buscar usuarios la solicitud no aparece como pendiente")
+	}
+
 	// Rechazamos todas las solicitudes menos la última
 	for _, a := range amigos[:len(amigos)-1] {
 		rechazarSolicitudDeAmistad(cookie, t, a)
@@ -104,7 +131,7 @@ func TestFuncionesSociales(t *testing.T) {
 	t.Log("La nueva biografía es:", usuario.Biografia)
 
 	// Buscamos usuarios cuyo nombre empiece por "Amigo"
-	resultadoBusqueda := buscarUsuariosSimilares(cookie, "Amigo", t)
+	resultadoBusqueda = buscarUsuariosSimilares(cookie, "Amigo", t)
 	log.Println("amigos:", resultadoBusqueda)
 	if len(amigos) != len(resultadoBusqueda) {
 		t.Fatal("No se han recuperado todos los usuarios con nombre empezado por Amigo")
