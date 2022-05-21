@@ -258,6 +258,11 @@ func AbandonarPartida(writer http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		devolverError(writer, err)
 	} else {
+		err = dao.OtorgarPuntos(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario}, 0, false)
+		if err != nil {
+			devolverError(writer, err)
+		}
+
 		// Expulsa al jugador en la cache
 		partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
 		partida.Estado.ExpulsarJugador(nombreUsuario)
