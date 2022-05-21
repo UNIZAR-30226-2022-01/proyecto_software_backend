@@ -27,7 +27,8 @@ func crearUsuario(nombre string, t *testing.T) (cookie *http.Cookie) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatal("Obtenido código de error no 200 al registrar un usuario:", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatal("Obtenido código de error no 200 al registrar un usuario:", resp.StatusCode, "\nMensaje de error:", string(body))
 	}
 
 	// De ObtenerUsuarioCookie
