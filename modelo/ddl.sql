@@ -101,7 +101,7 @@ VALUES(6, 'Avatar de panda rojo', 'Avatar de un panda rojo, para matar de ternur
 
 INSERT INTO backend."ItemTienda"
 (id, nombre, descripcion, precio, tipo)
-VALUES(7, 'Avatar de fénec', 'Avatar de un fénec, para oír los movimiento de tus contrincantes a kilómetros.', 150, 'avatar'::backend."item");
+VALUES(7, 'Avatar de fénec', 'Avatar de un fénec, para oír los movimientos de tus contrincantes a kilómetros.', 150, 'avatar'::backend."item");
 
 INSERT INTO backend."ItemTienda"
 (id, nombre, descripcion, precio, tipo)
