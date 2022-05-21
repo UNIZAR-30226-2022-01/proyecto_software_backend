@@ -10,7 +10,7 @@ import (
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
 	middlewarePropio "github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware" // Middleware a utilizar escrito por nosotros
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
-	"golang.org/x/crypto/acme/autocert"
+	//"golang.org/x/crypto/acme/autocert"
 	"log"
 	"net/http"
 	"os"
@@ -25,24 +25,8 @@ import (
 )
 
 func IniciarServidor(test bool) {
-	// Inicializa el gestor de certificados
-	// Tiene como dominios permitidos el global y los subdominios de la API, angular y react, y pedirá los certificados a
-	// Let's Encrypt dinámicamente dependiendo de la petición
-	//
-	// Los certificados se cachearán en el directorio indicado
-	certManager := autocert.Manager{
-		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist(os.Getenv(globales.NOMBRE_DNS_GLOBAL), os.Getenv(globales.NOMBRE_DNS_API), os.Getenv(globales.NOMBRE_DNS_ANGULAR), os.Getenv(globales.NOMBRE_DNS_REACT)),
-		Cache:      autocert.DirCache(globales.RUTA_CACHE_CERTIFICADOS),
-	}
-
-	log.Println("Configurado certificado TLS para:")
+	log.Println("Sirviendo con certificado TLS para:")
 	log.Println(os.Getenv(globales.NOMBRE_DNS_GLOBAL))
-	log.Println(os.Getenv(globales.NOMBRE_DNS_API))
-	log.Println(os.Getenv(globales.NOMBRE_DNS_ANGULAR))
-	log.Println(os.Getenv(globales.NOMBRE_DNS_REACT))
-
-	tlsConfig := certManager.TLSConfig()
 
 	var server *http.Server
 	if len(os.Args) < 2 && !test {
@@ -53,14 +37,11 @@ func IniciarServidor(test bool) {
 		if os.Args[len(os.Args)-1] == "-web" {
 			log.Println("Escuchando por el puerto", os.Getenv(globales.PUERTO_WEB))
 			server = &http.Server{Addr: ":" + os.Getenv(globales.PUERTO_WEB),
-				Handler:   routerWeb(),
-				TLSConfig: tlsConfig}
+				Handler: routerWeb()}
 		} else if os.Args[len(os.Args)-1] == "-api" || test {
 			log.Println("Escuchando por el puerto", os.Getenv(globales.PUERTO_API))
 			server = &http.Server{Addr: ":" + os.Getenv(globales.PUERTO_API),
-				Handler:   routerAPI(),
-				TLSConfig: tlsConfig}
-
+				Handler: routerAPI()}
 			// El objeto de base de datos es seguro para uso concurrente y controla su
 			// propio pool de conexiones independientemente.
 			globales.Db = dao.InicializarConexionDb(test)
