@@ -22,13 +22,17 @@ func Registro(writer http.ResponseWriter, request *http.Request) {
 	email := request.FormValue("email")
 	password := request.FormValue("password")
 
-	if dao.ExisteEmail(globales.Db, email) {
-		devolverError(writer, errors.New("El email introducido ya está registrado"))
+	log.Println("Comprobando usuario repetido")
+	if dao.ExisteUsuario(globales.Db, nombre) {
+		log.Println("El usuario está repetido")
+		devolverError(writer, errors.New("El nombre de usuario introducido ya existe"))
 		return
 	}
 
-	if dao.ExisteUsuario(globales.Db, nombre) {
-		devolverError(writer, errors.New("El nombre de usuario introducido ya existe"))
+	log.Println("Comprobando email repetido")
+	if dao.ExisteEmail(globales.Db, email) {
+		log.Println("El email está repetido")
+		devolverError(writer, errors.New("El email introducido ya está registrado"))
 		return
 	}
 
