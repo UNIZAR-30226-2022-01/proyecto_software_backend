@@ -361,7 +361,7 @@ func ObtenerNotificaciones(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	if len(notificacionesConEstado) > 0 {
-		notificaciones = append(notificaciones, notificacionesConEstado)
+		notificaciones = append(notificaciones, notificacionesConEstado...)
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
