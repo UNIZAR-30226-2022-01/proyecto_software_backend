@@ -338,11 +338,11 @@ func (e *EstadoPartida) RellenarRegiones() {
 func (e *EstadoPartida) ReforzarTerritorio(idTerritorio int, numTropas int, jugador string) error {
 	region, existe := e.EstadoMapa[NumRegion(idTerritorio)]
 	if !existe {
-		return errors.New("La región indicada," + strconv.Itoa(idTerritorio) + ", es inválida")
+		return errors.New("La región indicada es inválida")
 	}
 
 	if region.Ocupante != jugador {
-		return errors.New("La región indicada," + strconv.Itoa(idTerritorio) + ", tiene por ocupante a otro jugador: " + region.Ocupante)
+		return errors.New("La región indicada tiene por ocupante a otro jugador: " + region.Ocupante)
 	}
 
 	estado, existe := e.EstadosJugadores[jugador]
