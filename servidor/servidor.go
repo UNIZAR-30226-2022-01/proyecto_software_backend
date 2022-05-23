@@ -3,19 +3,18 @@
 package servidor
 
 import (
+	"context"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/dao"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/globales"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/handlers"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/logica_juego"
-	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
-
-	"context"
 	middlewarePropio "github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware" // Middleware a utilizar escrito por nosotros
+	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
+	//"golang.org/x/crypto/acme/autocert"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -26,6 +25,9 @@ import (
 )
 
 func IniciarServidor(test bool) {
+	log.Println("Sirviendo con certificado TLS para:")
+	log.Println(os.Getenv(globales.NOMBRE_DNS_GLOBAL))
+
 	var server *http.Server
 	if len(os.Args) < 2 && !test {
 		log.Println("Uso:\n\t ./ejecutable -web : Servir contenido web \n\t ./ejecutable -api : Servir API")
@@ -34,11 +36,12 @@ func IniciarServidor(test bool) {
 		// Instancia un servidor HTTP con el router programado indicado
 		if os.Args[len(os.Args)-1] == "-web" {
 			log.Println("Escuchando por el puerto", os.Getenv(globales.PUERTO_WEB))
-			server = &http.Server{Addr: ":" + os.Getenv(globales.PUERTO_WEB), Handler: routerWeb()}
+			server = &http.Server{Addr: ":" + os.Getenv(globales.PUERTO_WEB),
+				Handler: routerWeb()}
 		} else if os.Args[len(os.Args)-1] == "-api" || test {
 			log.Println("Escuchando por el puerto", os.Getenv(globales.PUERTO_API))
-			server = &http.Server{Addr: ":" + os.Getenv(globales.PUERTO_API), Handler: routerAPI()}
-
+			server = &http.Server{Addr: ":" + os.Getenv(globales.PUERTO_API),
+				Handler: routerAPI()}
 			// El objeto de base de datos es seguro para uso concurrente y controla su
 			// propio pool de conexiones independientemente.
 			globales.Db = dao.InicializarConexionDb(test)
@@ -87,7 +90,7 @@ func IniciarServidor(test bool) {
 		}
 	}
 
-	err := server.ListenAndServe()
+	err := server.ListenAndServeTLS(globales.RUTA_CERT_TLS, globales.RUTA_CLAVE_TLS)
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
@@ -147,7 +150,6 @@ func routerAPI() http.Handler {
 
 	// Para debugging
 	r.Use(middleware.Logger)
-	// TODO: Por refinar opciones CORS
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"https://*", "http://*"},
 		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
@@ -226,10 +228,11 @@ func routerWeb() http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
-	workDir, _ := os.Getwd()
 	// Carpeta del sistema de ficheros que se va a servir, restringida a ella y sus
 	// subdirectorios
-	filesDir := http.Dir(filepath.Join(workDir, globales.CARPETA_FRONTEND))
+	filesDir := http.Dir(globales.CARPETA_FRONTEND)
+	log.Println("Sirviendo contenido web desde", globales.CARPETA_FRONTEND)
+
 	fileServer(r, "/", filesDir)
 
 	return r
