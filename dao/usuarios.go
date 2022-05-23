@@ -239,24 +239,24 @@ func ObtenerUsuariosSimilares(db *sql.DB, nombre string) (usuarios []string, err
 
 // ExisteUsuario devuelve true si hay algún usuario con el nombre "nombre" registrado
 func ExisteUsuario(db *sql.DB, nombre string) bool {
-	var existe bool
+	var existe sql.NullBool
 	err := db.QueryRow(`SELECT EXISTS(SELECT * FROM backend."Usuario"
-		WHERE "nombreUsuario" = $1)`, nombre).Scan(existe)
+		WHERE "nombreUsuario" = $1)`, nombre).Scan(&existe)
 	if err != nil {
 		return false
 	}
-	return existe
+	return existe.Valid && existe.Bool
 }
 
 // ExisteEmail devuelve true si hay algún usuario con el email "email" registrado
 func ExisteEmail(db *sql.DB, email string) bool {
-	var existe bool
+	var existe sql.NullBool
 	err := db.QueryRow(`SELECT EXISTS(SELECT * FROM backend."Usuario"
-		WHERE "email" = $1)`, email).Scan(existe)
+		WHERE "email" = $1)`, email).Scan(&existe)
 	if err != nil {
 		return false
 	}
-	return existe
+	return existe.Valid && existe.Bool
 }
 
 // OtorgarPuntos añade una cantidad de puntos determinada al usuario dado. Devuelve error en caso de fallo.
@@ -300,6 +300,12 @@ func ContabilizarPartida(db *sql.DB, usuario *vo.Usuario) (err error) {
 // ModificarBiografia actualiza la biografia del usuario
 func ModificarBiografia(db *sql.DB, usuario *vo.Usuario, biografia string) error {
 	_, err := db.Exec(`UPDATE backend."Usuario" SET biografia=$1 WHERE "nombreUsuario"=$2`, biografia, usuario.NombreUsuario)
+	return err
+}
+
+// ModificarEmail actualiza el email del usuario
+func ModificarEmail(db *sql.DB, usuario *vo.Usuario, email string) error {
+	_, err := db.Exec(`UPDATE backend."Usuario" SET email=$1 WHERE "nombreUsuario"=$2`, email, usuario.NombreUsuario)
 	return err
 }
 

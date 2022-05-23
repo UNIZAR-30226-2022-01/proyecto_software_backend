@@ -130,6 +130,12 @@ func (e *EstadoPartida) ExpulsarJugadorActual() {
 
 	if jugadoresActivos > 0 {
 		e.SiguienteJugador()
+		if jugadoresActivos == 1 { // Únicamente queda un jugador, se da la partida como finalizada
+			e.Acciones = append(e.Acciones, NewAccionPartidaFinalizada(e.Jugadores[e.TurnoJugador]))
+
+			// Y se marca como terminada, para borrarla tras ser consultada por todos los jugadores
+			e.Terminada = true
+		}
 	} else {
 		// Todos los jugadores han sido derrotados o expulsados, se para la Goroutine y espera
 		// a que consulten el estado
@@ -154,6 +160,17 @@ func (e *EstadoPartida) ExpulsarJugador(expulsado string) {
 
 	if jugadoresActivos > 0 && e.Jugadores[e.TurnoJugador] == expulsado { // Era el jugador del turno actual
 		e.SiguienteJugador()
+		if jugadoresActivos == 1 { // Únicamente queda un jugador, se da la partida como finalizada
+			e.Acciones = append(e.Acciones, NewAccionPartidaFinalizada(e.Jugadores[e.TurnoJugador]))
+
+			// Y se marca como terminada, para borrarla tras ser consultada por todos los jugadores
+			e.Terminada = true
+		}
+	} else if jugadoresActivos == 1 {
+		e.Acciones = append(e.Acciones, NewAccionPartidaFinalizada(e.Jugadores[e.TurnoJugador]))
+
+		// Y se marca como terminada, para borrarla tras ser consultada por todos los jugadores
+		e.Terminada = true
 	} else if jugadoresActivos == 0 {
 		// Todos los jugadores han sido derrotados o expulsados, se para la Goroutine y espera
 		// a que consulten el estado
@@ -321,11 +338,11 @@ func (e *EstadoPartida) RellenarRegiones() {
 func (e *EstadoPartida) ReforzarTerritorio(idTerritorio int, numTropas int, jugador string) error {
 	region, existe := e.EstadoMapa[NumRegion(idTerritorio)]
 	if !existe {
-		return errors.New("La región indicada," + strconv.Itoa(idTerritorio) + ", es inválida")
+		return errors.New("La región indicada es inválida")
 	}
 
 	if region.Ocupante != jugador {
-		return errors.New("La región indicada," + strconv.Itoa(idTerritorio) + ", tiene por ocupante a otro jugador: " + region.Ocupante)
+		return errors.New("La región indicada tiene por ocupante a otro jugador: " + region.Ocupante)
 	}
 
 	estado, existe := e.EstadosJugadores[jugador]
@@ -377,7 +394,8 @@ func (e *EstadoPartida) FinDeFase(jugador string) error {
 		for _, jugador := range e.Jugadores {
 			estadoJugador := e.EstadosJugadores[jugador]
 
-			if estadoJugador.Tropas != 0 {
+			// Si aún tiene tropas y no ha sido expulsado ni eliminado, se sigue en fase de inicio
+			if estadoJugador.Tropas != 0 && !e.HaSidoExpulsado(jugador) && !e.HaSidoEliminado(jugador) {
 				todosSinTropas = false
 				break
 			}

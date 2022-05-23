@@ -134,7 +134,8 @@ func (e *EstadoPartida) CambiarCartas(jugador string, ID_carta1, ID_carta2, ID_c
 	if !esCambioValido([]Carta{carta1, carta2, carta3}) {
 		// Devolvemos las 3 cartas a la mano del jugador
 		estado.Cartas = append(estado.Cartas, carta1, carta2, carta3)
-		return errors.New("Las cartas introducidas no son válidas para realizar un cambio")
+		return errors.New("Las cartas introducidas no son válidas para realizar un cambio.\n" +
+			"Un cambio válido debe tener 3 cartas del mismo tipo, una de cada tipo, o dos del mismo tipo y un comodín.")
 	}
 
 	// Descartamos las 3 cartas

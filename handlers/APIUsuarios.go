@@ -10,11 +10,13 @@ import (
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/middleware"
 	"github.com/UNIZAR-30226-2022-01/proyecto_software_backend/vo"
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/gomail.v2"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -174,6 +176,8 @@ func ObtenerSolicitudesPendientes(writer http.ResponseWriter, request *http.Requ
 // 	   "ID_dado": int
 // 	   "ID_avatar": int
 //	   "EsAmigo": bool
+//	   "SolicitudRecibida": bool
+//	   "SolicitudPendiente": bool
 //    }
 //
 // Ruta: /api/obtenerPerfil/{nombre}
@@ -185,14 +189,22 @@ func ObtenerPerfilUsuario(writer http.ResponseWriter, request *http.Request) {
 		devolverErrorSQL(writer)
 		return
 	}
+
 	envioUsuario := transformaAElementoListaUsuarios(usuario)
 	// Se comprueba si es amigo del usuario solicitante o no
-	amigos, err := dao.ObtenerAmigos(globales.Db, &vo.Usuario{NombreUsuario: middleware.ObtenerUsuarioCookie(request)})
+	usuarioSolicitante := middleware.ObtenerUsuarioCookie(request)
+	amigos, err := dao.ObtenerAmigos(globales.Db, &vo.Usuario{NombreUsuario: usuarioSolicitante})
 	for _, amigo := range amigos {
 		if amigo.NombreUsuario == nombreUsuario {
 			envioUsuario.EsAmigo = true
 			break
 		}
+	}
+
+	// Si no son amigos, comprobamos si la solicitud de amistad está pendiente
+	if !envioUsuario.EsAmigo {
+		envioUsuario.SolicitudRecibida, envioUsuario.SolicitudPendiente =
+			comprobarEstadoSolicitud(usuarioSolicitante, nombreUsuario)
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
@@ -210,11 +222,15 @@ func ObtenerPerfilUsuario(writer http.ResponseWriter, request *http.Request) {
 //    [
 //        {
 //            "Nombre": string,
-//            "EsAmigo": bool
+//            "EsAmigo": bool,
+//			  "SolicitudRecibida": bool,
+//		 	  "SolicitudPendiente": bool
 //        },
 //        {
 //            "Nombre": string,
-//            "EsAmigo": bool
+//            "EsAmigo": bool,
+//			  "SolicitudRecibida": bool,
+//		 	  "SolicitudPendiente": bool
 //        },
 //		  ...
 //    ]
@@ -243,7 +259,16 @@ func ObtenerUsuariosSimilares(writer http.ResponseWriter, request *http.Request)
 				amigos = append(amigos[:i], amigos[i+1:]...) // Lo elimina de la lista, no hay que comprobarlo de nuevo
 			}
 		}
-		envioUsuarios = append(envioUsuarios, vo.ElementoListaUsuariosSimilares{Nombre: usuario, EsAmigo: esAmigo})
+
+		// Si no son amigos, comprobamos solicitudes de amistad pendientes
+		solicitudRecibida := false
+		solicitudPendiente := false
+		if !esAmigo {
+			solicitudRecibida, solicitudPendiente = comprobarEstadoSolicitud(nombreUsuario, usuario)
+		}
+
+		envioUsuarios = append(envioUsuarios, vo.ElementoListaUsuariosSimilares{Nombre: usuario, EsAmigo: esAmigo,
+			SolicitudRecibida: solicitudRecibida, SolicitudPendiente: solicitudPendiente})
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
@@ -316,13 +341,15 @@ func ObtenerNotificaciones(writer http.ResponseWriter, request *http.Request) {
 		}
 
 		partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
-		if partida.Estado.Jugadores[partida.Estado.TurnoJugador] == nombreUsuario {
-			turnoPrevio := partida.Estado.TurnoJugador - 1
-			if turnoPrevio == -1 {
-				turnoPrevio = len(partida.Estado.Jugadores) - 1
-			}
+		if len(partida.Estado.Jugadores) > 0 { // Está empezada
+			if partida.Estado.Jugadores[partida.Estado.TurnoJugador] == nombreUsuario {
+				turnoPrevio := partida.Estado.TurnoJugador - 1
+				if turnoPrevio == -1 {
+					turnoPrevio = len(partida.Estado.Jugadores) - 1
+				}
 
-			notificaciones = append(notificaciones, logica_juego.NewNotificacionTurno(partida.Estado.Jugadores[turnoPrevio]))
+				notificaciones = append(notificaciones, logica_juego.NewNotificacionTurno(partida.Estado.Jugadores[turnoPrevio]))
+			}
 		}
 	}
 
@@ -334,7 +361,7 @@ func ObtenerNotificaciones(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	if len(notificacionesConEstado) > 0 {
-		notificaciones = append(notificaciones, notificacionesConEstado)
+		notificaciones = append(notificaciones, notificacionesConEstado...)
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
@@ -372,8 +399,10 @@ func ObtenerNumeroNotificaciones(writer http.ResponseWriter, request *http.Reque
 		}
 
 		partida, _ := globales.CachePartidas.ObtenerPartida(idPartida)
-		if partida.Estado.Jugadores[partida.Estado.TurnoJugador] == nombreUsuario {
-			contador += 1
+		if len(partida.Estado.Jugadores) > 0 { // Está empezada
+			if partida.Estado.Jugadores[partida.Estado.TurnoJugador] == nombreUsuario {
+				contador += 1
+			}
 		}
 	}
 
@@ -477,6 +506,109 @@ func ModificarBiografia(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	escribirHeaderExito(writer)
+}
+
+// ModificarEmail permite al usuario modificar su email, especificando una nueva en el campo "email" del
+// formulario enviado.
+//
+// Devuelve status 500 en caso de error y 200 en caso contrario
+//
+// Ruta: /api/modificarEmail
+// Tipo: Post
+func ModificarEmail(writer http.ResponseWriter, request *http.Request) {
+	usuario := middleware.ObtenerUsuarioCookie(request)
+	email := request.FormValue("email")
+
+	if len(email) == 0 {
+		devolverError(writer, errors.New("El email no puede ser vacío"))
+		return
+	} else if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
+		devolverError(writer, errors.New("El email debe ser válido"))
+		return
+	}
+
+	err := dao.ModificarEmail(globales.Db, &vo.Usuario{NombreUsuario: usuario}, email)
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	escribirHeaderExito(writer)
+}
+
+// ModificarEmailYBiografia permite al usuario modificar su email y su biografía al mismo tiempo,
+// especificando los nuevos en los campos "email" y "biografia" del formulario enviado.
+//
+// Devuelve status 500 en caso de error y 200 en caso contrario
+//
+// Ruta: /api/modificarEmailYBiografia
+// Tipo: Post
+func ModificarEmailYBiografia(writer http.ResponseWriter, request *http.Request) {
+	usuario := middleware.ObtenerUsuarioCookie(request)
+	biografia := request.FormValue("biografia")
+	email := request.FormValue("email")
+
+	if len(email) == 0 {
+		devolverError(writer, errors.New("El email no puede ser vacío"))
+		return
+	} else if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
+		devolverError(writer, errors.New("El email debe ser válido"))
+		return
+	}
+
+	err := dao.ModificarBiografia(globales.Db, &vo.Usuario{NombreUsuario: usuario}, biografia)
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	err = dao.ModificarEmail(globales.Db, &vo.Usuario{NombreUsuario: usuario}, email)
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	escribirHeaderExito(writer)
+}
+
+// ResetearContraseñaLogin permite al usuario cambiar su contraseña mientras está conectado (y por tanto proporciona una
+// cookie válida), especificando su contraseña actual en el campo "passwordActual" y la contraseña nueva en el campo
+// "passwordNueva" del formulario
+//
+//
+//
+// Devuelve status 500 en caso de error y 200 en caso contrario
+//
+// Ruta: /api/resetearPasswordEnLogin
+// Tipo: Post
+func ResetearContraseñaLogin(writer http.ResponseWriter, request *http.Request) {
+	usuario := middleware.ObtenerUsuarioCookie(request)
+	passwordActual := request.FormValue("passwordActual")
+	passwordNueva := request.FormValue("passwordNueva")
+
+	usuarioVO := vo.Usuario{NombreUsuario: usuario}
+	hashDB, err := dao.ConsultarPasswordHash(globales.Db, &usuarioVO)
+	if err != nil {
+		devolverErrorSQL(writer)
+		return
+	}
+
+	existe := bcrypt.CompareHashAndPassword([]byte(hashDB), []byte(passwordActual))
+	if existe != nil {
+		devolverError(writer, errors.New("La contraseña o nombre de usuario introducidos son incorrectos"))
+	} else {
+		hash, err := hashPassword(passwordNueva)
+		if err != nil {
+			devolverErrorSQL(writer)
+			return
+		}
+
+		err = dao.ResetearContraseña(globales.Db, usuario, hash)
+		if err != nil {
+			devolverErrorSQL(writer)
+			return
+		}
+	}
 }
 
 // ModificarAspecto permite al usuario equipar un aspecto que haya comprado previamente. Para ello, especificará
