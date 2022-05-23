@@ -215,6 +215,12 @@ func ObtenerEstadoLobby(writer http.ResponseWriter, request *http.Request) {
 func AbandonarLobby(writer http.ResponseWriter, request *http.Request) {
 	nombreUsuario := middleware.ObtenerUsuarioCookie(request)
 
+	idPartida, err := dao.ObtenerIDPartida(globales.Db, nombreUsuario)
+	if err != nil {
+		devolverError(writer, err)
+		return
+	}
+
 	err, borrada := dao.AbandonarLobby(globales.Db, &vo.Usuario{NombreUsuario: nombreUsuario})
 	// AbandonarLobby ya da el error formateado
 	if err != nil {
@@ -223,19 +229,13 @@ func AbandonarLobby(writer http.ResponseWriter, request *http.Request) {
 		// Si se ha borrado de la DB, se borra de la cache
 		if borrada {
 			log.Println("Borrando partida no empezada por abandono de todos los usuarios")
-			id, err := dao.ObtenerIDPartida(globales.Db, nombreUsuario)
+			partida, err := dao.ObtenerPartida(globales.Db, idPartida)
 			if err != nil {
-				devolverError(writer, err)
-			} else {
-				partida, err := dao.ObtenerPartida(globales.Db, id)
-				if err != nil {
-					globales.CachePartidas.EliminarPartida(partida)
-				}
+				globales.CachePartidas.EliminarPartida(partida)
 			}
 		}
-
-		escribirHeaderExito(writer)
 	}
+	escribirHeaderExito(writer)
 }
 
 // AbandonarPartida deja la partida en la que el usuario esté participando. Responde con status 200 si ha habido éxito,
