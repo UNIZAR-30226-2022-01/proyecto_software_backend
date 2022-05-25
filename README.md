@@ -9,8 +9,8 @@ Repositorio para el backend de la asignatura de Proyecto Software
 
 # Compilación y despliegue
 El despliegue se encuentra automatizado y dividido entre despliegue real (rama ```main```) y despliegue de pruebas local (rama ```pruebas_local```)
-- Por defecto, el servidor atenderá por el puerto ```443``` mediante HTTPS
-- En el caso de pruebas en local, el servidor API atenderá por el puerto ```8090``` y el de Angular o React por ```8080```
+- Por defecto, el servidor atenderá por el puerto ```443``` mediante `HTTPS`
+- En el caso de pruebas en local, el servidor API atenderá mediante HTTP` por el puerto ```8090``` y el de Angular o React por ```8080```
 
 ## Servidor API
 - Acceder a ```scripts/api```  y ejecutar el fichero ```crear_contenedores.sh```
